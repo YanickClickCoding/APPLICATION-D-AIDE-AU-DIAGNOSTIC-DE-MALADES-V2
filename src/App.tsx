@@ -23,6 +23,14 @@ const Sidebar = () => {
   const location = useLocation();
   const { user, isAdmin, logout } = useAuth();
   
+  useEffect(() => {
+    // @ts-ignore
+    if (window.feather) {
+      // @ts-ignore
+      window.feather.replace();
+    }
+  });
+  
   return (
     <div className="sp-sidebar" id="sidebar">
       <div className="sp-logo-area">
@@ -44,7 +52,7 @@ const Sidebar = () => {
           <nav>
               {isAdmin && (
                 <Link to="/" className={`sp-nav-item ${location.pathname === '/' ? 'active' : ''}`}>
-                    <Grid size={18} />
+                    <i data-feather="grid"></i>
                     <span>Tableau de bord</span>
                 </Link>
               )}
