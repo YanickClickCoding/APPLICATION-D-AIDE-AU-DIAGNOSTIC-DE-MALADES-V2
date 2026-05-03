@@ -46,7 +46,7 @@ const StatCard = ({ label, value, total, icon: Icon, accent, bgIcon, colorIcon }
             <Icon style={{color: colorIcon, width:'24px', height:'24px'}} />
         </div>
         <div>
-            <div className="sp-stat-value" style={{ display: 'flex', alignItems: 'baseline', fontStyle: 'italic', color: '#0f172a' }}>
+            <div className="sp-stat-value" style={{ display: 'flex', alignItems: 'baseline', color: '#0f172a', fontFamily: "'Syne', sans-serif" }}>
                 <span style={{ fontSize: '38px', fontWeight: 900, lineHeight: 1 }}>{displayValue}</span>
                 {total !== undefined && (
                   <span style={{ fontSize: '24px', fontWeight: 700, color: '#94a3b8', marginLeft: '4px' }}>

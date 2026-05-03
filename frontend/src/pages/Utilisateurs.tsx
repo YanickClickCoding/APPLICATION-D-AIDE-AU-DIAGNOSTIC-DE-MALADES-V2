@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { getUtilisateurs, saveUtilisateurs } from '../db';
 import type { Utilisateur } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -38,7 +38,7 @@ const Utilisateurs = () => {
   const toggleRole = (id: number) => {
     const updated = utilisateurs.map(u => {
       if (u.utilisateur_id === id) {
-        return { ...u, role: u.role === 'admin' ? 'operateur' as const : 'admin' as const };
+        return { ...u, role: u.role === 'admin' ? 'medecin' as const : 'admin' as const };
       }
       return u;
     });

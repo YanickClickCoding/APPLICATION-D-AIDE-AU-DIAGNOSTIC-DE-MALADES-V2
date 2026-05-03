@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { getUtilisateurs, saveUtilisateurs } from '../db';
 import { User, Mail, Lock, Eye, EyeOff, UserPlus, AlertCircle, Info } from 'lucide-react';
 import type { Utilisateur } from '../types';
@@ -49,7 +48,7 @@ const Register = () => {
       prenoms: formData.prenoms,
       email: formData.email,
       mot_de_passe: formData.mot_de_passe,
-      role: 'operator',
+      role: 'infirmier',
       created_at: new Date().toISOString()
     };
 

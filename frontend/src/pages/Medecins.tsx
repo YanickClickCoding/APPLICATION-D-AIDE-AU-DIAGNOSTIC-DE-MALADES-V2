@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { getMedecins, saveMedecins } from '../db';
 import type { Medecin } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { HeartPulse, PlusCircle, Search, Edit2, Trash2, Grid, List, Activity, Phone, Hash, UserCheck, X, User, Save, CheckCircle, AlertCircle } from 'lucide-react';
+import { PlusCircle, Search, Edit2, Trash2, Grid, List, Activity, Phone, Hash, UserCheck, X, User, Save, CheckCircle, AlertCircle, UserX } from 'lucide-react';
 
 const SPECIALITES = [
   "Médecine Générale", "Cardiologie", "Pédiatrie", "Gynécologie-Obstétrique", 

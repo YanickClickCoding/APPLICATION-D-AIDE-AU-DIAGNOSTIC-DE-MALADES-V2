@@ -12,7 +12,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(location.state?.success || '');
+  const [success] = useState(location.state?.success || '');
 
   useEffect(() => {
     document.body.classList.add('sp-auth');

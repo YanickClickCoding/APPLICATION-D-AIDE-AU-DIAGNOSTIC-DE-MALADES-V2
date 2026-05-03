@@ -1,4 +1,4 @@
-export type Role = 'admin' | 'operateur';
+export type Role = 'admin' | 'medecin' | 'infirmier';
 export type StatutConsultation = 'en attente' | 'en cours' | 'terminée';
 
 export interface Utilisateur {
