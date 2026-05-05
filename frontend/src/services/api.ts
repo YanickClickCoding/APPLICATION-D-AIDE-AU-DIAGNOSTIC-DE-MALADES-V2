@@ -23,7 +23,9 @@ export interface Consultation {
   id: number;
   nom_patient: string;
   date: string;
+  date_heure?: string; // Ajout pour compatibilité
   motif: string;
+  medecin_id?: number | null; // Ajout pour compatibilité
   statut: 'en attente' | 'en cours' | 'terminée';
 }
 
@@ -73,10 +75,14 @@ export interface DashboardStats {
     total_patients: number;
     patients_ce_mois: number;
     total_consultations: number;
+    consultations_en_attente?: number; // Ajout
+    consultations_en_cours?: number; // Ajout
+    consultations_terminees?: number; // Ajout
     total_diagnostics: number;
     taux_approbation: number;
     confiance_moyenne: number;
   };
+  model_accuracy?: number; // Ajout
   tendance_patients: Array<{
     date: string;
     count: number;
@@ -88,13 +94,15 @@ export interface DashboardStats {
 }
 
 // Gestion des erreurs
-class APIError extends Error {
+export class APIError extends Error {
   status: number;
+  detail: string;
   
   constructor(status: number, message: string) {
     super(message);
     this.name = 'APIError';
     this.status = status;
+    this.detail = message;
   }
 }
 
@@ -111,15 +119,40 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise
       },
     });
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Erreur inconnue' }));
-      throw new APIError(response.status, error.detail || `Erreur ${response.status}`);
+    // Lire le contenu de la réponse
+    const contentType = response.headers.get('content-type');
+    let data;
+    
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      data = { detail: text || 'Erreur inconnue' };
     }
 
-    return await response.json();
+    if (!response.ok) {
+      const errorMessage = data.detail || data.message || `Erreur ${response.status}`;
+      // Token invalide/expiré → purger la session et rediriger vers login
+      if (response.status === 401) {
+        localStorage.removeItem('sp_token');
+        localStorage.removeItem('sp_user');
+        window.location.href = '/login';
+      }
+      throw new APIError(response.status, errorMessage);
+    }
+
+    return data as T;
   } catch (error) {
-    if (error instanceof APIError) throw error;
-    throw new Error(`Erreur de connexion au serveur: ${error}`);
+    if (error instanceof APIError) {
+      throw error;
+    }
+    
+    // Erreur réseau ou autre
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new APIError(0, 'Impossible de se connecter au serveur. Vérifiez que le backend est démarré sur http://localhost:8000');
+    }
+    
+    throw new APIError(500, `Erreur: ${error}`);
   }
 }
 
@@ -317,6 +350,76 @@ export const analyticsAPI = {
 };
 
 // ============================================================================
+// AUTHENTICATION
+// ============================================================================
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  user: {
+    utilisateur_id: number;
+    nom: string;
+    prenoms: string;
+    email: string;
+    role: string;
+    actif: boolean;
+  };
+}
+
+export interface UserInfo {
+  utilisateur_id: number;
+  nom: string;
+  prenoms: string;
+  email: string;
+  role: string;
+  actif: boolean;
+  created_at: string;
+  last_login?: string;
+}
+
+export const authAPI = {
+  // Connexion
+  login: (credentials: LoginRequest) => {
+    console.log('🌐 API: Envoi requête login à /api/auth/login');
+    return fetchAPI<LoginResponse>('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    });
+  },
+
+  // Récupérer les infos de l'utilisateur connecté
+  getMe: (token: string) =>
+    fetchAPI<UserInfo>('/api/auth/me', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    }),
+
+  // Déconnexion
+  logout: (token: string) =>
+    fetchAPI<{ message: string }>('/api/auth/logout', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    }),
+
+  // Rafraîchir le token
+  refresh: (token: string) =>
+    fetchAPI<LoginResponse>('/api/auth/refresh', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    }),
+};
+
+// ============================================================================
 // HEALTH CHECK
 // ============================================================================
 
@@ -338,11 +441,160 @@ export const healthAPI = {
     }>('/'),
 };
 
+// ============================================================================
+// ADMIN TYPES - Définis AVANT adminAPI
+// ============================================================================
+
+export interface AdminUser {
+  utilisateur_id: number;
+  nom: string;
+  prenoms: string;
+  email: string;
+  role: 'admin' | 'medecin' | 'infirmier';
+  actif: boolean;
+  created_at: string;
+  last_login?: string | null;
+}
+
+export interface AdminUserCreate {
+  nom: string;
+  prenoms: string;
+  email: string;
+  password: string;
+  role: 'admin' | 'medecin' | 'infirmier';
+}
+
+export interface AdminUserUpdate {
+  nom?: string;
+  prenoms?: string;
+  email?: string;
+  role?: 'admin' | 'medecin' | 'infirmier';
+  actif?: boolean;
+  password?: string;
+}
+
+export interface AdminMedecin {
+  medecin_id: number;
+  nom: string;
+  prenoms: string;
+  specialite: string;
+  telephone: string;
+  disponible: boolean;
+  created_at?: string;
+}
+
+export interface AdminMedecinCreate {
+  nom: string;
+  prenoms: string;
+  specialite: string;
+  telephone: string;
+  disponible?: boolean;
+}
+
+export interface AdminInfirmier {
+  infirmier_id: number;
+  nom: string;
+  prenoms: string;
+  telephone: string;
+  email?: string | null;
+  disponible: boolean;
+  created_at?: string;
+}
+
+export interface AdminInfirmierCreate {
+  nom: string;
+  prenoms: string;
+  telephone: string;
+  email?: string;
+  disponible?: boolean;
+}
+
+export interface IAConfig {
+  seuil_confiance_min: number;
+  seuil_alerte_bas: number;
+  n_estimators: number;
+  max_depth: number;
+}
+
+// ============================================================================
+// ADMIN — helper token-aware + CRUD complet
+// ============================================================================
+
+async function fetchAPIAuth<T>(token: string, endpoint: string, options: RequestInit = {}): Promise<T> {
+  return fetchAPI<T>(endpoint, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      ...options.headers,
+    },
+  });
+}
+
+export const adminAPI = {
+  // Statut & logs système
+  getStatus: (token: string) =>
+    fetchAPIAuth<any>(token, '/admin/status'),
+  getLogs: (token: string, lines = 200) =>
+    fetchAPIAuth<{ lines: string[]; total: number; exists: boolean }>(token, `/admin/logs?lines=${lines}`),
+  startTraining: (token: string, nEstimators = 200, maxDepth = 30) =>
+    fetchAPIAuth<{ message: string; status: string }>(
+      token, `/admin/train?n_estimators=${nEstimators}&max_depth=${maxDepth}`, { method: 'POST' }
+    ),
+  getTrainingStatus: (token: string) =>
+    fetchAPIAuth<any>(token, '/admin/train/status'),
+  cleanupModels: (token: string) =>
+    fetchAPIAuth<{ removed: string[]; count: number; message: string }>(
+      token, '/admin/cleanup/models', { method: 'POST' }
+    ),
+  cleanupLogs: (token: string) =>
+    fetchAPIAuth<{ message: string; done: boolean }>(
+      token, '/admin/cleanup/logs', { method: 'POST' }
+    ),
+
+  // CRUD Utilisateurs
+  getUsers: (token: string) =>
+    fetchAPIAuth<AdminUser[]>(token, '/admin/users'),
+  createUser: (token: string, data: AdminUserCreate) =>
+    fetchAPIAuth<AdminUser>(token, '/admin/users', { method: 'POST', body: JSON.stringify(data) }),
+  updateUser: (token: string, id: number, data: AdminUserUpdate) =>
+    fetchAPIAuth<AdminUser>(token, `/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteUser: (token: string, id: number) =>
+    fetchAPIAuth<{ message: string }>(token, `/admin/users/${id}`, { method: 'DELETE' }),
+
+  // CRUD Médecins
+  getMedecins: (token: string) =>
+    fetchAPIAuth<AdminMedecin[]>(token, '/admin/personnel/medecins'),
+  createMedecin: (token: string, data: AdminMedecinCreate) =>
+    fetchAPIAuth<AdminMedecin>(token, '/admin/personnel/medecins', { method: 'POST', body: JSON.stringify(data) }),
+  updateMedecin: (token: string, id: number, data: Partial<AdminMedecinCreate & { disponible: boolean }>) =>
+    fetchAPIAuth<AdminMedecin>(token, `/admin/personnel/medecins/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteMedecin: (token: string, id: number) =>
+    fetchAPIAuth<{ message: string }>(token, `/admin/personnel/medecins/${id}`, { method: 'DELETE' }),
+
+  // CRUD Infirmiers
+  getInfirmiers: (token: string) =>
+    fetchAPIAuth<AdminInfirmier[]>(token, '/admin/personnel/infirmiers'),
+  createInfirmier: (token: string, data: AdminInfirmierCreate) =>
+    fetchAPIAuth<AdminInfirmier>(token, '/admin/personnel/infirmiers', { method: 'POST', body: JSON.stringify(data) }),
+  updateInfirmier: (token: string, id: number, data: Partial<AdminInfirmierCreate & { disponible: boolean }>) =>
+    fetchAPIAuth<AdminInfirmier>(token, `/admin/personnel/infirmiers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteInfirmier: (token: string, id: number) =>
+    fetchAPIAuth<{ message: string }>(token, `/admin/personnel/infirmiers/${id}`, { method: 'DELETE' }),
+
+  // Config IA
+  getIAConfig: (token: string) =>
+    fetchAPIAuth<IAConfig>(token, '/admin/config/ia'),
+  updateIAConfig: (token: string, data: Partial<IAConfig>) =>
+    fetchAPIAuth<IAConfig>(token, '/admin/config/ia', { method: 'PUT', body: JSON.stringify(data) }),
+};
+
 // Export par défaut
 export default {
+  auth: authAPI,
   patients: patientsAPI,
   consultations: consultationsAPI,
   ml: mlAPI,
   analytics: analyticsAPI,
   health: healthAPI,
+  admin: adminAPI,
 };

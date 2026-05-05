@@ -7,14 +7,15 @@ from typing import Dict
 import json
 
 from ..database import get_db
-from ..models import Consultation, Symptome, SignesVitaux, AnalyseIA, Diagnostic
+from ..models import Consultation, Symptome, SignesVitaux, AnalyseIA, Diagnostic, Examen
 from ..schemas.diagnostic_schema import (
     PredictionRequest,
     PredictionResponse,
     DiagnosticCreate,
     DiagnosticApprove,
     DiagnosticReject,
-    DiagnosticResponse
+    DiagnosticResponse,
+    DirectPredictionRequest,
 )
 from ..ml.model_manager import model_manager
 
@@ -23,56 +24,94 @@ router = APIRouter(prefix="/ml", tags=["ML Prediction"])
 
 def extract_patient_data(consultation_id: int, db: Session) -> Dict:
     """
-    Extrait les données du patient depuis la consultation
+    Extrait les données de consultation et les formate dans la structure
+    attendue par model_manager.predict() / _build_feature_vector().
+
+    Retourne:
+    {
+        "age": int,
+        "duree_symptomes_jours": int,
+        "sexe": "M" | "F",
+        "severite": "LEGER" | "MODERE" | "SEVERE",
+        "vitaux": { ... },
+        "symptomes": [list of str],
+        "examens": [{"nom": str, "valeur_numerique": float, "unite_mesure": str}]
+    }
     """
-    # Récupérer la consultation
-    consultation = db.query(Consultation).filter(Consultation.id == consultation_id).first()
+    # --- Consultation ---
+    consultation = db.query(Consultation).filter(
+        Consultation.consultation_id == consultation_id
+    ).first()
     if not consultation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Consultation non trouvée"
+            detail="Consultation non trouvée",
         )
-    
-    # Récupérer les symptômes
-    symptomes = db.query(Symptome).filter(Symptome.consultation_id == consultation_id).all()
-    
-    # Récupérer les signes vitaux
-    signes = db.query(SignesVitaux).filter(SignesVitaux.consultation_id == consultation_id).first()
-    
-    # Construire le dictionnaire de données
-    patient_data = {}
-    
-    # Symptômes (binaires)
-    symptome_names = ['fievre', 'toux', 'mal_gorge', 'fatigue_musculaire', 'mal_tete', 'difficulte_respiration']
-    for name in symptome_names:
-        symptome = next((s for s in symptomes if s.nom == name), None)
-        patient_data[name] = 1 if (symptome and symptome.present) else 0
-    
-    # Signes vitaux
+
+    # --- Symptômes ---
+    symptomes = db.query(Symptome).filter(
+        Symptome.consultation_id == str(consultation_id)
+    ).all()
+
+    symptome_names = [s.nom for s in symptomes if s.nom]
+
+    # Durée maximale des symptômes déclarés
+    durees = [s.duree_jours for s in symptomes if s.duree_jours]
+    duree_symptomes = max(durees) if durees else 7
+
+    # Sévérité globale (prend la plus grave)
+    sev_order = {"SEVERE": 3, "MODERE": 2, "LEGER": 1}
+    severites = [s.severite for s in symptomes if s.severite and s.severite in sev_order]
+    if severites:
+        severite = max(severites, key=lambda s: sev_order.get(s, 0))
+    else:
+        severite = "MODERE"
+
+    # --- Signes vitaux ---
+    signes = db.query(SignesVitaux).filter(
+        SignesVitaux.consultation_id == str(consultation_id)
+    ).first()
+
+    vitaux = {}
     if signes:
-        patient_data['saturation_o2'] = signes.saturation_o2 or 98.0
-        patient_data['frequence_cardiaque'] = signes.frequence_cardiaque or 75
-        patient_data['temperature'] = signes.temperature or 37.0
-        patient_data['tension_arterielle_systolique'] = signes.tension_arterielle_systolique or 120
-        patient_data['tension_arterielle_diastolique'] = signes.tension_arterielle_diastolique or 80
-    else:
-        # Valeurs par défaut
-        patient_data['saturation_o2'] = 98.0
-        patient_data['frequence_cardiaque'] = 75
-        patient_data['temperature'] = 37.0
-        patient_data['tension_arterielle_systolique'] = 120
-        patient_data['tension_arterielle_diastolique'] = 80
-    
-    # Âge (calculé depuis date de naissance du patient)
-    if consultation.patient and consultation.patient.date_naissance:
-        from datetime import date
-        today = date.today()
-        age = today.year - consultation.patient.date_naissance.year
-        patient_data['age'] = age
-    else:
-        patient_data['age'] = 40  # Valeur par défaut
-    
-    return patient_data
+        vitaux = {
+            "tension_systolique":    signes.tension_systolique,
+            "tension_diastolique":   signes.tension_diastolique,
+            "frequence_cardiaque":   signes.frequence_cardiaque,
+            "frequence_respiratoire": signes.frequence_respiratoire,
+            "temperature":           signes.temperature,
+            "saturation_oxygene":    signes.saturation_oxygene,
+            "imc":                   signes.imc,
+        }
+
+    # --- Examens biologiques ---
+    examens_db = db.query(Examen).filter(
+        Examen.consultation_id == str(consultation_id),
+        Examen.type == "BIOLOGIE",
+    ).all()
+
+    examens = [
+        {
+            "nom":              e.nom,
+            "valeur_numerique": e.valeur_numerique,
+            "unite_mesure":     e.unite_mesure or "",
+        }
+        for e in examens_db
+        if e.valeur_numerique is not None
+    ]
+
+    # --- Âge --- (la table consultations ne stocke pas directement l'âge/patient)
+    age = 40  # valeur par défaut raisonnable
+
+    return {
+        "age":                  age,
+        "duree_symptomes_jours": duree_symptomes,
+        "sexe":                 "M",   # À améliorer si un lien patient est ajouté
+        "severite":             severite,
+        "vitaux":               vitaux,
+        "symptomes":            symptome_names,
+        "examens":              examens,
+    }
 
 
 @router.post("/predict", response_model=PredictionResponse)
@@ -80,30 +119,61 @@ def predict_diagnosis(request: PredictionRequest, db: Session = Depends(get_db))
     """
     US-014, US-015: Prédire le diagnostic pour une consultation
     """
-    # Vérifier que le modèle est chargé
     if not model_manager.model_loaded:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Modèle ML non chargé. Veuillez entraîner ou charger un modèle."
+            detail="Modèle ML non chargé. Veuillez entraîner ou charger un modèle.",
         )
-    
-    # Extraire les données du patient
-    patient_data = extract_patient_data(request.consultation_id, db)
-    
-    # Faire la prédiction
-    prediction = model_manager.predict(patient_data)
-    
+
+    consultation_data = extract_patient_data(request.consultation_id, db)
+    prediction = model_manager.predict(consultation_data)
+
     # Enregistrer l'analyse IA
     db_analyse = AnalyseIA(
         consultation_id=request.consultation_id,
         diagnostic_propose=prediction["diagnostic_propose"],
         confiance=prediction["confiance"],
-        diagnostics_alternatifs=json.dumps(prediction["diagnostics_alternatifs"], ensure_ascii=False)
+        diagnostics_alternatifs=json.dumps(
+            prediction["diagnostics_alternatifs"], ensure_ascii=False
+        ),
     )
     db.add(db_analyse)
     db.commit()
-    
+
     return prediction
+
+
+@router.post("/predict-direct", response_model=PredictionResponse)
+def predict_direct(request: DirectPredictionRequest):
+    """
+    Prédiction directe à partir des données brutes du formulaire,
+    sans enregistrement préalable en base de données.
+    """
+    if not model_manager.model_loaded:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Modèle ML non chargé. Veuillez entraîner ou charger un modèle.",
+        )
+
+    consultation_data = {
+        "age":                  request.age,
+        "duree_symptomes_jours": request.duree_symptomes_jours,
+        "sexe":                 request.sexe,
+        "severite":             request.severite,
+        "vitaux":               request.vitaux,
+        "symptomes":            request.symptomes,
+        "examens": [
+            {
+                "nom":              e.nom,
+                "valeur_numerique": e.valeur_numerique,
+                "unite_mesure":     e.unite_mesure or "",
+            }
+            for e in request.examens
+            if e.valeur_numerique is not None
+        ],
+    }
+
+    return model_manager.predict(consultation_data)
 
 
 @router.post("/explain", response_model=Dict)
@@ -114,32 +184,25 @@ def explain_diagnosis(request: PredictionRequest, db: Session = Depends(get_db))
     if not model_manager.model_loaded:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Modèle ML non chargé"
+            detail="Modèle ML non chargé",
         )
-    
-    # Extraire les données
-    patient_data = extract_patient_data(request.consultation_id, db)
-    
-    # Obtenir l'explication
-    explanation = model_manager.explain_prediction(patient_data)
-    
-    return explanation
+
+    consultation_data = extract_patient_data(request.consultation_id, db)
+    return model_manager.explain_prediction(consultation_data)
 
 
 @router.post("/diagnostics", response_model=DiagnosticResponse, status_code=status.HTTP_201_CREATED)
 def create_diagnostic(diagnostic: DiagnosticCreate, db: Session = Depends(get_db)):
-    """
-    Créer un diagnostic après prédiction
-    """
-    # Vérifier que la consultation existe
-    consultation = db.query(Consultation).filter(Consultation.id == diagnostic.consultation_id).first()
+    """Créer un diagnostic après prédiction"""
+    consultation = db.query(Consultation).filter(
+        Consultation.consultation_id == diagnostic.consultation_id
+    ).first()
     if not consultation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Consultation non trouvée"
+            detail="Consultation non trouvée",
         )
-    
-    # Créer le diagnostic
+
     db_diagnostic = Diagnostic(
         consultation_id=diagnostic.consultation_id,
         diagnostic_propose=diagnostic.diagnostic_propose,
@@ -147,12 +210,12 @@ def create_diagnostic(diagnostic: DiagnosticCreate, db: Session = Depends(get_db
         niveau_confiance=diagnostic.niveau_confiance,
         diagnostics_alternatifs=diagnostic.diagnostics_alternatifs,
         explication=diagnostic.explication,
-        statut="en_attente"
+        statut="en_attente",
     )
     db.add(db_diagnostic)
     db.commit()
     db.refresh(db_diagnostic)
-    
+
     return db_diagnostic
 
 
@@ -160,44 +223,38 @@ def create_diagnostic(diagnostic: DiagnosticCreate, db: Session = Depends(get_db
 def approve_diagnostic(
     diagnostic_id: str,
     approval: DiagnosticApprove,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    """
-    US-020: Approuver un diagnostic proposé par l'IA
-    """
+    """US-020: Approuver un diagnostic proposé par l'IA"""
     from uuid import UUID
-    
-    # Récupérer le diagnostic
+
     diagnostic = db.query(Diagnostic).filter(Diagnostic.id == UUID(diagnostic_id)).first()
     if not diagnostic:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Diagnostic non trouvé"
-        )
-    
-    # Vérifier qu'il n'est pas déjà approuvé/rejeté
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Diagnostic non trouvé")
+
     if diagnostic.statut != "en_attente":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Diagnostic déjà {diagnostic.statut}"
+            detail=f"Diagnostic déjà {diagnostic.statut}",
         )
-    
-    # Approuver
+
     from datetime import datetime
+
     diagnostic.statut = "approuve"
     diagnostic.diagnostic_final = diagnostic.diagnostic_propose
     diagnostic.approuve_par = approval.medecin_id
     diagnostic.date_approbation = datetime.now()
     diagnostic.notes_medicales = approval.notes_medicales
-    
-    # Mettre à jour le statut de la consultation
-    consultation = db.query(Consultation).filter(Consultation.id == diagnostic.consultation_id).first()
+
+    consultation = db.query(Consultation).filter(
+        Consultation.consultation_id == diagnostic.consultation_id
+    ).first()
     if consultation:
-        consultation.statut = "terminee"
-    
+        consultation.statut = "terminée"
+
     db.commit()
     db.refresh(diagnostic)
-    
+
     return diagnostic
 
 
@@ -205,46 +262,37 @@ def approve_diagnostic(
 def reject_diagnostic(
     diagnostic_id: str,
     rejection: DiagnosticReject,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    """
-    US-021: Rejeter un diagnostic et proposer le diagnostic correct
-    """
+    """US-021: Rejeter un diagnostic et proposer le diagnostic correct"""
     from uuid import UUID
-    
-    # Récupérer le diagnostic
+
     diagnostic = db.query(Diagnostic).filter(Diagnostic.id == UUID(diagnostic_id)).first()
     if not diagnostic:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Diagnostic non trouvé"
-        )
-    
-    # Vérifier qu'il n'est pas déjà approuvé/rejeté
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Diagnostic non trouvé")
+
     if diagnostic.statut != "en_attente":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Diagnostic déjà {diagnostic.statut}"
+            detail=f"Diagnostic déjà {diagnostic.statut}",
         )
-    
-    # Rejeter
+
     from datetime import datetime
+
     diagnostic.statut = "rejete"
     diagnostic.diagnostic_final = rejection.diagnostic_correct
     diagnostic.approuve_par = rejection.medecin_id
     diagnostic.date_approbation = datetime.now()
     diagnostic.raison_rejet = rejection.raison_rejet
     diagnostic.notes_medicales = rejection.explication_medicale
-    
+
     db.commit()
     db.refresh(diagnostic)
-    
+
     return diagnostic
 
 
 @router.get("/model/info")
 def get_model_info():
-    """
-    Informations sur le modèle chargé
-    """
+    """Informations sur le modèle chargé"""
     return model_manager.get_model_info()

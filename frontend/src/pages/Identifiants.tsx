@@ -135,7 +135,7 @@ const Identifiants = () => {
           color="#DC2626"
           bgColor="#FEE2E2"
           credentials={[
-            { label: 'Email', value: 'admin@sante.com', field: 'admin-email' },
+            { label: 'Email', value: 'admin@santeplus.bj', field: 'admin-email' },
             { label: 'Mot de passe', value: 'admin123', field: 'admin-password' },
             { label: 'Rôle', value: 'admin', field: 'admin-role' }
           ]}

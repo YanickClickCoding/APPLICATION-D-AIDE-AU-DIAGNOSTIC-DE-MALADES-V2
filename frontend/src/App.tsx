@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './components/Toast';
 import { initDB } from './db';
-import { Grid, Users, Calendar, LogOut, UserCheck, Clock } from 'lucide-react';
+import { Users, Calendar, LogOut, UserCheck, Clock, Settings } from 'lucide-react';
 
 // Pages
 import Login from './pages/Login';
@@ -14,6 +14,7 @@ import PersonnelMedical from './pages/PersonnelMedical';
 import Utilisateurs from './pages/Utilisateurs';
 import Register from './pages/Register';
 import Identifiants from './pages/Identifiants';
+import AdminSystem from './pages/AdminSystem';
 
 const PrivateRoute = ({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) => {
   const { isAuthenticated, isAdmin } = useAuth();
@@ -32,7 +33,7 @@ const Sidebar = () => {
       // @ts-ignore
       window.feather.replace();
     }
-  });
+  }, [location.pathname]); // Seulement quand la route change
   
   return (
     <div className="sp-sidebar" id="sidebar">
@@ -77,6 +78,10 @@ const Sidebar = () => {
                       <i data-feather="key"></i>
                       <span>Identifiants</span>
                   </Link>
+                  <Link to="/admin/systeme" className={`sp-nav-item ${location.pathname === '/admin/systeme' ? 'active' : ''}`}>
+                      <Settings size={18} />
+                      <span>Système</span>
+                  </Link>
                 </>
               )}
           </nav>
@@ -90,7 +95,9 @@ const Sidebar = () => {
               </div>
               <div className="sp-user-info">
                   <div className="sp-user-name">{user?.prenoms} {user?.nom}</div>
-                  <div className="sp-user-role">{user?.role === 'admin' ? 'Admin' : 'Opérateur'}</div>
+                  <div className="sp-user-role">
+                    {user?.role === 'admin' ? 'Administrateur' : user?.role === 'medecin' ? 'Médecin' : 'Infirmier'}
+                  </div>
               </div>
           </div>
           <button onClick={logout} className="sp-logout-btn" style={{ width: '100%', border: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center' }}>
@@ -103,7 +110,7 @@ const Sidebar = () => {
 };
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   
   const getPageTitle = () => {
     const path = window.location.pathname;
@@ -112,6 +119,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     if (path === '/personnel') return 'Personnel Médical';
     if (path === '/utilisateurs') return 'Utilisateurs';
     if (path === '/identifiants') return 'Identifiants';
+    if (path === '/admin/systeme') return 'Administration Système';
     return 'Accueil';
   };
   
@@ -134,9 +142,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                       <span>{new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} à {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                   {isAdmin ? (
-                    <div className="sp-role-badge admin">Admin</div>
+                    <div className="sp-role-badge admin">Administrateur</div>
                   ) : (
-                    <div className="sp-role-badge operator">Opérateur</div>
+                    <div className="sp-role-badge operator">
+                      {user?.role === 'medecin' ? 'Médecin' : 'Infirmier'}
+                    </div>
                   )}
               </div>
           </div>
@@ -150,16 +160,19 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 };
 
 function AppContent() {
+  const { isAuthenticated } = useAuth();
+  
   return (
     <Routes>
-      <Route path="/login" element={!useAuth().isAuthenticated ? <Login /> : <Navigate to="/" replace />} />
-      <Route path="/register" element={!useAuth().isAuthenticated ? <Register /> : <Navigate to="/" replace />} />
+      <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" replace />} />
+      <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/" replace />} />
       <Route path="/" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
       <Route path="/consultations" element={<PrivateRoute><Layout><Consultations /></Layout></PrivateRoute>} />
       <Route path="/consultation/nouvelle" element={<PrivateRoute><Layout><ConsultationWorkflow /></Layout></PrivateRoute>} />
       <Route path="/personnel" element={<PrivateRoute><Layout><PersonnelMedical /></Layout></PrivateRoute>} />
       <Route path="/utilisateurs" element={<PrivateRoute adminOnly><Layout><Utilisateurs /></Layout></PrivateRoute>} />
       <Route path="/identifiants" element={<PrivateRoute adminOnly><Layout><Identifiants /></Layout></PrivateRoute>} />
+      <Route path="/admin/systeme" element={<PrivateRoute adminOnly><Layout><AdminSystem /></Layout></PrivateRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

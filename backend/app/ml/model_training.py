@@ -37,7 +37,9 @@ class ModelTrainer:
         self.feature_names = []
         self.model_path = model_path
         self.training_history = {}
-        
+        self.normalization_params: Dict = {}
+        self.dataset_means: Dict = {}
+
         # Créer le dossier si nécessaire
         os.makedirs(model_path, exist_ok=True)
     
@@ -270,6 +272,8 @@ class ModelTrainer:
             "label_encoder": self.label_encoder,
             "feature_names": self.feature_names,
             "training_history": self.training_history,
+            "normalization_params": self.normalization_params,
+            "dataset_means": self.dataset_means,
             "version": version,
             "saved_at": datetime.now().isoformat()
         }
@@ -307,6 +311,8 @@ class ModelTrainer:
         self.label_encoder = model_data["label_encoder"]
         self.feature_names = model_data["feature_names"]
         self.training_history = model_data.get("training_history", {})
+        self.normalization_params = model_data.get("normalization_params", {})
+        self.dataset_means = model_data.get("dataset_means", {})
         
         logger.info(f"✅ Modèle chargé avec succès!")
         logger.info(f"   Version: {model_data.get('version', 'unknown')}")

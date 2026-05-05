@@ -18,7 +18,7 @@ class Diagnostic(Base):
     # Foreign Keys
     consultation_id = Column(CHAR(36), ForeignKey("consultations.consultation_id"), nullable=False)
     analyse_ia_id = Column(CHAR(36), ForeignKey("analyses_ia.id"))
-    medecin_id = Column(CHAR(36), ForeignKey("medecins.medecin_id"), nullable=False)
+    medecin_id = Column(CHAR(36), ForeignKey("medecins.medecin_id"), nullable=True)
     dossier_id = Column(CHAR(36), ForeignKey("dossiers_medicaux.id"), nullable=False)
     
     # Diagnostic Information

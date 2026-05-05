@@ -13,6 +13,23 @@ class PredictionRequest(BaseModel):
     # Les données seront extraites de la consultation
 
 
+class ExamenInput(BaseModel):
+    nom: str
+    valeur_numerique: Optional[float] = None
+    unite_mesure: Optional[str] = ""
+
+
+class DirectPredictionRequest(BaseModel):
+    """Prédiction directe sans consultation en DB (workflow frontend)"""
+    age: int = 40
+    duree_symptomes_jours: int = 7
+    sexe: str = "M"
+    severite: str = "MODERE"
+    vitaux: Dict[str, Any] = {}
+    symptomes: List[str] = []
+    examens: List[ExamenInput] = []
+
+
 class AlternativeDiagnostic(BaseModel):
     """Diagnostic alternatif"""
     diagnostic: str

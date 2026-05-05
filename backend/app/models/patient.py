@@ -35,6 +35,7 @@ class Patient(Base):
     dossier_medical = relationship("DossierMedical", back_populates="patient", uselist=False)
     ordonnances = relationship("Ordonnance", back_populates="patient")
     suivis = relationship("Suivi", back_populates="patient")
+    prediction_history = relationship("PredictionHistory", back_populates="patient")
     
     def __repr__(self):
         return f"<Patient(id={self.id}, nom='{self.nom}', prenoms='{self.prenoms}')>"

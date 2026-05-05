@@ -1,7 +1,7 @@
 """
 User database model - Pour l'authentification
 """
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy.dialects.mysql import ENUM
 from sqlalchemy.sql import func
 from ..database import Base
@@ -22,10 +22,12 @@ class User(Base):
     # Authentication
     email = Column(String(200), unique=True, nullable=False, index=True)
     mot_de_passe = Column(String(255), nullable=False)
-    role = Column(ENUM('admin', 'operateur'), default='operateur')
+    role = Column(ENUM('admin', 'medecin', 'infirmier'), default='medecin')
+    actif = Column(Boolean, default=True, nullable=False)
     
-    # Timestamp
+    # Timestamps
     created_at = Column(DateTime, server_default=func.now())
+    last_login = Column(DateTime, nullable=True)
     
     def __repr__(self):
         return f"<User(id={self.utilisateur_id}, email='{self.email}', role='{self.role}')>"

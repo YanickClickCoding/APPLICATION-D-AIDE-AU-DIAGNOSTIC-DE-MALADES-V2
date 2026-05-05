@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getUtilisateurs } from '../db';
-import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle, CheckCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle, CheckCircle, Loader } from 'lucide-react';
 
 const Login = () => {
   const { login } = useAuth();
@@ -13,23 +12,44 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success] = useState(location.state?.success || '');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     document.body.classList.add('sp-auth');
     return () => document.body.classList.remove('sp-auth');
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    const users = getUtilisateurs();
-    const user = users.find(u => u.email === email && u.mot_de_passe === password);
     
-    if (user) {
-      login(user);
-      navigate('/');
-    } else {
-      setError('Email ou mot de passe incorrect.');
+    // Empêcher les soumissions multiples
+    if (isLoading) {
+      console.log('⚠️ Soumission déjà en cours, ignorée');
+      return;
+    }
+    
+    console.log('🔐 Tentative de connexion...');
+    setError('');
+    setIsLoading(true);
+
+    try {
+      await login(email, password);
+      console.log('✅ Connexion réussie, redirection...');
+      // Navigation React Router (pas de reload)
+      navigate('/', { replace: true });
+    } catch (err: any) {
+      console.error('❌ Erreur de connexion:', err);
+      
+      // Gérer les différents types d'erreurs
+      if (err.status === 401) {
+        setError('Email ou mot de passe incorrect.');
+      } else if (err.message?.includes('connexion')) {
+        setError('Impossible de se connecter au serveur. Vérifiez que le backend est démarré.');
+      } else {
+        setError(err.message || 'Une erreur est survenue lors de la connexion.');
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -39,7 +59,7 @@ const Login = () => {
         <div className="sp-auth-logo-icon">
           <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
             <path d="M18 4v28M4 18h28" stroke="white" strokeWidth="4" strokeLinecap="round"/>
-            <circle cx="18" cy="18" r="7" stroke="white" strokeWidth="2.5" fill="none"/>
+            <circle cx="18" cy="18" r="7" stroke="white" strokeWidth="2" fill="none"/>
           </svg>
         </div>
         <div className="sp-auth-logo-name">SANTÉ PLUS</div>
@@ -76,6 +96,7 @@ const Login = () => {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required 
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -91,32 +112,48 @@ const Login = () => {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required 
+                disabled={isLoading}
                 style={{ paddingRight: '40px' }}
               />
               <button 
                 type="button" 
                 className="sp-pw-toggle" 
                 onClick={() => setShowPassword(!showPassword)}
+                disabled={isLoading}
               >
                 {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
           </div>
 
-          <button type="submit" className="sp-btn sp-btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: '14.5px' }}>
-            <LogIn size={18} />
-            Se connecter
+          <button 
+            type="submit" 
+            className="sp-btn sp-btn-primary" 
+            style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: '14.5px' }}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader size={18} className="animate-spin" />
+                Connexion en cours...
+              </>
+            ) : (
+              <>
+                <LogIn size={18} />
+                Se connecter
+              </>
+            )}
           </button>
         </form>
 
-        <div className="sp-divider">ou</div>
 
-        <div style={{ textAlign: 'center', fontSize: '13.5px', color: 'var(--sp-gray-500)' }}>
+        <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '13.5px', color: 'var(--sp-gray-500)' }}>
           Pas encore de compte ?{' '}
           <Link to="/register" style={{ color: 'var(--sp-primary)', fontWeight: 600, textDecoration: 'none' }}>
             S'inscrire
           </Link>
         </div>
+
       </div>
 
       <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '11.5px', color: 'rgba(255,255,255,0.3)' }}>

@@ -22,3 +22,22 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.claude/
+.kiro/
+
+# Documentation temporaire (exclure tous les .md sauf les README importants)
+*.md
+!README.md
+!README_FR.md
+!backend/README.md
+!frontend/README.md
+
+# Fichiers de backup
+*.bkp
+*.drawio
+
+# Datasets et ressources volumineuses
+les ressources dataset/
+
+# Scripts temporaires
+server/ai_engine.py

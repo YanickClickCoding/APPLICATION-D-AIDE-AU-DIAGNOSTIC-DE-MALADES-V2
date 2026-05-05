@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Activity, CheckCircle, UserCheck, Sun, List, PlusCircle, Inbox, UserX, PieChart, Brain, TrendingUp, AlertCircle } from 'lucide-react';
+import { Calendar, Activity, CheckCircle, UserCheck, Sun, List, PlusCircle, Inbox, UserX, PieChart, Brain, TrendingUp, AlertCircle, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
@@ -77,33 +77,31 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [modelInfo, setModelInfo] = useState<{ loaded: boolean } | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [dashboardData, consultationsData, healthData, personnelData] = await Promise.all([
-          analyticsAPI.getDashboard(),
-          analyticsAPI.getRecentConsultations(6),
-          healthAPI.check(),
-          analyticsAPI.getPersonnelDisponible()
-        ]);
-        setStats(dashboardData);
-        setRecentConsultations(consultationsData);
-        setModelInfo({ loaded: healthData.model_loaded });
-        setPersonnel(personnelData);
-        setError(null);
-      } catch (err) {
-        console.error('Erreur lors du chargement des données:', err);
-        setError('Impossible de charger les données du dashboard');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [dashboardData, consultationsData, healthData, personnelData] = await Promise.all([
+        analyticsAPI.getDashboard(),
+        analyticsAPI.getRecentConsultations(6),
+        healthAPI.check(),
+        analyticsAPI.getPersonnelDisponible()
+      ]);
+      setStats(dashboardData);
+      setRecentConsultations(consultationsData);
+      setModelInfo({ loaded: healthData.model_loaded });
+      setPersonnel(personnelData);
+      setError(null);
+    } catch (err) {
+      console.error('Erreur lors du chargement des données:', err);
+      setError('Impossible de charger les données du dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchData();
-    // Rafraîchir toutes les 30 secondes
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
+    // Pas de rafraîchissement automatique - l'utilisateur peut utiliser le bouton de rafraîchissement manuel
   }, []);
 
   if (loading) {
@@ -112,6 +110,7 @@ const Dashboard = () => {
         <div style={{ textAlign: 'center' }}>
           <Activity size={48} style={{ animation: 'spin 1s linear infinite', color: '#4F46E5' }} />
           <p style={{ marginTop: '16px', color: '#6B7280' }}>Chargement des données...</p>
+          <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
         </div>
       </div>
     );
@@ -207,12 +206,22 @@ const Dashboard = () => {
 
   return (
     <>
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       <div className="sp-page-header sp-fade-in">
           <div>
               <h1 className="sp-page-title">Tableau de bord</h1>
               <p className="sp-page-subtitle">Vue d'ensemble de la clinique SANTÉ PLUS · Système IA {modelInfo?.loaded ? '✓' : '✗'}</p>
           </div>
           <div style={{display:'flex',gap:'10px',alignItems:'center'}}>
+              <button 
+                onClick={fetchData} 
+                className="sp-btn sp-btn-outline"
+                disabled={loading}
+                title="Rafraîchir les données"
+              >
+                  <RefreshCw size={18} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} /> 
+                  Rafraîchir
+              </button>
               <Link to="/consultations" className="sp-btn sp-btn-primary">
                   <PlusCircle size={18} /> Nouvelle consultation
               </Link>

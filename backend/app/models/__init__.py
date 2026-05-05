@@ -16,6 +16,10 @@ from .ordonnance import Ordonnance
 from .medicament import Medicament
 from .examen import Examen
 from .suivi import Suivi
+from .prediction_history import PredictionHistory
+from .prescription import Prescription
+from .training_log import ModelTrainingLog
+from .feedback import DoctorFeedback
 
 __all__ = [
     "Patient",
@@ -32,5 +36,9 @@ __all__ = [
     "Ordonnance",
     "Medicament",
     "Examen",
-    "Suivi"
+    "Suivi",
+    "PredictionHistory",
+    "Prescription",
+    "ModelTrainingLog",
+    "DoctorFeedback"
 ]

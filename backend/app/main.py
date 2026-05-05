@@ -12,10 +12,12 @@ from .database import engine, Base
 from .utils.logger import setup_logging
 from .ml.model_manager import model_manager
 from .routers import (
+    auth_router,
     patients_router,
     consultations_router,
     ml_router,
-    analytics_router
+    analytics_router,
+    admin_router,
 )
 
 # Configuration du logging
@@ -81,10 +83,12 @@ app.add_middleware(
 )
 
 # Enregistrer les routers
+app.include_router(auth_router)
 app.include_router(patients_router)
 app.include_router(consultations_router)
 app.include_router(ml_router)
 app.include_router(analytics_router)
+app.include_router(admin_router)
 
 
 @app.get("/")

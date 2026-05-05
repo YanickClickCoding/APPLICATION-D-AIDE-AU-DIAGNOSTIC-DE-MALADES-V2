@@ -39,6 +39,7 @@ class Consultation(Base):
     diagnostics = relationship("Diagnostic", back_populates="consultation", cascade="all, delete-orphan")
     analyses_ia = relationship("AnalyseIA", back_populates="consultation", cascade="all, delete-orphan")
     suivis = relationship("Suivi", back_populates="consultation")
+    prediction_history = relationship("PredictionHistory", back_populates="consultation")
     
     def __repr__(self):
         return f"<Consultation(id={self.consultation_id}, patient='{self.nom_patient}', statut='{self.statut}')>"

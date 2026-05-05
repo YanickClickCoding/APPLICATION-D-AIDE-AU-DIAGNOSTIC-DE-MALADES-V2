@@ -57,7 +57,7 @@ const Consultations = () => {
     fetchData();
   }, []);
 
-  const getMedecinName = (id: number | null) => {
+  const getMedecinName = (id: number | null | undefined) => {
     if (!id) return null;
     const m = medecins.find(med => med && med.medecin_id === id);
     return m ? `Dr. ${m.prenoms} ${m.nom}` : null;
@@ -240,7 +240,7 @@ const Consultations = () => {
                                 <div className="sp-item-details" style={{ gap: '12px', marginBottom: '20px', flex: 1 }}>
                                     <div className="sp-item-detail-row" style={{ fontSize: '13px', display: 'flex', gap: '10px', alignItems: 'center' }}>
                                         <Calendar size={15} style={{ color: 'var(--sp-gray-400)' }} />
-                                        <span style={{ color: 'var(--sp-gray-700)' }}>{new Date(c.date_heure).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' à')}</span>
+                                        <span style={{ color: 'var(--sp-gray-700)' }}>{new Date(c.date_heure || c.date).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' à')}</span>
                                     </div>
                                     <div className="sp-item-detail-row" style={{ fontSize: '13px', display: 'flex', gap: '10px', alignItems: 'center' }}>
                                         <FileText size={15} style={{ color: 'var(--sp-gray-400)' }} />
@@ -342,7 +342,7 @@ const Consultations = () => {
                                         <td>
                                             <div style={{fontWeight:600}}>{c.nom_patient}</div>
                                         </td>
-                                        <td>{new Date(c.date_heure).toLocaleString('fr-FR', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})}</td>
+                                        <td>{new Date(c.date_heure || c.date).toLocaleString('fr-FR', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})}</td>
                                         <td style={{maxWidth:'200px'}}>
                                             <span title={c.motif || ''}>
                                                 {(c.motif || '').length > 40 ? (c.motif || '').substring(0, 40) + '…' : (c.motif || '')}

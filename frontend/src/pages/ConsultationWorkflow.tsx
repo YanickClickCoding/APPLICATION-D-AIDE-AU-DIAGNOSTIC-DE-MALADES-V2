@@ -75,6 +75,8 @@ const ConsultationWorkflow = () => {
   const [motifConsultation, setMotifConsultation] = useState('');
   const [predictionIA, setPredictionIA] = useState<PredictionIA | null>(null);
   const [diagnosticFinal, setDiagnosticFinal] = useState('');
+  const [validationDecision, setValidationDecision] = useState<'confirme' | 'rejete' | null>(null);
+  const [diagnosticCorrection, setDiagnosticCorrection] = useState('');
   const [loading, setLoading] = useState(false);
 
   const steps = [
@@ -126,46 +128,100 @@ const ConsultationWorkflow = () => {
   const handlePredictionIA = async () => {
     setLoading(true);
     try {
-      // TODO: Appeler l'API backend réelle
-      // const response = await fetch('http://localhost:8000/ml/predict', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     patient_data: {
-      //       symptomes,
-      //       signes_vitaux: signesVitaux
-      //     }
-      //   })
-      // });
-      // const data = await response.json();
-      
-      // Simuler un appel API pour l'instant
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      setPredictionIA({
-        maladie_predite: 'Grippe saisonnière',
-        confiance: 0.87,
-        top_3_predictions: [
-          { maladie: 'Grippe saisonnière', probabilite: 0.87 },
-          { maladie: 'Infection respiratoire', probabilite: 0.09 },
-          { maladie: 'Bronchite aiguë', probabilite: 0.04 }
-        ]
+      const age = patientData.date_naissance
+        ? Math.floor((Date.now() - new Date(patientData.date_naissance).getTime()) / (365.25 * 24 * 3600 * 1000))
+        : 40;
+
+      const severityOrder: Record<string, number> = { 'Légère': 1, 'Modérée': 2, 'Sévère': 3 };
+      const severiteMap: Record<string, string> = { 'Légère': 'LEGER', 'Modérée': 'MODERE', 'Sévère': 'SEVERE' };
+      const maxSeverite = symptomes.length > 0
+        ? symptomes.reduce((max, s) =>
+            severityOrder[s.severite] > severityOrder[max] ? s.severite : max,
+            symptomes[0].severite)
+        : 'Modérée';
+      const maxDuree = symptomes.length > 0
+        ? Math.max(...symptomes.map(s => s.duree_jours || 1))
+        : 7;
+
+      const imc = signesVitaux.poids && signesVitaux.taille
+        ? signesVitaux.poids / ((signesVitaux.taille / 100) ** 2)
+        : 22.0;
+
+      const response = await fetch('http://localhost:8000/ml/predict-direct', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          age,
+          duree_symptomes_jours: maxDuree,
+          sexe: patientData.sexe,
+          severite: severiteMap[maxSeverite] || 'MODERE',
+          vitaux: {
+            tension_systolique:    signesVitaux.tension_systolique,
+            tension_diastolique:   signesVitaux.tension_diastolique,
+            frequence_cardiaque:   signesVitaux.frequence_cardiaque,
+            frequence_respiratoire: signesVitaux.frequence_respiratoire,
+            temperature:           signesVitaux.temperature,
+            saturation_oxygene:    signesVitaux.saturation_o2,
+            imc,
+          },
+          symptomes: symptomes.map(s => s.nom).filter(n => n.trim() !== ''),
+          examens: examens
+            .filter(e => e.valeur_numerique != null && e.nom.trim() !== '')
+            .map(e => ({ nom: e.nom, valeur_numerique: e.valeur_numerique, unite_mesure: e.unite_mesure || '' })),
+        }),
       });
-      
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.detail || `Erreur ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      const alternatives: Array<{ maladie: string; probabilite: number }> = (data.diagnostics_alternatifs || [])
+        .map((a: { diagnostic: string; confiance: number }) => ({ maladie: a.diagnostic, probabilite: a.confiance }));
+
+      setPredictionIA({
+        maladie_predite: data.diagnostic_propose,
+        confiance: data.confiance,
+        top_3_predictions: [
+          { maladie: data.diagnostic_propose, probabilite: data.confiance },
+          ...alternatives,
+        ],
+      });
+
+      setValidationDecision(null);
+      setDiagnosticFinal('');
+      setDiagnosticCorrection('');
+
       showToast('Diagnostic IA généré avec succès', 'success');
       handleNext();
-    } catch (error) {
-      console.error('Erreur lors de la prédiction IA:', error);
-      showToast('Erreur lors de la génération du diagnostic IA', 'error');
+    } catch (error: any) {
+      console.error('Erreur prédiction IA:', error);
+      showToast(error.message || 'Erreur lors de la génération du diagnostic IA', 'error');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleConfirmerDiagnostic = () => {
+    if (!predictionIA) return;
+    setValidationDecision('confirme');
+    setDiagnosticFinal(predictionIA.maladie_predite);
+    setDiagnosticCorrection('');
+  };
+
+  const handleRejeterDiagnostic = () => {
+    setValidationDecision('rejete');
+    setDiagnosticFinal('');
   };
 
   const handleSubmit = async () => {
     try {
       setLoading(true);
       
+      const finalDiagnostic = validationDecision === 'rejete' ? diagnosticCorrection : diagnosticFinal;
+
       const consultationData = {
         patient: patientData,
         symptomes,
@@ -173,7 +229,8 @@ const ConsultationWorkflow = () => {
         examens,
         motif: motifConsultation,
         prediction_ia: predictionIA,
-        diagnostic_final: diagnosticFinal
+        diagnostic_final: finalDiagnostic,
+        validation_type: validationDecision,
       };
       
       // Appeler l'API backend
@@ -908,46 +965,127 @@ const ConsultationWorkflow = () => {
           {/* Étape 7: Validation Médicale */}
           {currentStep === 7 && (
             <div>
-              <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '20px', color: '#1F2937' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '8px', color: '#1F2937' }}>
                 Validation Médicale
               </h2>
-              <p style={{ color: '#6B7280', marginBottom: '20px', fontSize: '14px' }}>
-                Rôle: Médecin - Validez ou modifiez le diagnostic suggéré par l'IA
+              <p style={{ color: '#6B7280', marginBottom: '24px', fontSize: '14px' }}>
+                Confirmez ou corrigez le diagnostic proposé par l'IA
               </p>
 
+              {/* Diagnostic IA */}
               {predictionIA && (
                 <div style={{
-                  padding: '20px',
-                  background: '#F9FAFB',
+                  padding: '24px',
+                  background: 'linear-gradient(135deg, #EEF2FF, #F5F3FF)',
                   borderRadius: '12px',
                   marginBottom: '24px',
-                  border: '1px solid #E5E7EB'
+                  border: '2px solid #C7D2FE'
                 }}>
-                  <div style={{ fontSize: '14px', color: '#6B7280', marginBottom: '8px' }}>
-                    Diagnostic suggéré par l'IA
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#6366F1', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                    Diagnostic proposé par l'IA
                   </div>
-                  <div style={{ fontSize: '20px', fontWeight: 700, color: '#4F46E5', marginBottom: '8px' }}>
+                  <div style={{ fontSize: '22px', fontWeight: 800, color: '#3730A3', marginBottom: '6px' }}>
                     {predictionIA.maladie_predite}
                   </div>
-                  <div style={{ fontSize: '14px', color: '#6B7280' }}>
-                    Confiance: {(predictionIA.confiance * 100).toFixed(1)}%
+                  <div style={{ fontSize: '14px', color: '#6B7280', marginBottom: '16px' }}>
+                    Confiance : <strong style={{ color: predictionIA.confiance >= 0.8 ? '#059669' : predictionIA.confiance >= 0.6 ? '#D97706' : '#DC2626' }}>
+                      {(predictionIA.confiance * 100).toFixed(1)}%
+                    </strong>
+                  </div>
+
+                  {/* Alternatives */}
+                  {predictionIA.top_3_predictions.length > 1 && (
+                    <div style={{ marginBottom: '20px' }}>
+                      <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '8px', fontWeight: 600 }}>Diagnostics alternatifs :</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {predictionIA.top_3_predictions.slice(1).map((p, i) => (
+                          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#374151', background: 'white', padding: '8px 12px', borderRadius: '6px' }}>
+                            <span>{p.maladie}</span>
+                            <span style={{ color: '#6B7280' }}>{(p.probabilite * 100).toFixed(1)}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Boutons de décision */}
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button
+                      onClick={handleConfirmerDiagnostic}
+                      style={{
+                        flex: 1,
+                        padding: '12px',
+                        background: validationDecision === 'confirme' ? '#059669' : 'white',
+                        color: validationDecision === 'confirme' ? 'white' : '#059669',
+                        border: '2px solid #059669',
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      ✓ Confirmer ce diagnostic
+                    </button>
+                    <button
+                      onClick={handleRejeterDiagnostic}
+                      style={{
+                        flex: 1,
+                        padding: '12px',
+                        background: validationDecision === 'rejete' ? '#DC2626' : 'white',
+                        color: validationDecision === 'rejete' ? 'white' : '#DC2626',
+                        border: '2px solid #DC2626',
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      ✗ Rejeter et corriger
+                    </button>
                   </div>
                 </div>
               )}
 
-              <div className="sp-form-group">
-                <label className="sp-form-label">
-                  Diagnostic final <span style={{ color: '#EF4444' }}>*</span>
-                </label>
-                <textarea
-                  className="sp-form-textarea"
-                  rows={4}
-                  required
-                  value={diagnosticFinal}
-                  onChange={(e) => setDiagnosticFinal(e.target.value)}
-                  placeholder="Confirmez le diagnostic IA ou saisissez votre propre diagnostic..."
-                />
-              </div>
+              {/* Confirmation affichée */}
+              {validationDecision === 'confirme' && (
+                <div style={{
+                  padding: '16px',
+                  background: '#ECFDF5',
+                  border: '1px solid #6EE7B7',
+                  borderRadius: '8px',
+                  marginBottom: '16px',
+                  color: '#065F46',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                }}>
+                  ✓ Vous avez confirmé : <strong>{diagnosticFinal}</strong>
+                </div>
+              )}
+
+              {/* Champ de correction si rejeté */}
+              {validationDecision === 'rejete' && (
+                <div className="sp-form-group" style={{ marginBottom: '16px' }}>
+                  <label className="sp-form-label">
+                    Diagnostic correct <span style={{ color: '#EF4444' }}>*</span>
+                  </label>
+                  <input
+                    className="sp-form-input"
+                    type="text"
+                    value={diagnosticCorrection}
+                    onChange={(e) => setDiagnosticCorrection(e.target.value)}
+                    placeholder="Saisissez le diagnostic correct..."
+                    autoFocus
+                  />
+                </div>
+              )}
 
               <div style={{
                 padding: '16px',
@@ -956,11 +1094,10 @@ const ConsultationWorkflow = () => {
                 border: '1px solid #FCD34D',
                 display: 'flex',
                 gap: '12px',
-                marginTop: '20px'
               }}>
                 <AlertCircle size={20} style={{ color: '#D97706', flexShrink: 0, marginTop: '2px' }} />
                 <div style={{ fontSize: '13px', color: '#92400E' }}>
-                  <strong>Note importante:</strong> Le diagnostic final est sous votre responsabilité médicale. 
+                  <strong>Note importante :</strong> Le diagnostic final est sous votre responsabilité médicale.
                   L'IA est un outil d'aide à la décision, pas un remplacement du jugement médical.
                 </div>
               </div>
@@ -999,25 +1136,32 @@ const ConsultationWorkflow = () => {
               </button>
             )}
 
-            {currentStep === 7 && (
-              <button 
-                onClick={handleSubmit} 
-                className="sp-btn sp-btn-success"
-                disabled={loading || !diagnosticFinal}
-              >
-                {loading ? (
-                  <>
-                    <Activity size={18} style={{ animation: 'spin 1s linear infinite' }} />
-                    Enregistrement...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle size={18} />
-                    Enregistrer la consultation
-                  </>
-                )}
-              </button>
-            )}
+            {currentStep === 7 && (() => {
+              const canSubmit = !loading && (
+                validationDecision === 'confirme' ||
+                (validationDecision === 'rejete' && diagnosticCorrection.trim() !== '')
+              );
+              return (
+                <button
+                  onClick={handleSubmit}
+                  className="sp-btn sp-btn-success"
+                  disabled={!canSubmit}
+                  style={{ opacity: canSubmit ? 1 : 0.4, cursor: canSubmit ? 'pointer' : 'not-allowed' }}
+                >
+                  {loading ? (
+                    <>
+                      <Activity size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                      Enregistrement...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle size={18} />
+                      Enregistrer la consultation
+                    </>
+                  )}
+                </button>
+              );
+            })()}
           </div>
         </div>
       </div>

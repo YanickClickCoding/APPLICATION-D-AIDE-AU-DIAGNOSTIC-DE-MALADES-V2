@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getUtilisateurs, saveUtilisateurs } from '../db';
-import { User, Mail, Lock, Eye, EyeOff, UserPlus, AlertCircle, Info } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, UserPlus, AlertCircle } from 'lucide-react';
 import type { Utilisateur } from '../types';
 
 const Register = () => {
@@ -72,15 +72,6 @@ const Register = () => {
       <div className="sp-auth-card sp-fade-in">
         <h1 className="sp-auth-title">Créer un compte</h1>
         <p className="sp-auth-subtitle">Renseignez vos informations pour accéder au système</p>
-
-        <div className="sp-alert info" style={{ marginBottom: '18px', background: '#e0f2fe', borderColor: '#38bdf8' }}>
-          <Info size={18} style={{ color: '#0284c7' }} />
-          <div style={{ fontSize: '12.5px' }}>
-            <strong>Compte Opérateur</strong><br />
-            L'inscription crée un compte <strong>opérateur</strong> avec accès limité.<br />
-            Seul un administrateur peut créer d'autres comptes admin.
-          </div>
-        </div>
 
         {error && (
           <div className="sp-alert error" style={{ marginBottom: '18px' }}>
@@ -178,7 +169,7 @@ const Register = () => {
 
           <button type="submit" className="sp-btn sp-btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px' }}>
             <UserPlus size={18} />
-            Créer mon compte opérateur
+            Créer mon compte
           </button>
         </form>
 
