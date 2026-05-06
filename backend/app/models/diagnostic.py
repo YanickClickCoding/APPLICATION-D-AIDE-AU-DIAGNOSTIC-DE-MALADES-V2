@@ -1,9 +1,9 @@
 """
 Diagnostic database model
 """
-from sqlalchemy import Column, String, Text, Date, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Date, Float, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.mysql import CHAR, ENUM
+from sqlalchemy.dialects.mysql import ENUM
 from ..database import Base
 
 
@@ -12,14 +12,14 @@ class Diagnostic(Base):
     
     __tablename__ = "diagnostics"
     
-    # Primary Key (UUID)
-    id = Column(CHAR(36), primary_key=True, index=True)
+    # Primary Key
+    diagnostic_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     
     # Foreign Keys
-    consultation_id = Column(CHAR(36), ForeignKey("consultations.consultation_id"), nullable=False)
-    analyse_ia_id = Column(CHAR(36), ForeignKey("analyses_ia.id"))
-    medecin_id = Column(CHAR(36), ForeignKey("medecins.medecin_id"), nullable=True)
-    dossier_id = Column(CHAR(36), ForeignKey("dossiers_medicaux.id"), nullable=False)
+    consultation_id = Column(Integer, ForeignKey("consultations.consultation_id"), nullable=False)
+    analyse_ia_id = Column(Integer, ForeignKey("analyses_ia.analyse_id"))
+    medecin_id = Column(Integer, ForeignKey("medecins.medecin_id"), nullable=True)
+    dossier_id = Column(Integer, ForeignKey("dossiers_medicaux.dossier_id"), nullable=False)
     
     # Diagnostic Information
     code_icd10 = Column(String(20))  # Code ICD-10
@@ -47,4 +47,4 @@ class Diagnostic(Base):
     suivis = relationship("Suivi", back_populates="diagnostic")
     
     def __repr__(self):
-        return f"<Diagnostic(id={self.id}, maladie='{self.nom_maladie}', statut='{self.statut}')>"
+        return f"<Diagnostic(diagnostic_id={self.diagnostic_id}, maladie='{self.nom_maladie}', statut='{self.statut}')>"

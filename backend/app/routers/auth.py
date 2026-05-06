@@ -19,7 +19,7 @@ from pydantic import BaseModel, EmailStr
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
-    prefix="/api/auth",
+    prefix="/auth",
     tags=["Authentication"]
 )
 

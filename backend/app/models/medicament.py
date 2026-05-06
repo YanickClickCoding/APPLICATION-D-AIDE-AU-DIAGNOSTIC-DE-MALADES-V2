@@ -1,13 +1,13 @@
 """Medicament model"""
-from sqlalchemy import Column, String, Integer, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.mysql import CHAR, ENUM
+from sqlalchemy.dialects.mysql import ENUM
 from ..database import Base
 
 class Medicament(Base):
     __tablename__ = "medicaments"
-    id = Column(CHAR(36), primary_key=True)
-    ordonnance_id = Column(CHAR(36), ForeignKey("ordonnances.id"), nullable=False)
+    medicament_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    ordonnance_id = Column(Integer, ForeignKey("ordonnances.ordonnance_id"), nullable=False)
     nom_commercial = Column(String(255), nullable=False)
     denomination_commune = Column(String(255))
     dosage = Column(String(100))

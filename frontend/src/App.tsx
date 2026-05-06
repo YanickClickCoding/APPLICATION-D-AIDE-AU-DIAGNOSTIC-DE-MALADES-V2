@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './components/Toast';
 import { initDB } from './db';
-import { Users, Calendar, LogOut, UserCheck, Clock, Settings } from 'lucide-react';
+import { Users, Calendar, LogOut, UserCheck, Clock, Settings, Brain, User } from 'lucide-react';
 
 // Pages
 import Login from './pages/Login';
@@ -15,11 +15,15 @@ import Utilisateurs from './pages/Utilisateurs';
 import Register from './pages/Register';
 import Identifiants from './pages/Identifiants';
 import AdminSystem from './pages/AdminSystem';
+import DossierPatient from './pages/DossierPatient';
+import MesPatients from './pages/MesPatients';
+import DiagnosticsIA from './pages/DiagnosticsIA';
 
-const PrivateRoute = ({ children, adminOnly = false }: { children: React.ReactNode, adminOnly?: boolean }) => {
-  const { isAuthenticated, isAdmin } = useAuth();
+const PrivateRoute = ({ children, adminOnly = false, medicalOnly = false }: { children: React.ReactNode, adminOnly?: boolean, medicalOnly?: boolean }) => {
+  const { isAuthenticated, isAdmin, user } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (adminOnly && !isAdmin) return <Navigate to="/" replace />;
+  if (medicalOnly && user?.role !== 'medecin' && user?.role !== 'infirmier') return <Navigate to="/consultations" replace />;
   return <>{children}</>;
 };
 
@@ -54,16 +58,32 @@ const Sidebar = () => {
       <div className="sp-nav-section">
           <div className="sp-nav-label">Navigation</div>
           <nav>
-              {isAdmin && (
-                <Link to="/" className={`sp-nav-item ${location.pathname === '/' ? 'active' : ''}`}>
-                    <i data-feather="grid"></i>
-                    <span>Tableau de bord</span>
-                </Link>
-              )}
+              {/* Tableau de bord — admin ET médecin */}
+              <Link to="/" className={`sp-nav-item ${location.pathname === '/' ? 'active' : ''}`}>
+                  <i data-feather="grid"></i>
+                  <span>Tableau de bord</span>
+              </Link>
+
               <Link to="/consultations" className={`sp-nav-item ${location.pathname === '/consultations' ? 'active' : ''}`}>
                   <Calendar size={18} />
                   <span>Consultations</span>
               </Link>
+
+              {/* Nav médecin */}
+              {!isAdmin && user?.role === 'medecin' && (
+                <>
+                  <Link to="/mes-patients" className={`sp-nav-item ${location.pathname === '/mes-patients' ? 'active' : ''}`}>
+                      <User size={18} />
+                      <span>Mes Patients</span>
+                  </Link>
+                  <Link to="/diagnostics" className={`sp-nav-item ${location.pathname === '/diagnostics' ? 'active' : ''}`}>
+                      <Brain size={18} />
+                      <span>Diagnostics IA</span>
+                  </Link>
+                </>
+              )}
+
+              {/* Nav admin */}
               {isAdmin && (
                 <>
                   <Link to="/personnel" className={`sp-nav-item ${location.pathname === '/personnel' ? 'active' : ''}`}>
@@ -116,10 +136,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     const path = window.location.pathname;
     if (path === '/') return 'Tableau de bord';
     if (path === '/consultations') return 'Consultations';
+    if (path === '/mes-patients') return 'Mes Patients';
+    if (path === '/diagnostics') return 'Diagnostics IA';
     if (path === '/personnel') return 'Personnel Médical';
     if (path === '/utilisateurs') return 'Utilisateurs';
     if (path === '/identifiants') return 'Identifiants';
     if (path === '/admin/systeme') return 'Administration Système';
+    if (path.startsWith('/dossier-patient')) return 'Dossier Patient';
     return 'Accueil';
   };
   
@@ -161,14 +184,17 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
 function AppContent() {
   const { isAuthenticated } = useAuth();
-  
+
   return (
     <Routes>
       <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" replace />} />
       <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/" replace />} />
       <Route path="/" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
       <Route path="/consultations" element={<PrivateRoute><Layout><Consultations /></Layout></PrivateRoute>} />
-      <Route path="/consultation/nouvelle" element={<PrivateRoute><Layout><ConsultationWorkflow /></Layout></PrivateRoute>} />
+      <Route path="/consultation/nouvelle" element={<PrivateRoute medicalOnly><Layout><ConsultationWorkflow /></Layout></PrivateRoute>} />
+      <Route path="/dossier-patient/:patientId" element={<PrivateRoute><Layout><DossierPatient /></Layout></PrivateRoute>} />
+      <Route path="/mes-patients" element={<PrivateRoute><Layout><MesPatients /></Layout></PrivateRoute>} />
+      <Route path="/diagnostics" element={<PrivateRoute><Layout><DiagnosticsIA /></Layout></PrivateRoute>} />
       <Route path="/personnel" element={<PrivateRoute><Layout><PersonnelMedical /></Layout></PrivateRoute>} />
       <Route path="/utilisateurs" element={<PrivateRoute adminOnly><Layout><Utilisateurs /></Layout></PrivateRoute>} />
       <Route path="/identifiants" element={<PrivateRoute adminOnly><Layout><Identifiants /></Layout></PrivateRoute>} />

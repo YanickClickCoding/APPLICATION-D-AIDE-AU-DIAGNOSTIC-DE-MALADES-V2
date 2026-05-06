@@ -1,13 +1,13 @@
 """Examen model"""
-from sqlalchemy import Column, String, Text, Date, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Date, Float, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.mysql import CHAR, ENUM
+from sqlalchemy.dialects.mysql import ENUM
 from ..database import Base
 
 class Examen(Base):
     __tablename__ = "examens"
-    id = Column(CHAR(36), primary_key=True)
-    consultation_id = Column(CHAR(36), ForeignKey("consultations.consultation_id"), nullable=False)
+    examen_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    consultation_id = Column(Integer, ForeignKey("consultations.consultation_id"), nullable=False)
     type = Column(ENUM('CLINIQUE', 'IMAGERIE', 'BIOLOGIE', 'ELECTROCARDIOGRAMME'))
     nom = Column(String(255), nullable=False)
     description = Column(Text)

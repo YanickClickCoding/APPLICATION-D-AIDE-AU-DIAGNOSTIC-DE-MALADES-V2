@@ -5,6 +5,7 @@ import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { analyticsAPI, healthAPI } from '../services/api';
 import type { DashboardStats, Consultation } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -47,7 +48,7 @@ const StatCard = ({ label, value, total, icon: Icon, accent, bgIcon, colorIcon }
         </div>
         <div>
             <div className="sp-stat-value" style={{ display: 'flex', alignItems: 'baseline', color: '#0f172a', fontFamily: "'Syne', sans-serif" }}>
-                <span style={{ fontSize: '38px', fontWeight: 900, lineHeight: 1 }}>{displayValue}</span>
+                <span style={{ fontSize: '38px', fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>{displayValue}</span>
                 {total !== undefined && (
                   <span style={{ fontSize: '24px', fontWeight: 700, color: '#94a3b8', marginLeft: '4px' }}>
                     / {displayTotal}
@@ -70,6 +71,7 @@ const CenteredCounter = ({ value }: { value: number }) => {
 };
 
 const Dashboard = () => {
+  const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentConsultations, setRecentConsultations] = useState<Consultation[]>([]);
   const [personnel, setPersonnel] = useState<any>(null);
@@ -222,9 +224,11 @@ const Dashboard = () => {
                   <RefreshCw size={18} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} /> 
                   Rafraîchir
               </button>
-              <Link to="/consultations" className="sp-btn sp-btn-primary">
-                  <PlusCircle size={18} /> Nouvelle consultation
-              </Link>
+              {user?.role === 'medecin' && (
+                <Link to="/consultations" className="sp-btn sp-btn-primary">
+                    <PlusCircle size={18} /> Nouvelle consultation
+                </Link>
+              )}
           </div>
       </div>
 

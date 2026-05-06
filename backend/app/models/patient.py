@@ -1,9 +1,8 @@
 """
 Patient database model - Adapté au schéma MySQL existant
 """
-from sqlalchemy import Column, String, Date, DateTime, Text, Enum
+from sqlalchemy import Column, Integer, String, Date, DateTime, Text, Enum
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.mysql import CHAR
 from sqlalchemy.sql import func
 from ..database import Base
 
@@ -13,8 +12,8 @@ class Patient(Base):
     
     __tablename__ = "patients"
     
-    # Primary Key (UUID)
-    id = Column(CHAR(36), primary_key=True, index=True)
+    # Primary Key (INT AUTO_INCREMENT)
+    patient_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     
     # Personal Information
     nom = Column(String(100), nullable=False)
@@ -32,10 +31,11 @@ class Patient(Base):
     created_at = Column(DateTime, server_default=func.now())
     
     # Relationships
+    consultations = relationship("Consultation", back_populates="patient")  # Relation vers Consultations
     dossier_medical = relationship("DossierMedical", back_populates="patient", uselist=False)
     ordonnances = relationship("Ordonnance", back_populates="patient")
     suivis = relationship("Suivi", back_populates="patient")
     prediction_history = relationship("PredictionHistory", back_populates="patient")
     
     def __repr__(self):
-        return f"<Patient(id={self.id}, nom='{self.nom}', prenoms='{self.prenoms}')>"
+        return f"<Patient(id={self.patient_id}, nom='{self.nom}', prenoms='{self.prenoms}')>"

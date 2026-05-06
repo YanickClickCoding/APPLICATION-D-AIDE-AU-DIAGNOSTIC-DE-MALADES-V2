@@ -39,13 +39,14 @@ class ConsultationCreate(BaseModel):
 
 class ConsultationResponse(BaseModel):
     """Schema pour retourner une consultation"""
-    id: int
-    patient_id: UUID
-    medecin_id: int
-    date_consultation: datetime
+    consultation_id: int
+    patient_id: Optional[int] = None  # INT, peut être null
+    nom_patient: str
+    date_heure: datetime
     motif: str
     statut: str
-    created_at: datetime
+    medecin_id: Optional[int] = None
+    created_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True

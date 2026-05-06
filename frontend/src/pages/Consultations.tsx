@@ -15,7 +15,7 @@ interface Medecin {
 }
 
 const Consultations = () => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [medecins, setMedecins] = useState<Medecin[]>([]);
   const [loading, setLoading] = useState(true);
@@ -164,14 +164,18 @@ const Consultations = () => {
               <p className="sp-page-subtitle">{filteredConsultations.length} consultation(s) trouvée(s)</p>
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
-            <button onClick={() => openForm()} className="sp-btn sp-btn-outline">
-                <PlusCircle size={18} />
-                <span>Consultation rapide</span>
-            </button>
-            <Link to="/consultation/nouvelle" className="sp-btn sp-btn-primary">
-                <PlusCircle size={18} />
-                <span>Nouvelle consultation complète</span>
-            </Link>
+            {(user?.role === 'medecin' || user?.role === 'infirmier') && (
+              <>
+                <button onClick={() => openForm()} className="sp-btn sp-btn-outline">
+                    <PlusCircle size={18} />
+                    <span>Consultation rapide</span>
+                </button>
+                <Link to="/consultation/nouvelle" className="sp-btn sp-btn-primary">
+                    <PlusCircle size={18} />
+                    <span>Nouvelle consultation complète</span>
+                </Link>
+              </>
+            )}
           </div>
       </div>
 
@@ -225,11 +229,77 @@ const Consultations = () => {
                           return (
                             <div className="sp-item-card" key={c.id} style={{ padding: '24px', position: 'relative', minHeight: '280px', display: 'flex', flexDirection: 'column' }}>
                                 <div className="sp-item-card-header" style={{ marginBottom: '16px', display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-                                    <div className="sp-item-avatar" style={{ width: '48px', height: '48px', fontSize: '18px', borderRadius: '12px', flexShrink: 0 }}>
+                                    {/* Logo cliquable pour admin et médecin */}
+                                    {(user?.role === 'admin' || user?.role === 'medecin') && c.patient_id ? (
+                                      <Link 
+                                        to={`/dossier-patient/${c.patient_id}`}
+                                        style={{ 
+                                          width: '48px', 
+                                          height: '48px', 
+                                          fontSize: '18px', 
+                                          borderRadius: '12px', 
+                                          flexShrink: 0,
+                                          cursor: 'pointer',
+                                          transition: 'transform 0.2s, box-shadow 0.2s',
+                                          textDecoration: 'none',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          background: 'linear-gradient(135deg, var(--sp-primary), var(--sp-accent))',
+                                          color: '#fff',
+                                          fontWeight: 700,
+                                          pointerEvents: 'auto'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                          e.currentTarget.style.transform = 'scale(1.05)';
+                                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          e.currentTarget.style.transform = 'scale(1)';
+                                          e.currentTarget.style.boxShadow = 'none';
+                                        }}
+                                        title="Voir le dossier patient"
+                                      >
                                         {initiales}
-                                    </div>
+                                      </Link>
+                                    ) : (
+                                      <div className="sp-item-avatar" style={{ width: '48px', height: '48px', fontSize: '18px', borderRadius: '12px', flexShrink: 0 }}>
+                                        {initiales}
+                                      </div>
+                                    )}
                                     <div style={{ flex: 1, minWidth: 0, paddingTop: '2px' }}>
-                                        <div className="sp-item-name" style={{ fontSize: '16px', fontWeight: 700, marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.nom_patient}</div>
+                                        {/* Nom cliquable pour admin et médecin */}
+                                        {(user?.role === 'admin' || user?.role === 'medecin') && c.patient_id ? (
+                                          <Link 
+                                            to={`/dossier-patient/${c.patient_id}`}
+                                            className="sp-item-name" 
+                                            style={{ 
+                                              fontSize: '16px', 
+                                              fontWeight: 700, 
+                                              marginBottom: '2px', 
+                                              whiteSpace: 'nowrap', 
+                                              overflow: 'hidden', 
+                                              textOverflow: 'ellipsis',
+                                              color: '#4F46E5',
+                                              textDecoration: 'none',
+                                              cursor: 'pointer',
+                                              display: 'block'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                              e.currentTarget.style.textDecoration = 'underline';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                              e.currentTarget.style.textDecoration = 'none';
+                                            }}
+                                            title="Voir le dossier patient"
+                                          >
+                                            {c.nom_patient}
+                                          </Link>
+                                        ) : (
+                                          <div className="sp-item-name" style={{ fontSize: '16px', fontWeight: 700, marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {c.nom_patient}
+                                          </div>
+                                        )}
                                         <span className={`sp-badge ${cls}`} style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px' }}>{c.statut}</span>
                                     </div>
                                     <div style={{ fontSize: '11px', color: 'var(--sp-gray-400)', position: 'absolute', top: '24px', right: '24px', fontWeight: 400, opacity: 0.8 }}>

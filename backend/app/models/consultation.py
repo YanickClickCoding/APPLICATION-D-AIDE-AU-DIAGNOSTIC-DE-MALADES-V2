@@ -16,8 +16,9 @@ class Consultation(Base):
     # Primary Key
     consultation_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     
-    # Patient Info (simplifié dans la table actuelle)
-    nom_patient = Column(String(200), nullable=False)
+    # Patient Info
+    patient_id = Column(Integer, ForeignKey("patients.patient_id"), nullable=True, index=True)  # Lien vers le patient (INT)
+    nom_patient = Column(String(200), nullable=False)  # Conservé pour compatibilité
     
     # Consultation Info
     date_heure = Column(DateTime, nullable=False)
@@ -32,6 +33,7 @@ class Consultation(Base):
     created_at = Column(DateTime, server_default=func.now())
     
     # Relationships
+    patient = relationship("Patient", back_populates="consultations")  # Relation vers Patient
     medecin = relationship("Medecin", back_populates="consultations")
     symptomes = relationship("Symptome", back_populates="consultation", cascade="all, delete-orphan")
     signes_vitaux = relationship("SignesVitaux", back_populates="consultation", cascade="all, delete-orphan")

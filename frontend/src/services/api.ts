@@ -7,25 +7,26 @@ const API_BASE_URL = 'http://localhost:8000';
 
 // Types pour les réponses API
 export interface Patient {
-  id: string;
+  patient_id: number;  // INT AUTO_INCREMENT
   nom: string;
-  prenom: string;
+  prenoms: string;  // Pluriel comme dans la DB
   date_naissance: string;
   sexe: 'M' | 'F';
   adresse?: string;
   telephone?: string;
   email?: string;
   groupe_sanguin?: string;
-  date_creation: string;
+  created_at: string;
 }
 
 export interface Consultation {
   id: number;
+  patient_id?: number; // INT pour accéder au dossier
   nom_patient: string;
   date: string;
   date_heure?: string; // Ajout pour compatibilité
   motif: string;
-  medecin_id?: number | null; // Ajout pour compatibilité
+  medecin_id?: number | null;
   statut: 'en attente' | 'en cours' | 'terminée';
 }
 
@@ -162,30 +163,34 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise
 
 export const patientsAPI = {
   // Créer un patient
-  create: (data: Omit<Patient, 'id' | 'date_creation'>) =>
-    fetchAPI<Patient>('/patients', {
+  create: (data: Omit<Patient, 'patient_id' | 'created_at'>) =>
+    fetchAPI<Patient>('/api/patients', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
   // Liste des patients
   list: (skip = 0, limit = 100) =>
-    fetchAPI<Patient[]>(`/patients?skip=${skip}&limit=${limit}`),
+    fetchAPI<Patient[]>(`/api/patients?skip=${skip}&limit=${limit}`),
 
-  // Détails d'un patient
-  get: (id: string) =>
-    fetchAPI<Patient>(`/patients/${id}`),
+  // Détails d'un patient par ID (INT)
+  get: (id: number, token?: string) =>
+    fetchAPI<Patient>(`/api/patients/${id}`, {
+      headers: token ? {
+        'Authorization': `Bearer ${token}`,
+      } : {},
+    }),
 
   // Mettre à jour un patient
-  update: (id: string, data: Partial<Patient>) =>
-    fetchAPI<Patient>(`/patients/${id}`, {
+  update: (id: number, data: Partial<Patient>) =>
+    fetchAPI<Patient>(`/api/patients/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
 
   // Supprimer un patient
-  delete: (id: string) =>
-    fetchAPI<{ message: string }>(`/patients/${id}`, {
+  delete: (id: number) =>
+    fetchAPI<{ message: string }>(`/api/patients/${id}`, {
       method: 'DELETE',
     }),
 };
@@ -203,22 +208,26 @@ export const consultationsAPI = {
     symptomes?: Symptome[];
     signes_vitaux?: SignesVitaux;
   }) =>
-    fetchAPI<Consultation>('/consultations', {
+    fetchAPI<Consultation>('/api/consultations', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
   // Liste des consultations
   list: (skip = 0, limit = 100) =>
-    fetchAPI<Consultation[]>(`/consultations?skip=${skip}&limit=${limit}`),
+    fetchAPI<Consultation[]>(`/api/consultations?skip=${skip}&limit=${limit}`),
 
   // Détails d'une consultation
   get: (id: number) =>
-    fetchAPI<Consultation>(`/consultations/${id}`),
+    fetchAPI<Consultation>(`/api/consultations/${id}`),
 
-  // Historique d'un patient
-  getByPatient: (patientId: string) =>
-    fetchAPI<Consultation[]>(`/consultations/patient/${patientId}`),
+  // Historique d'un patient par ID (INT)
+  getByPatient: (patientId: number, token?: string) =>
+    fetchAPI<Consultation[]>(`/api/consultations/patient/${patientId}`, {
+      headers: token ? {
+        'Authorization': `Bearer ${token}`,
+      } : {},
+    }),
 };
 
 // ============================================================================
@@ -228,7 +237,7 @@ export const consultationsAPI = {
 export const mlAPI = {
   // Prédiction de diagnostic
   predict: (patientData: Record<string, any>) =>
-    fetchAPI<PredictionIA>('/ml/predict', {
+    fetchAPI<PredictionIA>('/api/ml/predict', {
       method: 'POST',
       body: JSON.stringify({ patient_data: patientData }),
     }),
@@ -240,7 +249,7 @@ export const mlAPI = {
       confidence: number;
       feature_importance: Array<{ feature: string; importance: number }>;
       explanation: string;
-    }>('/ml/explain', {
+    }>('/api/ml/explain', {
       method: 'POST',
       body: JSON.stringify({ patient_data: patientData }),
     }),
@@ -252,7 +261,7 @@ export const mlAPI = {
     confiance: number;
     explications?: string;
   }) =>
-    fetchAPI<Diagnostic>('/ml/diagnostics', {
+    fetchAPI<Diagnostic>('/api/ml/diagnostics', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
@@ -263,7 +272,7 @@ export const mlAPI = {
     code_cim10?: string;
     notes_medecin?: string;
   }) =>
-    fetchAPI<Diagnostic>(`/ml/diagnostics/${id}/approve`, {
+    fetchAPI<Diagnostic>(`/api/ml/diagnostics/${id}/approve`, {
       method: 'POST',
       body: JSON.stringify(data),
     }),
@@ -273,7 +282,7 @@ export const mlAPI = {
     raison: string;
     notes_medecin?: string;
   }) =>
-    fetchAPI<Diagnostic>(`/ml/diagnostics/${id}/reject`, {
+    fetchAPI<Diagnostic>(`/api/ml/diagnostics/${id}/reject`, {
       method: 'POST',
       body: JSON.stringify(data),
     }),
@@ -287,7 +296,7 @@ export const mlAPI = {
       n_features: number;
       n_classes: number;
       classes: string[];
-    }>('/ml/model/info'),
+    }>('/api/ml/model/info'),
 };
 
 // ============================================================================
@@ -297,12 +306,12 @@ export const mlAPI = {
 export const analyticsAPI = {
   // Dashboard KPIs
   getDashboard: () =>
-    fetchAPI<DashboardStats>('/analytics/dashboard'),
+    fetchAPI<DashboardStats>('/api/analytics/dashboard'),
 
   // Distribution des diagnostics
   getDiagnosticsDistribution: (limit = 10) =>
     fetchAPI<Array<{ diagnostic: string; count: number; percentage: number }>>(
-      `/analytics/diagnostics/distribution?limit=${limit}`
+      `/api/analytics/diagnostics/distribution?limit=${limit}`
     ),
 
   // Performance du modèle
@@ -315,11 +324,11 @@ export const analyticsAPI = {
       approval_rate: number;
       avg_confidence: number;
       confidence_distribution: Record<string, number>;
-    }>('/analytics/performance/model'),
+    }>('/api/analytics/performance/model'),
 
   // Consultations récentes
   getRecentConsultations: (limit = 10) =>
-    fetchAPI<Consultation[]>(`/analytics/consultations/recent?limit=${limit}`),
+    fetchAPI<Consultation[]>(`/api/analytics/consultations/recent?limit=${limit}`),
   
   // Personnel disponible
   getPersonnelDisponible: () =>
@@ -346,7 +355,7 @@ export const analyticsAPI = {
           email?: string;
         }>;
       };
-    }>('/analytics/personnel/disponible'),
+    }>('/api/analytics/personnel/disponible'),
 };
 
 // ============================================================================
@@ -533,59 +542,59 @@ async function fetchAPIAuth<T>(token: string, endpoint: string, options: Request
 export const adminAPI = {
   // Statut & logs système
   getStatus: (token: string) =>
-    fetchAPIAuth<any>(token, '/admin/status'),
+    fetchAPIAuth<any>(token, '/api/admin/status'),
   getLogs: (token: string, lines = 200) =>
-    fetchAPIAuth<{ lines: string[]; total: number; exists: boolean }>(token, `/admin/logs?lines=${lines}`),
+    fetchAPIAuth<{ lines: string[]; total: number; exists: boolean }>(token, `/api/admin/logs?lines=${lines}`),
   startTraining: (token: string, nEstimators = 200, maxDepth = 30) =>
     fetchAPIAuth<{ message: string; status: string }>(
-      token, `/admin/train?n_estimators=${nEstimators}&max_depth=${maxDepth}`, { method: 'POST' }
+      token, `/api/admin/train?n_estimators=${nEstimators}&max_depth=${maxDepth}`, { method: 'POST' }
     ),
   getTrainingStatus: (token: string) =>
-    fetchAPIAuth<any>(token, '/admin/train/status'),
+    fetchAPIAuth<any>(token, '/api/admin/train/status'),
   cleanupModels: (token: string) =>
     fetchAPIAuth<{ removed: string[]; count: number; message: string }>(
-      token, '/admin/cleanup/models', { method: 'POST' }
+      token, '/api/admin/cleanup/models', { method: 'POST' }
     ),
   cleanupLogs: (token: string) =>
     fetchAPIAuth<{ message: string; done: boolean }>(
-      token, '/admin/cleanup/logs', { method: 'POST' }
+      token, '/api/admin/cleanup/logs', { method: 'POST' }
     ),
 
   // CRUD Utilisateurs
   getUsers: (token: string) =>
-    fetchAPIAuth<AdminUser[]>(token, '/admin/users'),
+    fetchAPIAuth<AdminUser[]>(token, '/api/admin/users'),
   createUser: (token: string, data: AdminUserCreate) =>
-    fetchAPIAuth<AdminUser>(token, '/admin/users', { method: 'POST', body: JSON.stringify(data) }),
+    fetchAPIAuth<AdminUser>(token, '/api/admin/users', { method: 'POST', body: JSON.stringify(data) }),
   updateUser: (token: string, id: number, data: AdminUserUpdate) =>
-    fetchAPIAuth<AdminUser>(token, `/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    fetchAPIAuth<AdminUser>(token, `/api/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteUser: (token: string, id: number) =>
-    fetchAPIAuth<{ message: string }>(token, `/admin/users/${id}`, { method: 'DELETE' }),
+    fetchAPIAuth<{ message: string }>(token, `/api/admin/users/${id}`, { method: 'DELETE' }),
 
   // CRUD Médecins
   getMedecins: (token: string) =>
-    fetchAPIAuth<AdminMedecin[]>(token, '/admin/personnel/medecins'),
+    fetchAPIAuth<AdminMedecin[]>(token, '/api/admin/personnel/medecins'),
   createMedecin: (token: string, data: AdminMedecinCreate) =>
-    fetchAPIAuth<AdminMedecin>(token, '/admin/personnel/medecins', { method: 'POST', body: JSON.stringify(data) }),
+    fetchAPIAuth<AdminMedecin>(token, '/api/admin/personnel/medecins', { method: 'POST', body: JSON.stringify(data) }),
   updateMedecin: (token: string, id: number, data: Partial<AdminMedecinCreate & { disponible: boolean }>) =>
-    fetchAPIAuth<AdminMedecin>(token, `/admin/personnel/medecins/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    fetchAPIAuth<AdminMedecin>(token, `/api/admin/personnel/medecins/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteMedecin: (token: string, id: number) =>
-    fetchAPIAuth<{ message: string }>(token, `/admin/personnel/medecins/${id}`, { method: 'DELETE' }),
+    fetchAPIAuth<{ message: string }>(token, `/api/admin/personnel/medecins/${id}`, { method: 'DELETE' }),
 
   // CRUD Infirmiers
   getInfirmiers: (token: string) =>
-    fetchAPIAuth<AdminInfirmier[]>(token, '/admin/personnel/infirmiers'),
+    fetchAPIAuth<AdminInfirmier[]>(token, '/api/admin/personnel/infirmiers'),
   createInfirmier: (token: string, data: AdminInfirmierCreate) =>
-    fetchAPIAuth<AdminInfirmier>(token, '/admin/personnel/infirmiers', { method: 'POST', body: JSON.stringify(data) }),
+    fetchAPIAuth<AdminInfirmier>(token, '/api/admin/personnel/infirmiers', { method: 'POST', body: JSON.stringify(data) }),
   updateInfirmier: (token: string, id: number, data: Partial<AdminInfirmierCreate & { disponible: boolean }>) =>
-    fetchAPIAuth<AdminInfirmier>(token, `/admin/personnel/infirmiers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    fetchAPIAuth<AdminInfirmier>(token, `/api/admin/personnel/infirmiers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteInfirmier: (token: string, id: number) =>
-    fetchAPIAuth<{ message: string }>(token, `/admin/personnel/infirmiers/${id}`, { method: 'DELETE' }),
+    fetchAPIAuth<{ message: string }>(token, `/api/admin/personnel/infirmiers/${id}`, { method: 'DELETE' }),
 
   // Config IA
   getIAConfig: (token: string) =>
-    fetchAPIAuth<IAConfig>(token, '/admin/config/ia'),
+    fetchAPIAuth<IAConfig>(token, '/api/admin/config/ia'),
   updateIAConfig: (token: string, data: Partial<IAConfig>) =>
-    fetchAPIAuth<IAConfig>(token, '/admin/config/ia', { method: 'PUT', body: JSON.stringify(data) }),
+    fetchAPIAuth<IAConfig>(token, '/api/admin/config/ia', { method: 'PUT', body: JSON.stringify(data) }),
 };
 
 // Export par défaut

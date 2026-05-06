@@ -1,18 +1,18 @@
 """Suivi model"""
-from sqlalchemy import Column, String, Date, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Date, Float, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.mysql import CHAR, ENUM
+from sqlalchemy.dialects.mysql import ENUM
 from ..database import Base
 
 class Suivi(Base):
     __tablename__ = "suivis"
-    id = Column(CHAR(36), primary_key=True)
-    patient_id = Column(CHAR(36), ForeignKey("patients.id"), nullable=False)
-    medecin_id = Column(CHAR(36), ForeignKey("medecins.medecin_id"), nullable=False)
-    consultation_id = Column(CHAR(36), ForeignKey("consultations.consultation_id"))
-    diagnostic_id = Column(CHAR(36), ForeignKey("diagnostics.id"))
-    traitement_id = Column(CHAR(36), ForeignKey("traitements.id"))
-    dossier_id = Column(CHAR(36), ForeignKey("dossiers_medicaux.id"), nullable=False)
+    suivi_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    patient_id = Column(Integer, ForeignKey("patients.patient_id"), nullable=False)
+    medecin_id = Column(Integer, ForeignKey("medecins.medecin_id"), nullable=False)
+    consultation_id = Column(Integer, ForeignKey("consultations.consultation_id"))
+    diagnostic_id = Column(Integer, ForeignKey("diagnostics.diagnostic_id"))
+    traitement_id = Column(Integer, ForeignKey("traitements.traitement_id"))
+    dossier_id = Column(Integer, ForeignKey("dossiers_medicaux.dossier_id"), nullable=False)
     numero_suivi = Column(String(50), nullable=False, unique=True)
     date_suivi = Column(Date, nullable=False)
     etat_general = Column(ENUM('EXCELLENT', 'BON', 'STABLE', 'DECLINE', 'CRITIQUE'))

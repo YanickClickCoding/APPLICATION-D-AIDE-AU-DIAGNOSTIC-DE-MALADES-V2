@@ -82,13 +82,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Enregistrer les routers
-app.include_router(auth_router)
-app.include_router(patients_router)
-app.include_router(consultations_router)
-app.include_router(ml_router)
-app.include_router(analytics_router)
-app.include_router(admin_router)
+# Enregistrer les routers avec le préfixe /api
+app.include_router(auth_router, prefix="/api")
+app.include_router(patients_router, prefix="/api")
+app.include_router(consultations_router, prefix="/api")
+app.include_router(ml_router, prefix="/api")
+app.include_router(analytics_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
 
 
 @app.get("/")

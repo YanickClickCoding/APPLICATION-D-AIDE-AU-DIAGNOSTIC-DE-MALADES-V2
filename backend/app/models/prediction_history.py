@@ -20,7 +20,7 @@ class PredictionHistory(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     
     # Relations
-    patient_id = Column(Integer, ForeignKey("patients.id"), nullable=False, index=True)
+    patient_id = Column(Integer, ForeignKey("patients.patient_id"), nullable=False, index=True)
     consultation_id = Column(Integer, ForeignKey("consultations.consultation_id"), nullable=True, index=True)
     
     # Prédiction

@@ -19,7 +19,7 @@ def create_consultation(consultation: ConsultationCreate, db: Session = Depends(
     US-002, US-003: Créer une consultation avec symptômes et signes vitaux
     """
     # Vérifier que le patient existe
-    patient = db.query(Patient).filter(Patient.id == consultation.patient_id).first()
+    patient = db.query(Patient).filter(Patient.patient_id == consultation.patient_id).first()
     if not patient:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -36,19 +36,22 @@ def create_consultation(consultation: ConsultationCreate, db: Session = Depends(
     # Créer la consultation
     db_consultation = Consultation(
         patient_id=consultation.patient_id,
+        nom_patient=f"{patient.prenoms} {patient.nom}",
         medecin_id=consultation.medecin_id,
         motif=consultation.motif,
-        statut="en_cours"
+        date_heure=__import__('datetime').datetime.now(),
+        statut="en cours"
     )
     db.add(db_consultation)
     db.flush()  # Pour obtenir l'ID
     
     # Ajouter les symptômes
+    import uuid as _uuid
     for symptome_input in consultation.symptomes:
         db_symptome = Symptome(
-            consultation_id=db_consultation.id,
+            id=str(_uuid.uuid4()),
+            consultation_id=str(db_consultation.consultation_id),
             nom=symptome_input.nom,
-            present=symptome_input.present,
             severite=symptome_input.severite,
             duree_jours=symptome_input.duree_jours
         )
@@ -57,7 +60,8 @@ def create_consultation(consultation: ConsultationCreate, db: Session = Depends(
     # Ajouter les signes vitaux
     signes_data = consultation.signes_vitaux.model_dump()
     db_signes = SignesVitaux(
-        consultation_id=db_consultation.id,
+        id=str(_uuid.uuid4()),
+        consultation_id=str(db_consultation.consultation_id),
         **signes_data
     )
     db.add(db_signes)
@@ -82,7 +86,7 @@ def get_consultation(consultation_id: int, db: Session = Depends(get_db)):
     """
     Récupère une consultation par son ID
     """
-    consultation = db.query(Consultation).filter(Consultation.id == consultation_id).first()
+    consultation = db.query(Consultation).filter(Consultation.consultation_id == consultation_id).first()
     if not consultation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -92,13 +96,13 @@ def get_consultation(consultation_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/patient/{patient_id}", response_model=List[ConsultationResponse])
-def get_patient_consultations(patient_id: UUID, db: Session = Depends(get_db)):
+def get_patient_consultations(patient_id: int, db: Session = Depends(get_db)):
     """
     US-004: Récupère l'historique des consultations d'un patient
     """
     consultations = db.query(Consultation).filter(
         Consultation.patient_id == patient_id
-    ).order_by(Consultation.date_consultation.desc()).all()
+    ).order_by(Consultation.date_heure.desc()).all()
     
     return consultations
 
@@ -106,177 +110,195 @@ def get_patient_consultations(patient_id: UUID, db: Session = Depends(get_db)):
 @router.post("/workflow", status_code=status.HTTP_201_CREATED)
 def create_consultation_workflow(data: dict, db: Session = Depends(get_db)):
     """
-    Endpoint pour le workflow complet de consultation avec diagnostic IA
-    Enregistre: patient, consultation, symptômes, signes vitaux, analyse IA, diagnostic
+    Workflow complet de consultation assistée par IA (9 étapes).
+    Enregistre : patient, consultation, symptômes, signes vitaux,
+    examens, deux analyses IA (préliminaire + finale), diagnostic.
     """
     try:
         import uuid
         from datetime import datetime
-        from ..models import AnalyseIA, Diagnostic, DossierMedical
-        
-        # Extraire les données
-        patient_data = data.get('patient', {})
-        symptomes_data = data.get('symptomes', [])
-        signes_vitaux_data = data.get('signes_vitaux', {})
-        examens_data = data.get('examens', [])
-        motif = data.get('motif', '')
-        prediction_ia = data.get('prediction_ia', {})
-        diagnostic_final = data.get('diagnostic_final', '')
-        
-        # 1. Créer ou récupérer le patient
-        patient_email = patient_data.get('email', '').strip()
+        from ..models import AnalyseIA, Diagnostic, DossierMedical, Examen
+
+        patient_data      = data.get('patient', {})
+        symptomes_data    = data.get('symptomes', [])
+        vitaux_data       = data.get('signes_vitaux', {})
+        examens_data      = data.get('examens', [])
+        motif             = data.get('motif', '')
+        analyse_prelim    = data.get('analyse_preliminaire')
+        analyse_finale    = data.get('analyse_finale')
+        diagnostic_final  = data.get('diagnostic_final', '')
+        validation_type   = data.get('validation_type', 'confirme')
+        notes_validation  = data.get('notes_validation', '')
+
+        # ── 1. Patient (integer PK, autoincrement) ──────────────────────────
+        patient_email = (patient_data.get('email') or '').strip()
         patient = None
-        
         if patient_email:
             patient = db.query(Patient).filter(Patient.email == patient_email).first()
-        
+
         if not patient:
-            patient_id = str(uuid.uuid4())
+            dn = patient_data.get('date_naissance')
             patient = Patient(
-                id=patient_id,
                 nom=patient_data.get('nom', ''),
                 prenoms=patient_data.get('prenoms', ''),
-                date_naissance=datetime.strptime(patient_data.get('date_naissance'), '%Y-%m-%d').date() if patient_data.get('date_naissance') else None,
+                date_naissance=datetime.strptime(dn, '%Y-%m-%d').date() if dn else None,
                 sexe=patient_data.get('sexe', 'M'),
-                telephone=patient_data.get('telephone'),
-                email=patient_email if patient_email else None,
-                adresse=None
+                telephone=patient_data.get('telephone') or None,
+                email=patient_email or None,
             )
             db.add(patient)
-            db.flush()
-        
-        # 2. Créer la consultation
+            db.flush()  # génère patient.patient_id
+
+        # ── 2. Consultation (integer PK) ────────────────────────────────────
         db_consultation = Consultation(
-            nom_patient=f"{patient_data.get('prenoms', '')} {patient_data.get('nom', '')}",
+            patient_id=patient.patient_id,
+            nom_patient=f"{patient_data.get('prenoms', '')} {patient_data.get('nom', '')}".strip(),
             date_heure=datetime.now(),
             motif=motif,
-            medecin_id=None,  # À définir si disponible
-            statut="terminée"
+            medecin_id=None,
+            statut="terminée",
         )
         db.add(db_consultation)
-        db.flush()
-        
-        # 3. Enregistrer les symptômes
-        for symptome_input in symptomes_data:
-            # Mapper la sévérité du frontend vers le format DB
-            severite_map = {
-                'Légère': 'LEGER',
-                'Modérée': 'MODERE',
-                'Sévère': 'SEVERE'
-            }
-            severite_db = severite_map.get(symptome_input.get('severite', 'Modérée'), 'MODERE')
-            
-            db_symptome = Symptome(
+        db.flush()  # génère db_consultation.consultation_id
+
+        cid_int = db_consultation.consultation_id
+        cid_str = str(cid_int)  # pour les FK CHAR(36) non encore migrées
+
+        # ── 3. Symptômes (UUID PK, CHAR(36) FK consultation_id) ────────────
+        sev_map = {'Légère': 'LEGER', 'Modérée': 'MODERE', 'Sévère': 'SEVERE'}
+        for s in symptomes_data:
+            if not (s.get('nom') or '').strip():
+                continue
+            db.add(Symptome(
                 id=str(uuid.uuid4()),
-                consultation_id=str(db_consultation.consultation_id),
-                nom=symptome_input.get('nom', ''),
-                description=symptome_input.get('description'),
-                severite=severite_db,
-                duree_jours=symptome_input.get('duree_jours', 1),
-                frequence=None
-            )
-            db.add(db_symptome)
-        
-        # 4. Enregistrer les signes vitaux
-        db_signes = SignesVitaux(
+                consultation_id=cid_str,
+                nom=s['nom'].strip(),
+                description=s.get('description') or None,
+                severite=sev_map.get(s.get('severite', 'Modérée'), 'MODERE'),
+                duree_jours=s.get('duree_jours', 1),
+            ))
+
+        # ── 4. Signes vitaux (UUID PK, CHAR(36) FK consultation_id) ────────
+        imc = None
+        poids, taille = vitaux_data.get('poids'), vitaux_data.get('taille')
+        if poids and taille:
+            imc = round(poids / (taille / 100) ** 2, 1)
+
+        db.add(SignesVitaux(
             id=str(uuid.uuid4()),
-            consultation_id=str(db_consultation.consultation_id),
-            infirmier_id=None,  # À définir si disponible
-            tension_systolique=signes_vitaux_data.get('tension_systolique'),
-            tension_diastolique=signes_vitaux_data.get('tension_diastolique'),
-            frequence_cardiaque=signes_vitaux_data.get('frequence_cardiaque'),
-            temperature=signes_vitaux_data.get('temperature'),
-            frequence_respiratoire=signes_vitaux_data.get('frequence_respiratoire'),
-            saturation_oxygene=signes_vitaux_data.get('saturation_o2'),
-            poids=signes_vitaux_data.get('poids'),
-            taille=signes_vitaux_data.get('taille'),
-            imc=None  # Calculé automatiquement si nécessaire
-        )
-        db.add(db_signes)
-        
-        # 4.5. Enregistrer les examens médicaux
-        from ..models import Examen
-        for examen_input in examens_data:
-            db_examen = Examen(
-                id=str(uuid.uuid4()),
-                consultation_id=str(db_consultation.consultation_id),
-                type=examen_input.get('type', 'BIOLOGIE'),
-                nom=examen_input.get('nom', ''),
-                description=examen_input.get('description'),
-                resultats=examen_input.get('resultats'),
-                valeur_numerique=examen_input.get('valeur_numerique'),
-                unite_mesure=examen_input.get('unite_mesure'),
+            consultation_id=cid_str,
+            tension_systolique=vitaux_data.get('tension_systolique'),
+            tension_diastolique=vitaux_data.get('tension_diastolique'),
+            frequence_cardiaque=vitaux_data.get('frequence_cardiaque'),
+            temperature=vitaux_data.get('temperature'),
+            frequence_respiratoire=vitaux_data.get('frequence_respiratoire'),
+            saturation_oxygene=vitaux_data.get('saturation_o2'),
+            poids=poids,
+            taille=taille,
+            imc=imc,
+        ))
+
+        # ── 5. Examens (integer PK, integer FK consultation_id) ─────────────
+        for ex in examens_data:
+            if not (ex.get('nom') or '').strip():
+                continue
+            de = ex.get('date_examen')
+            db.add(Examen(
+                consultation_id=cid_int,
+                type=ex.get('type', 'BIOLOGIE'),
+                nom=ex['nom'].strip(),
+                description=ex.get('description') or None,
+                resultats=ex.get('resultats') or None,
+                valeur_numerique=ex.get('valeur_numerique'),
+                unite_mesure=ex.get('unite_mesure') or None,
                 statut='REALISE',
-                date_examen=datetime.strptime(examen_input.get('date_examen'), '%Y-%m-%d').date() if examen_input.get('date_examen') else None
-            )
-            db.add(db_examen)
-        
-        # 5. Enregistrer l'analyse IA
-        if prediction_ia:
-            db_analyse_ia = AnalyseIA(
-                id=str(uuid.uuid4()),
-                consultation_id=str(db_consultation.consultation_id),
-                modele_ia="RandomForest_v1.0",
-                probabilite=prediction_ia.get('confiance', 0.0),
-                diagnostics_suggeres=prediction_ia.get('top_3_predictions', []),
-                scoring_confiance=prediction_ia.get('confiance', 0.0),
-                donnees_entree={
-                    'symptomes': symptomes_data,
-                    'signes_vitaux': signes_vitaux_data,
-                    'examens': examens_data
-                },
-                temps_traitement=None
-            )
-            db.add(db_analyse_ia)
-            db.flush()
-            analyse_ia_id = db_analyse_ia.id
-        else:
-            analyse_ia_id = None
-        
-        # 6. Créer ou récupérer le dossier médical du patient
-        dossier = db.query(DossierMedical).filter(DossierMedical.patient_id == patient.id).first()
+                date_examen=datetime.strptime(de, '%Y-%m-%d').date() if de else None,
+            ))
+
+        # ── 6. Dossier médical (integer PK, integer FK patient_id) ──────────
+        dossier = db.query(DossierMedical).filter(
+            DossierMedical.patient_id == patient.patient_id
+        ).first()
         if not dossier:
+            ts = datetime.now().strftime('%Y%m%d%H%M%S')
             dossier = DossierMedical(
-                id=str(uuid.uuid4()),
-                patient_id=patient.id,
-                numero_dossier=f"DM-{datetime.now().strftime('%Y%m%d')}-{patient.id[:8]}",
-                antecedents_familiaux=None,
-                antecedents_personnels=None,
-                allergies=None
+                patient_id=patient.patient_id,
+                numero_dossier=f"DM-{ts}-{patient.patient_id}",
             )
             db.add(dossier)
             db.flush()
-        
-        # 7. Enregistrer le diagnostic final
-        if diagnostic_final:
-            db_diagnostic = Diagnostic(
-                id=str(uuid.uuid4()),
-                consultation_id=str(db_consultation.consultation_id),
-                analyse_ia_id=analyse_ia_id,
-                medecin_id=None,  # À définir si disponible
-                dossier_id=dossier.id,
-                code_icd10=None,
-                nom_maladie=diagnostic_final,
-                description=f"Diagnostic validé par le médecin. Suggestion IA: {prediction_ia.get('maladie_predite', 'N/A')}",
-                certitude=prediction_ia.get('confiance', 0.0) if prediction_ia else None,
-                statut='CONFIRMÉ',
-                severite=None,
-                justification=None,
-                date_validation=datetime.now().date()
+
+        # ── 7. Analyse IA préliminaire (integer PK) ─────────────────────────
+        prelim_analyse_id = None
+        if analyse_prelim:
+            rec = AnalyseIA(
+                consultation_id=cid_int,
+                modele_ia="RandomForest_v1.0_Preliminaire",
+                probabilite=analyse_prelim.get('confiance', 0.0),
+                diagnostics_suggeres=analyse_prelim.get('top_predictions', []),
+                scoring_confiance=analyse_prelim.get('confiance', 0.0),
+                donnees_entree={
+                    'phase': 'preliminaire',
+                    'symptomes': symptomes_data,
+                    'signes_vitaux': vitaux_data,
+                },
             )
-            db.add(db_diagnostic)
-        
-        # Commit final
+            db.add(rec)
+            db.flush()
+            prelim_analyse_id = rec.analyse_id
+
+        # ── 8. Analyse IA finale (integer PK) ───────────────────────────────
+        finale_analyse_id = None
+        if analyse_finale:
+            rec = AnalyseIA(
+                consultation_id=cid_int,
+                modele_ia="RandomForest_v1.0_Finale",
+                probabilite=analyse_finale.get('confiance', 0.0),
+                diagnostics_suggeres=analyse_finale.get('top_predictions', []),
+                scoring_confiance=analyse_finale.get('confiance', 0.0),
+                donnees_entree={
+                    'phase': 'finale',
+                    'symptomes': symptomes_data,
+                    'signes_vitaux': vitaux_data,
+                    'examens': examens_data,
+                },
+            )
+            db.add(rec)
+            db.flush()
+            finale_analyse_id = rec.analyse_id
+
+        # ── 9. Diagnostic final (integer PK) ────────────────────────────────
+        if diagnostic_final:
+            ref = analyse_finale or analyse_prelim or {}
+            confiance = ref.get('confiance', 0.0)
+            statut_diag = 'CONFIRMÉ' if validation_type == 'confirme' else 'REJETÉ'
+            ia_suggestion = ref.get('maladie_predite', 'N/A')
+            db.add(Diagnostic(
+                consultation_id=cid_int,
+                analyse_ia_id=finale_analyse_id or prelim_analyse_id,
+                medecin_id=None,
+                dossier_id=dossier.dossier_id,
+                nom_maladie=diagnostic_final,
+                description=(
+                    f"Validation : {statut_diag}. "
+                    f"Suggestion IA : {ia_suggestion} ({confiance*100:.1f}%). "
+                    f"Notes : {notes_validation}"
+                ),
+                certitude=confiance,
+                statut=statut_diag,
+                date_validation=datetime.now().date(),
+            ))
+
         db.commit()
         db.refresh(db_consultation)
-        
+
         return {
             "success": True,
             "message": "Consultation enregistrée avec succès",
             "consultation_id": db_consultation.consultation_id,
-            "patient_id": patient.id
+            "patient_id": patient.patient_id,
         }
-        
+
     except Exception as e:
         db.rollback()
         raise HTTPException(

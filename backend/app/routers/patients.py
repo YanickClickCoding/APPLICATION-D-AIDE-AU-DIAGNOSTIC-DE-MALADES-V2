@@ -48,11 +48,11 @@ def list_patients(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
 
 
 @router.get("/{patient_id}", response_model=PatientResponse)
-def get_patient(patient_id: UUID, db: Session = Depends(get_db)):
+def get_patient(patient_id: int, db: Session = Depends(get_db)):
     """
-    Récupère un patient par son ID
+    Récupère un patient par son ID (INT)
     """
-    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    patient = db.query(Patient).filter(Patient.patient_id == patient_id).first()
     if not patient:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -63,14 +63,14 @@ def get_patient(patient_id: UUID, db: Session = Depends(get_db)):
 
 @router.put("/{patient_id}", response_model=PatientResponse)
 def update_patient(
-    patient_id: UUID,
+    patient_id: int,
     patient_update: PatientUpdate,
     db: Session = Depends(get_db)
 ):
     """
     Met à jour un patient
     """
-    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    patient = db.query(Patient).filter(Patient.patient_id == patient_id).first()
     if not patient:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -89,11 +89,11 @@ def update_patient(
 
 
 @router.delete("/{patient_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_patient(patient_id: UUID, db: Session = Depends(get_db)):
+def delete_patient(patient_id: int, db: Session = Depends(get_db)):
     """
     Supprime un patient
     """
-    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    patient = db.query(Patient).filter(Patient.patient_id == patient_id).first()
     if not patient:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
