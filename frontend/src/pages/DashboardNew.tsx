@@ -154,11 +154,11 @@ const Dashboard = () => {
     totalMedecins: personnel?.medecins.total || 0,
     infirmiersDispo: personnel?.infirmiers.disponibles || 0,
     totalInfirmiers: personnel?.infirmiers.total || 0,
-    consultationsJour: 0, // Pas encore disponible dans l'API
+    consultationsJour: stats.kpis.consultations_aujourd_hui || 0,
     totalPatients: stats.kpis.total_patients,
     diagnosticsIA: stats.kpis.total_diagnostics,
-    diagnosticsApprouves: 0, // Pas encore disponible dans l'API
-    diagnosticsRejetes: 0, // Pas encore disponible dans l'API
+    diagnosticsApprouves: stats.kpis.diagnostics_approuves || 0,
+    diagnosticsRejetes: stats.kpis.diagnostics_rejetes || 0,
     tauxApprobation: stats.kpis.taux_approbation
   };
 

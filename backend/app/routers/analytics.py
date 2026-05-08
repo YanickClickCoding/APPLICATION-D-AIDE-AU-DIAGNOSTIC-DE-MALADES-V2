@@ -86,6 +86,24 @@ def get_dashboard_stats(db: Session = Depends(get_db)) -> Dict:
     # Note: La table diagnostics utilise 'certitude' pas 'confiance'
     avg_confidence = db.query(func.avg(Diagnostic.certitude)).scalar() or 0
     
+    # KPI 7: Consultations aujourd'hui
+    today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = datetime.now().replace(hour=23, minute=59, second=59, microsecond=999999)
+    consultations_aujourd_hui = db.query(func.count(Consultation.consultation_id)).filter(
+        Consultation.date_heure >= today_start,
+        Consultation.date_heure <= today_end
+    ).scalar() or 0
+    
+    # KPI 8: Diagnostics IA approuvés
+    diagnostics_approuves = db.query(func.count(Diagnostic.diagnostic_id)).filter(
+        Diagnostic.statut == "CONFIRMÉ"
+    ).scalar() or 0
+    
+    # KPI 9: Diagnostics IA rejetés
+    diagnostics_rejetes = db.query(func.count(Diagnostic.diagnostic_id)).filter(
+        Diagnostic.statut == "REJETÉ"
+    ).scalar() or 0
+    
     # Tendance patients par jour (7 derniers jours)
     seven_days_ago = datetime.now() - timedelta(days=7)
     daily_patients = db.query(
@@ -115,7 +133,10 @@ def get_dashboard_stats(db: Session = Depends(get_db)) -> Dict:
             "consultations_terminees": consultations_terminees,
             "total_diagnostics": total_diagnostics,
             "taux_approbation": round(taux_approbation, 2),
-            "confiance_moyenne": round(float(avg_confidence) * 100, 2)
+            "confiance_moyenne": round(float(avg_confidence) * 100, 2),
+            "consultations_aujourd_hui": consultations_aujourd_hui,
+            "diagnostics_approuves": diagnostics_approuves,
+            "diagnostics_rejetes": diagnostics_rejetes
         },
         "tendance_patients": [
             {"date": str(row.date), "count": row.count}

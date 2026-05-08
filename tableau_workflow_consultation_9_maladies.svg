@@ -1,0 +1,211 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 3200" width="2000" height="3200">
+  <!-- Styles -->
+  <defs>
+    <style>
+      .title { font-family: Arial, sans-serif; font-size: 28px; font-weight: bold; fill: #2c3e50; }
+      .subtitle { font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; fill: #34495e; }
+      .step-title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; fill: #3498db; }
+      .header { font-family: Arial, sans-serif; font-size: 13px; font-weight: bold; fill: white; }
+      .cell-text { font-family: Arial, sans-serif; font-size: 11px; fill: #2c3e50; }
+      .cell-small { font-family: Arial, sans-serif; font-size: 9px; fill: #555; }
+      .header-bg { fill: #3498db; }
+      .step-bg { fill: #ecf0f1; }
+      .row-even { fill: #f8f9fa; }
+      .row-odd { fill: #ffffff; }
+      .border { stroke: #bdc3c7; stroke-width: 1; }
+      .step-number { font-family: Arial, sans-serif; font-size: 20px; font-weight: bold; fill: white; }
+    </style>
+  </defs>
+  
+  <!-- Titre principal -->
+  <text x="1000" y="40" text-anchor="middle" class="title">Workflow Complet de Consultation — 9 Cas de Test</text>
+  <text x="1000" y="70" text-anchor="middle" class="subtitle">Système de Diagnostic IA (153 maladies) — Santé Plus</text>
+  
+  <!-- Légende des étapes -->
+  <rect x="50" y="100" width="1900" height="80" fill="#e8f4f8" stroke="#3498db" stroke-width="2" rx="5"/>
+  <text x="1000" y="125" text-anchor="middle" class="subtitle">9 Étapes du Workflow</text>
+  <text x="100" y="150" class="cell-text">1️⃣ Patient → 2️⃣ Symptômes → 3️⃣ Signes Vitaux → 4️⃣ Examens Médicaux → 5️⃣ Consultation</text>
+  <text x="100" y="170" class="cell-text">6️⃣ Diagnostic IA → 7️⃣ Validation Médicale → 8️⃣ Ordonnance → 9️⃣ Suivi</text>
+  
+  <!-- CAS 1: PALUDISME -->
+  <g id="cas1">
+    <!-- Numéro du cas -->
+    <circle cx="100" cy="240" r="30" fill="#e74c3c"/>
+    <text x="100" y="250" text-anchor="middle" class="step-number">1</text>
+    <text x="150" y="250" class="step-title">CAS 1 — PALUDISME / MALARIA (Koffi AGOSSOU)</text>
+    
+    <!-- Étape 1: Patient -->
+    <rect x="50" y="270" width="1900" height="60" class="step-bg border"/>
+    <text x="60" y="290" class="step-title">Étape 1 — Patient</text>
+    <text x="60" y="310" class="cell-text">Nom: AGOSSOU | Prénoms: Koffi Mensah | Sexe: M | Date naissance: 1990-03-15 (36 ans) | Tél: 97 12 34 56</text>
+    <text x="60" y="325" class="cell-small">Motif: Fièvre élevée depuis 3 jours avec frissons intenses et maux de tête</text>
+    
+    <!-- Étape 2: Symptômes -->
+    <rect x="50" y="335" width="1900" height="70" class="row-odd border"/>
+    <text x="60" y="355" class="step-title">Étape 2 — Symptômes</text>
+    <text x="60" y="375" class="cell-text">• Fièvre (Sévère, 3 jours) • Frissons (Sévère, 3 jours) • Céphalées (Sévère, 3 jours)</text>
+    <text x="60" y="390" class="cell-text">• Douleurs musculaires (Modérée, 3 jours) • Nausées (Modérée, 2 jours) • Fatigue (Sévère, 3 jours)</text>
+    
+    <!-- Étape 3: Signes Vitaux -->
+    <rect x="50" y="410" width="1900" height="60" class="row-even border"/>
+    <text x="60" y="430" class="step-title">Étape 3 — Signes Vitaux</text>
+    <text x="60" y="450" class="cell-text">TA: 110/70 mmHg | FC: 105 bpm ⚠ | FR: 20 rpm | Temp: 39.8°C ⚠⚠ | SpO₂: 96% | Poids: 72 kg | Taille: 175 cm</text>
+    
+    <!-- Étape 4: Examens -->
+    <rect x="50" y="475" width="1900" height="70" class="step-bg border"/>
+    <text x="60" y="495" class="step-title">Étape 4 — Examens Médicaux</text>
+    <text x="60" y="515" class="cell-text">• Frottis sanguin + GE (Biologie): Plasmodium falciparum présent — Trophozoïtes 3+</text>
+    <text x="60" y="530" class="cell-text">• TDR Paludisme (Biologie): POSITIF | • NFS: Thrombopénie 95000/mm³, anémie légère 11.2 g/dL</text>
+    
+    <!-- Étape 5: Consultation -->
+    <rect x="50" y="550" width="1900" height="50" class="row-odd border"/>
+    <text x="60" y="570" class="step-title">Étape 5 — Consultation Médicale</text>
+    <text x="60" y="590" class="cell-text">Motif: Fièvre palustre typique avec frissons. Splénomégalie palpable. Contexte épidémiologique favorable (saison des pluies).</text>
+    
+    <!-- Étape 6: Diagnostic IA -->
+    <rect x="50" y="605" width="1900" height="60" fill="#d5f4e6" class="border"/>
+    <text x="60" y="625" class="step-title">Étape 6 — Diagnostic IA 🤖</text>
+    <text x="60" y="645" class="cell-text" font-weight="bold">🎯 Paludisme / Malaria — Confiance: 78% 🟢</text>
+    <text x="60" y="660" class="cell-small">Alternatives: Dengue (12%), Fièvre typhoïde (8%)</text>
+    
+    <!-- Étape 7: Validation -->
+    <rect x="50" y="670" width="1900" height="50" class="row-even border"/>
+    <text x="60" y="690" class="step-title">Étape 7 — Validation Médicale ✅</text>
+    <text x="60" y="705" class="cell-text">Diagnostic confirmé: Paludisme à Plasmodium falciparum. Frottis et TDR positifs. Traitement antipaludéen urgent.</text>
+    
+    <!-- Étape 8: Ordonnance -->
+    <rect x="50" y="725" width="1900" height="60" class="step-bg border"/>
+    <text x="60" y="745" class="step-title">Étape 8 — Ordonnance</text>
+    <text x="60" y="765" class="cell-text">• Artéméther-Luméfantrine 80/480mg (2×/jour, 3 jours) • Paracétamol 1g (3×/jour, 5 jours)</text>
+    <text x="60" y="780" class="cell-small">• Soluté de réhydratation orale (après chaque selle, 5 jours)</text>
+    
+    <!-- Étape 9: Suivi -->
+    <rect x="50" y="790" width="1900" height="50" class="row-odd border"/>
+    <text x="60" y="810" class="step-title">Étape 9 — Suivi</text>
+    <text x="60" y="825" class="cell-text">Prochain RDV: 3 jours (contrôle frottis). Instructions: Repos, hydratation 2L/jour. Retour si fièvre persiste > 48h.</text>
+  </g>
+  
+  <!-- CAS 2: PNEUMONIE -->
+  <g id="cas2">
+    <circle cx="100" cy="890" r="30" fill="#e74c3c"/>
+    <text x="100" y="900" text-anchor="middle" class="step-number">2</text>
+    <text x="150" y="900" class="step-title">CAS 2 — PNEUMONIE BACTÉRIENNE (Armelle HOUNSOU)</text>
+    
+    <rect x="50" y="920" width="1900" height="60" class="step-bg border"/>
+    <text x="60" y="940" class="step-title">Étape 1 — Patient</text>
+    <text x="60" y="960" class="cell-text">Nom: HOUNSOU | Prénoms: Armelle Bénédicte | Sexe: F | Date naissance: 1985-07-20 (40 ans) | Tél: 96 44 55 66</text>
+    <text x="60" y="975" class="cell-small">Motif: Toux productive avec expectorations purulentes depuis 5 jours, fièvre et difficultés à respirer</text>
+    
+    <rect x="50" y="985" width="1900" height="70" class="row-odd border"/>
+    <text x="60" y="1005" class="step-title">Étape 2 — Symptômes</text>
+    <text x="60" y="1025" class="cell-text">• Toux (Sévère, 5 jours) • Fièvre (Sévère, 5 jours) • Dyspnée (Modérée, 4 jours)</text>
+    <text x="60" y="1040" class="cell-text">• Douleurs thoraciques (Modérée, 3 jours) • Fatigue (Modérée, 5 jours) • Céphalées (Légère, 3 jours)</text>
+    
+    <rect x="50" y="1060" width="1900" height="60" class="row-even border"/>
+    <text x="60" y="1080" class="step-title">Étape 3 — Signes Vitaux</text>
+    <text x="60" y="1100" class="cell-text">TA: 118/75 mmHg | FC: 102 bpm ⚠ | FR: 26 rpm ⚠⚠ | Temp: 39.1°C ⚠ | SpO₂: 93% ⚠⚠ | Poids: 65 kg | Taille: 162 cm</text>
+    
+    <rect x="50" y="1125" width="1900" height="70" class="step-bg border"/>
+    <text x="60" y="1145" class="step-title">Étape 4 — Examens Médicaux</text>
+    <text x="60" y="1165" class="cell-text">• NFS (Biologie): Hyperleucocytose 18000/mm³, neutrophiles 85%, Hb 14.5 g/dL</text>
+    <text x="60" y="1180" class="cell-text">• CRP: 142 mg/L | • Radio thorax (Imagerie): Opacité alvéolaire lobe inférieur droit — condensation lobaire</text>
+    
+    <rect x="50" y="1200" width="1900" height="50" class="row-odd border"/>
+    <text x="60" y="1220" class="step-title">Étape 5 — Consultation Médicale</text>
+    <text x="60" y="1240" class="cell-text">Pneumonie lobaire droite. Hypoxie SpO₂ 93%. Syndrome inflammatoire majeur. Antibiothérapie urgente + oxygénothérapie.</text>
+    
+    <rect x="50" y="1255" width="1900" height="60" fill="#d5f4e6" class="border"/>
+    <text x="60" y="1275" class="step-title">Étape 6 — Diagnostic IA 🤖</text>
+    <text x="60" y="1295" class="cell-text" font-weight="bold">🎯 Pneumonie — Confiance: 72% 🟢</text>
+    <text x="60" y="1310" class="cell-small">Alternatives: Bronchite aiguë (15%), Tuberculose (10%)</text>
+    
+    <rect x="50" y="1320" width="1900" height="50" class="row-even border"/>
+    <text x="60" y="1340" class="step-title">Étape 7 — Validation Médicale ✅</text>
+    <text x="60" y="1355" class="cell-text">Diagnostic confirmé: Pneumonie bactérienne lobaire droite. Radio + biologie concordants. Hospitalisation si aggravation.</text>
+    
+    <rect x="50" y="1375" width="1900" height="60" class="step-bg border"/>
+    <text x="60" y="1395" class="step-title">Étape 8 — Ordonnance</text>
+    <text x="60" y="1415" class="cell-text">• Amoxicilline-Acide clavulanique 1g (3×/jour, 7 jours) • Paracétamol 1g (4×/jour, 5 jours)</text>
+    <text x="60" y="1430" class="cell-small">• Prednisolone 40mg (1×/jour, 3 jours si pas d'amélioration SpO₂)</text>
+    
+    <rect x="50" y="1440" width="1900" height="50" class="row-odd border"/>
+    <text x="60" y="1460" class="step-title">Étape 9 — Suivi</text>
+    <text x="60" y="1475" class="cell-text">Prochain RDV: 48h (contrôle SpO₂, radio J7). Repos absolu. Retour urgent si SpO₂ &lt; 90% ou fièvre &gt; 40°C.</text>
+  </g>
+  
+  <!-- CAS 3: DENGUE -->
+  <g id="cas3">
+    <circle cx="100" cy="1540" r="30" fill="#e74c3c"/>
+    <text x="100" y="1550" text-anchor="middle" class="step-number">3</text>
+    <text x="150" y="1550" class="step-title">CAS 3 — DENGUE FIÈVRE (Franck DOSSOU)</text>
+    
+    <rect x="50" y="1570" width="1900" height="60" class="step-bg border"/>
+    <text x="60" y="1590" class="step-title">Étape 1 — Patient</text>
+    <text x="60" y="1610" class="cell-text">Nom: DOSSOU | Prénoms: Franck Olivier | Sexe: M | Date naissance: 2000-11-08 (25 ans) | Tél: 95 77 33 44</text>
+    <text x="60" y="1625" class="cell-small">Motif: Fièvre brutale depuis 4 jours avec douleurs musculaires intenses et éruption cutanée</text>
+    
+    <rect x="50" y="1635" width="1900" height="70" class="row-odd border"/>
+    <text x="60" y="1655" class="step-title">Étape 2 — Symptômes</text>
+    <text x="60" y="1675" class="cell-text">• Fièvre (Sévère, 4 jours) • Douleurs musculaires (Sévère, 4 jours) • Céphalées (Sévère, 4 jours)</text>
+    <text x="60" y="1690" class="cell-text">• Éruption cutanée (Modérée, 2 jours) • Douleurs articulaires (Modérée, 3 jours) • Nausées (Modérée, 3 jours)</text>
+    
+    <rect x="50" y="1710" width="1900" height="60" class="row-even border"/>
+    <text x="60" y="1730" class="step-title">Étape 3 — Signes Vitaux</text>
+    <text x="60" y="1750" class="cell-text">TA: 105/68 mmHg ⚠ | FC: 98 bpm | FR: 18 rpm | Temp: 39.5°C ⚠⚠ | SpO₂: 97% | Poids: 70 kg | Taille: 178 cm</text>
+    
+    <rect x="50" y="1775" width="1900" height="70" class="step-bg border"/>
+    <text x="60" y="1795" class="step-title">Étape 4 — Examens Médicaux</text>
+    <text x="60" y="1815" class="cell-text">• NFS (Biologie): Thrombopénie 62000 plaquettes/mm³, leucopénie 3200/mm³, Hb 11.2 g/dL</text>
+    <text x="60" y="1830" class="cell-text">• CRP: 55 mg/L | • Frottis sanguin + GE (Biologie): Plasmodium NÉGATIF — élimine le paludisme</text>
+    
+    <rect x="50" y="1850" width="1900" height="50" class="row-odd border"/>
+    <text x="60" y="1870" class="step-title">Étape 5 — Consultation Médicale</text>
+    <text x="60" y="1890" class="cell-text">Dengue classique. Thrombopénie franche 62000. Rash typique. GE négatif. Surveillance plaquettes obligatoire.</text>
+    
+    <rect x="50" y="1905" width="1900" height="60" fill="#d5f4e6" class="border"/>
+    <text x="60" y="1925" class="step-title">Étape 6 — Diagnostic IA 🤖</text>
+    <text x="60" y="1945" class="cell-text" font-weight="bold">🎯 Dengue — Confiance: 69% 🟡</text>
+    <text x="60" y="1960" class="cell-small">Alternatives: Paludisme (18%), Chikungunya (10%)</text>
+    
+    <rect x="50" y="1970" width="1900" height="50" class="row-even border"/>
+    <text x="60" y="1990" class="step-title">Étape 7 — Validation Médicale ✅</text>
+    <text x="60" y="2005" class="cell-text">Diagnostic confirmé: Dengue. Thrombopénie + leucopénie + rash. Pas d'hospitalisation si plaquettes > 50000.</text>
+    
+    <rect x="50" y="2025" width="1900" height="60" class="step-bg border"/>
+    <text x="60" y="2045" class="step-title">Étape 8 — Ordonnance</text>
+    <text x="60" y="2065" class="cell-text">• Paracétamol 1g (4×/jour, 7 jours) — PAS d'aspirine ni ibuprofène (risque hémorragique)</text>
+    <text x="60" y="2080" class="cell-small">• Soluté de réhydratation orale (après chaque selle, 5 jours)</text>
+    
+    <rect x="50" y="2090" width="1900" height="50" class="row-odd border"/>
+    <text x="60" y="2110" class="step-title">Étape 9 — Suivi</text>
+    <text x="60" y="2125" class="cell-text">Prochain RDV: 24h (contrôle plaquettes). Repos strict, 2L eau/jour. Retour urgent si saignement ou plaquettes &lt; 50000.</text>
+  </g>
+  
+  <!-- Note compacte pour les 6 autres cas -->
+  <rect x="50" y="2190" width="1900" height="120" fill="#fff3cd" stroke="#ffc107" stroke-width="2" rx="5"/>
+  <text x="1000" y="2220" text-anchor="middle" class="subtitle">6 Autres Cas de Test (Format Identique)</text>
+  <text x="100" y="2250" class="cell-text">4️⃣ Diabète Type 2 (Geneviève AMOUSSOU) — Glycémie 14.2, HbA1c 9.8%, IMC 33.7 → Confiance 77% 🟢</text>
+  <text x="100" y="2270" class="cell-text">5️⃣ Tuberculose (Sébastien KPENOU) — BAAR 3+, cavernes apicales, hémoptysie, perte 8kg → Confiance 73% 🟢</text>
+  <text x="100" y="2290" class="cell-text">6️⃣ Hépatite B (Romuald TCHEGNON) — ALAT 856 UI/L, ictère, bilirubine 148 → Confiance 68% 🟡</text>
+  
+  <rect x="50" y="2320" width="1900" height="100" fill="#fff3cd" stroke="#ffc107" stroke-width="2" rx="5"/>
+  <text x="100" y="2350" class="cell-text">7️⃣ Hypertension (Bernadette ZANNOU) — TA 185/112, HVG ECG, céphalées en casque → Confiance 75% 🟢</text>
+  <text x="100" y="2370" class="cell-text">8️⃣ Insuffisance cardiaque (Maurice AHOUANDJINOU) — SpO₂ 91%, œdèmes, cardiomégalie, FA → Confiance 70% 🟢</text>
+  <text x="100" y="2390" class="cell-text">9️⃣ Anémie ferriprive (Prisca HONFO) — Hb 6.2 g/dL, ferritine 4 µg/L, tachycardie 110 → Confiance 76% 🟢</text>
+  
+  <!-- Résumé statistique -->
+  <rect x="50" y="2450" width="1900" height="140" fill="#e8f4f8" stroke="#3498db" stroke-width="2" rx="5"/>
+  <text x="1000" y="2480" text-anchor="middle" class="subtitle">📊 Résumé Statistique des 9 Cas</text>
+  <text x="100" y="2510" class="cell-text" font-weight="bold">Confiance moyenne: 72.1% | Haute confiance (&gt;70%): 7 cas | Confiance moyenne (50-70%): 2 cas</text>
+  <text x="100" y="2535" class="cell-text">✅ Tous les diagnostics confirmés par le médecin après validation</text>
+  <text x="100" y="2555" class="cell-text">✅ 9 étapes complètes pour chaque cas: Patient → Symptômes → Signes Vitaux → Examens → Consultation → IA → Validation → Ordonnance → Suivi</text>
+  <text x="100" y="2575" class="cell-text">🎯 Objectif: Valider que le système IA détecte correctement les 9 maladies avec un niveau de confiance acceptable (&gt;65%)</text>
+  
+  <!-- Footer -->
+  <text x="1000" y="2630" text-anchor="middle" class="cell-small" font-style="italic">
+    Document généré pour validation du système de diagnostic IA — Santé Plus — Mai 2026
+  </text>
+  <text x="1000" y="2650" text-anchor="middle" class="cell-small" font-style="italic">
+    Modèle Random Forest entraîné sur 153 maladies | Workflow complet en 9 étapes
+  </text>
+</svg>
