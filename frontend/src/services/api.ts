@@ -21,13 +21,18 @@ export interface Patient {
 
 export interface Consultation {
   id: number;
-  patient_id?: number; // INT pour accéder au dossier
+  patient_id?: number;
   nom_patient: string;
+  // champs utilisés dans le formulaire rapide (create mode)
+  nom?: string;
+  prenoms?: string;
+  sexe?: 'M' | 'F';
+  date_naissance?: string;
   date: string;
-  date_heure?: string; // Ajout pour compatibilité
+  date_heure?: string;
   motif: string;
   medecin_id?: number | null;
-  statut: 'en attente' | 'en cours' | 'terminée';
+  statut: 'en attente' | 'en cours' | 'terminée' | 'en_attente_medecin';
 }
 
 export interface Symptome {
@@ -200,7 +205,7 @@ export const patientsAPI = {
 // ============================================================================
 
 export const consultationsAPI = {
-  // Créer une consultation
+  // Créer une consultation complète
   create: (data: {
     patient_id: string;
     medecin_id: number;
@@ -209,6 +214,20 @@ export const consultationsAPI = {
     signes_vitaux?: SignesVitaux;
   }) =>
     fetchAPI<Consultation>('/api/consultations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Initialise patient + consultation draft dès l'étape 1
+  init: (data: { patient: object; motif: string; medecin_id?: number | null }) =>
+    fetchAPI<{ success: boolean; consultation_id: number; patient_id: number }>('/api/consultations/init', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Consultation rapide avec création du patient (nom, prenoms, sexe requis)
+  createRapide: (data: { nom?: string; prenoms?: string; sexe?: string; date_naissance?: string; nom_patient?: string; motif: string; date_heure: string; medecin_id?: number | null }) =>
+    fetchAPI<{ success: boolean; consultation_id: number; patient_id: number | null }>('/api/consultations/rapide', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
@@ -224,9 +243,34 @@ export const consultationsAPI = {
   // Historique d'un patient par ID (INT)
   getByPatient: (patientId: number, token?: string) =>
     fetchAPI<Consultation[]>(`/api/consultations/patient/${patientId}`, {
-      headers: token ? {
-        'Authorization': `Bearer ${token}`,
-      } : {},
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    }),
+
+  // Affecter un médecin
+  affecter: (id: number, medecinId: number) =>
+    fetchAPI<{ success: boolean }>(`/api/consultations/${id}/affecter-medecin`, {
+      method: 'PUT',
+      body: JSON.stringify({ medecin_id: medecinId }),
+    }),
+
+  // Changer le statut
+  updateStatut: (id: number, statut: string) =>
+    fetchAPI<{ success: boolean }>(`/api/consultations/${id}/statut`, {
+      method: 'PATCH',
+      body: JSON.stringify({ statut }),
+    }),
+
+  // Mise à jour générale
+  update: (id: number, data: { nom_patient?: string; motif?: string; date_heure?: string; medecin_id?: number | null; statut?: string }) =>
+    fetchAPI<{ success: boolean }>(`/api/consultations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  // Supprimer
+  delete: (id: number) =>
+    fetchAPI<{ success: boolean }>(`/api/consultations/${id}`, {
+      method: 'DELETE',
     }),
 };
 

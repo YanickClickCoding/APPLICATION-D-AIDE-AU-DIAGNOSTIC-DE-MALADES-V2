@@ -1,11 +1,13 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '../components/Toast';
+import { useAuth } from '../context/AuthContext';
 import {
   User, Activity, Stethoscope, Brain, CheckCircle,
   ArrowRight, ArrowLeft, X, AlertCircle, Thermometer,
   Heart, Wind, Droplet, Weight, Ruler, FlaskConical,
-  Pill, Calendar, Plus, Lightbulb, RefreshCw, ClipboardList
+  Pill, Calendar, Plus, Lightbulb, RefreshCw, ClipboardList,
+  UserCheck, Send
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -13,6 +15,7 @@ import {
 interface PatientData {
   nom: string; prenoms: string; date_naissance: string;
   sexe: 'M' | 'F'; telephone?: string; email?: string;
+  groupe_sanguin?: string;
 }
 interface Symptome {
   nom: string; severite: 'Légère' | 'Modérée' | 'Sévère';
@@ -162,11 +165,24 @@ const VitalBadge = ({ label, value, unit, icon: Icon, alert }: any) => (
 export default function ConsultationWorkflow() {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+
+  const reprendreId = searchParams.get('reprendre');
+  const isInfirmier = user?.role === 'infirmier';
+  const isReprendre = !!reprendreId && !isInfirmier;
+
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [draftConsultationId, setDraftConsultationId] = useState<number | null>(null);
+
+  // État infirmier
+  const [medecinId, setMedecinId] = useState<number | null>(null);
+  const [medecins, setMedecins] = useState<{ id: number; nom: string; prenoms: string; specialite?: string }[]>([]);
+  const [infirmierSubmitted, setInfirmierSubmitted] = useState(false);
 
   // State par étape
-  const [patient, setPatient] = useState<PatientData>({ nom: '', prenoms: '', date_naissance: '', sexe: 'M' });
+  const [patient, setPatient] = useState<PatientData>({ nom: '', prenoms: '', date_naissance: '', sexe: 'M', groupe_sanguin: '' });
   const [motif, setMotif] = useState('');
   const [symptomes, setSymptomes] = useState<Symptome[]>([]);
   const [vitaux, setVitaux] = useState<SignesVitaux>({ tension_systolique: 120, tension_diastolique: 80, frequence_cardiaque: 70, frequence_respiratoire: 16, temperature: 37.0, saturation_o2: 98 });
@@ -223,7 +239,65 @@ export default function ConsultationWorkflow() {
     };
   };
 
+  // ── Effects ────────────────────────────────────────────────────────────────
+
+  // Infirmier : charger la liste des médecins
+  useEffect(() => {
+    if (!isInfirmier) return;
+    fetch('http://localhost:8000/api/analytics/personnel/disponible')
+      .then(r => r.json())
+      .then(d => setMedecins((d.medecins?.liste || []).map((m: any) => ({ id: m.id, nom: m.nom, prenoms: m.prenoms, specialite: m.specialite }))))
+      .catch(() => {});
+  }, [isInfirmier]);
+
+  // Médecin reprend une consultation existante
+  useEffect(() => {
+    if (!reprendreId || isInfirmier) return;
+    fetch(`http://localhost:8000/api/consultations/${reprendreId}/donnees-resume`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.patient) setPatient(p => ({ ...p, ...d.patient }));
+        if (d.motif) setMotif(d.motif);
+        if (d.symptomes?.length) {
+          const rev: Record<string, string> = { LEGER: 'Légère', MODERE: 'Modérée', SEVERE: 'Sévère' };
+          setSymptomes(d.symptomes.map((s: any) => ({ nom: s.nom, severite: rev[s.severite] || 'Modérée', duree_jours: s.duree_jours, description: s.description || '' })));
+        }
+        if (d.signes_vitaux) setVitaux(v => ({ ...v, ...d.signes_vitaux }));
+        if (d.analyse_preliminaire) {
+          setAnalysePreliminaire(d.analyse_preliminaire);
+          setExamens(suggestExams(d.analyse_preliminaire.top_predictions || []));
+        }
+        setStep(5);
+      })
+      .catch(() => showToast('Impossible de charger la consultation', 'error'));
+  }, [reprendreId]);
+
   // ── Step actions ───────────────────────────────────────────────────────────
+
+  // Étape 1 → 2 : enregistre le patient + crée la consultation draft
+  const handleNextStep = async () => {
+    if (!patient.nom.trim() || !patient.prenoms.trim() || !patient.date_naissance || !motif.trim()) {
+      showToast('Veuillez remplir les champs obligatoires (nom, prénoms, date de naissance, motif)', 'error');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch('http://localhost:8000/api/consultations/init', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patient, motif, medecin_id: medecinId }),
+      });
+      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Erreur serveur'); }
+      const result = await res.json();
+      setDraftConsultationId(result.consultation_id);
+      showToast('Patient enregistré avec succès', 'success');
+      setStep(2);
+    } catch (e: any) {
+      showToast(e.message || 'Erreur lors de l\'enregistrement du patient', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAnalysePreliminaire = async () => {
     setLoading(true);
@@ -254,18 +328,56 @@ export default function ConsultationWorkflow() {
     setLoading(true);
     try {
       const finalDiag = validationDecision === 'rejete' ? diagnosticCorrection : diagnosticFinal;
-      await fetch('http://localhost:8000/api/consultations/workflow', {
+      const res = await fetch('http://localhost:8000/api/consultations/workflow', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           patient, motif, symptomes, signes_vitaux: vitaux, examens,
           analyse_preliminaire: analysePreliminaire, analyse_finale: analyseFinale,
           diagnostic_final: finalDiag, validation_type: validationDecision,
           notes_validation: notesValidation, ordonnance, suivi,
+          consultation_id: draftConsultationId,
         }),
       });
-      showToast('Consultation enregistrée avec succès !', 'success');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Erreur serveur ${res.status}`);
+      }
+      showToast('Consultation enregistrée ! Affichage des diagnostics IA...', 'success');
+      setTimeout(() => navigate('/diagnostics'), 1500);
+    } catch (e: any) {
+      showToast(e.message || 'Erreur lors de l\'enregistrement', 'error');
+    } finally { setLoading(false); }
+  };
+
+  // Infirmier soumet les étapes 1-3 et notifie le médecin
+  const handleSubmitInfirmier = async () => {
+    if (!medecinId) { showToast('Veuillez sélectionner un médecin', 'error'); return; }
+    setLoading(true);
+    try {
+      const res = await fetch('http://localhost:8000/api/consultations/workflow-partiel', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patient, motif, symptomes, signes_vitaux: vitaux, analyse_preliminaire: analysePreliminaire, medecin_id: medecinId, consultation_id: draftConsultationId }),
+      });
+      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Erreur serveur'); }
+      setInfirmierSubmitted(true);
+      showToast('Consultation envoyée au médecin avec succès', 'success');
+    } catch (e: any) { showToast(e.message || 'Erreur', 'error'); }
+    finally { setLoading(false); }
+  };
+
+  // Médecin finalise une consultation reprise (étapes 5-9)
+  const handleSubmitComplet = async () => {
+    setLoading(true);
+    try {
+      const finalDiag = validationDecision === 'rejete' ? diagnosticCorrection : diagnosticFinal;
+      const res = await fetch(`http://localhost:8000/api/consultations/${reprendreId}/workflow-complet`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ examens, analyse_finale: analyseFinale, diagnostic_final: finalDiag, validation_type: validationDecision, notes_validation: notesValidation, ordonnance, suivi }),
+      });
+      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Erreur serveur'); }
+      showToast('Consultation complétée avec succès !', 'success');
       setTimeout(() => navigate('/consultations'), 1500);
-    } catch { showToast('Erreur lors de l\'enregistrement', 'error'); }
+    } catch (e: any) { showToast(e.message || 'Erreur', 'error'); }
     finally { setLoading(false); }
   };
 
@@ -317,14 +429,44 @@ export default function ConsultationWorkflow() {
   );
 
   // ── Render ─────────────────────────────────────────────────────────────────
+
+  // Écran de confirmation infirmier après soumission
+  if (infirmierSubmitted) {
+    return (
+      <div style={{ maxWidth: '600px', margin: '60px auto' }}>
+        <div className="sp-card sp-fade-in">
+          <div style={{ padding: '60px 40px', textAlign: 'center' }}>
+            <div style={{ width: '80px', height: '80px', margin: '0 auto 24px', background: 'linear-gradient(135deg,#059669,#10B981)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CheckCircle size={40} style={{ color: '#fff' }} />
+            </div>
+            <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#065F46', marginBottom: '12px' }}>Consultation transmise !</h2>
+            <p style={{ color: '#6B7280', marginBottom: '8px', fontSize: '15px' }}>
+              Les données ont été enregistrées et le médecin assigné a été notifié.
+            </p>
+            <p style={{ color: '#9CA3AF', marginBottom: '36px', fontSize: '13px' }}>
+              Le médecin pourra continuer à partir de l'étape Examens pour finaliser le diagnostic.
+            </p>
+            <button onClick={() => navigate('/consultations')} className="sp-btn sp-btn-primary">
+              Retour aux consultations
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto' }}>
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
 
       <div className="sp-page-header sp-fade-in">
         <div>
-          <h1 className="sp-page-title">Nouvelle Consultation</h1>
-          <p className="sp-page-subtitle">Workflow assisté par IA · Étape {step}/{TOTAL}</p>
+          <h1 className="sp-page-title">
+            {isReprendre ? `Continuer la consultation #${reprendreId}` : 'Nouvelle Consultation'}
+          </h1>
+          <p className="sp-page-subtitle">
+            {isInfirmier ? 'Saisie infirmier · Étapes 1–3' : `Workflow assisté par IA · Étape ${step}/${TOTAL}`}
+          </p>
         </div>
       </div>
 
@@ -363,6 +505,24 @@ export default function ConsultationWorkflow() {
                 <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1F2937' }}>Informations du Patient</h2>
                 {roleBadge('Accueil')}
               </div>
+              {/* Sélecteur médecin — infirmier uniquement */}
+              {isInfirmier && (
+                <div style={{ marginBottom: '20px', padding: '16px', background: '#EEF2FF', borderRadius: '10px', border: '1px solid #C7D2FE' }}>
+                  <label className="sp-form-label" style={{ color: '#4338CA', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                    <UserCheck size={14} />Médecin assigné <span style={{ color: '#EF4444' }}>*</span>
+                  </label>
+                  <select className="sp-form-select" value={medecinId || ''} onChange={e => setMedecinId(Number(e.target.value) || null)}>
+                    <option value="">— Sélectionner un médecin —</option>
+                    {medecins.map(m => (
+                      <option key={m.id} value={m.id}>Dr. {m.prenoms} {m.nom}{m.specialite ? ` — ${m.specialite}` : ''}</option>
+                    ))}
+                  </select>
+                  <p style={{ fontSize: '12px', color: '#6366F1', margin: '8px 0 0' }}>
+                    Ce médecin sera notifié pour continuer et finaliser la consultation à partir des examens.
+                  </p>
+                </div>
+              )}
+
               <div className="sp-form-group" style={{ marginBottom: '16px' }}>
                 <label className="sp-form-label">Motif de consultation <span style={{ color: '#EF4444' }}>*</span></label>
                 <textarea className="sp-form-textarea" rows={2} value={motif} onChange={e => setMotif(e.target.value)} placeholder="Raison de la visite aujourd'hui..." />
@@ -384,6 +544,16 @@ export default function ConsultationWorkflow() {
                   <label className="sp-form-label">Sexe <span style={{ color: '#EF4444' }}>*</span></label>
                   <select className="sp-form-select" value={patient.sexe} onChange={e => setPatient({ ...patient, sexe: e.target.value as 'M' | 'F' })}>
                     <option value="M">Masculin</option><option value="F">Féminin</option>
+                  </select>
+                </div>
+                <div className="sp-form-group">
+                  <label className="sp-form-label">Groupe sanguin</label>
+                  <select className="sp-form-select" value={patient.groupe_sanguin || ''} onChange={e => setPatient({ ...patient, groupe_sanguin: e.target.value || undefined })}>
+                    <option value="">— Non renseigné —</option>
+                    <option value="A+">A+</option><option value="A-">A-</option>
+                    <option value="B+">B+</option><option value="B-">B-</option>
+                    <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                    <option value="O+">O+</option><option value="O-">O-</option>
                   </select>
                 </div>
               </div>
@@ -794,14 +964,40 @@ export default function ConsultationWorkflow() {
               <ArrowLeft size={16} /> Précédent
             </button>
 
-            {/* Étapes normales : bouton Suivant */}
-            {step < 4 && (
-              <button onClick={() => setStep(s => s + 1)} className="sp-btn sp-btn-primary">
+            {/* Étapes 1-2 : bouton Suivant pour tous */}
+            {step < 3 && (
+              <button
+                onClick={step === 1 ? handleNextStep : () => setStep(s => s + 1)}
+                disabled={step === 1 && loading}
+                className="sp-btn sp-btn-primary"
+                style={{ opacity: step === 1 && loading ? 0.7 : 1 }}
+              >
+                {step === 1 && loading
+                  ? <><RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Enregistrement...</>
+                  : <>Suivant <ArrowRight size={16} /></>}
+              </button>
+            )}
+
+            {/* Étape 3 : infirmier soumet → médecin continue vers étape 4 */}
+            {step === 3 && isInfirmier && (
+              <button
+                onClick={handleSubmitInfirmier}
+                disabled={loading || !medecinId}
+                className="sp-btn sp-btn-success"
+                style={{ opacity: !medecinId ? 0.5 : 1 }}
+              >
+                {loading
+                  ? <><RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Envoi en cours...</>
+                  : <><Send size={16} /> Envoyer au médecin</>}
+              </button>
+            )}
+            {step === 3 && !isInfirmier && (
+              <button onClick={() => setStep(4)} className="sp-btn sp-btn-primary">
                 Suivant <ArrowRight size={16} />
               </button>
             )}
 
-            {/* Étape 4 : déclenchement IA préliminaire */}
+            {/* Étape 4 : après analyse IA préliminaire → médecin saisit les examens */}
             {step === 4 && !analysePreliminaire && null}
             {step === 4 && analysePreliminaire && (
               <button onClick={() => setStep(5)} className="sp-btn sp-btn-primary">
@@ -842,9 +1038,9 @@ export default function ConsultationWorkflow() {
               </button>
             )}
 
-            {/* Étape 9 : soumission finale */}
+            {/* Étape 9 : soumission finale (reprendre = médecin complète, sinon workflow normal) */}
             {step === 9 && (
-              <button onClick={handleSubmit} disabled={loading} className="sp-btn sp-btn-success">
+              <button onClick={isReprendre ? handleSubmitComplet : handleSubmit} disabled={loading} className="sp-btn sp-btn-success">
                 {loading ? <><RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Enregistrement...</> : <><CheckCircle size={16} /> Clôturer la consultation</>}
               </button>
             )}

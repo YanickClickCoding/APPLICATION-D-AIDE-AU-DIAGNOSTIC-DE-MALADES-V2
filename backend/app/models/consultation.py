@@ -3,7 +3,6 @@ Consultation database model - Adapté au schéma MySQL existant
 """
 from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.mysql import CHAR, ENUM
 from sqlalchemy.sql import func
 from ..database import Base
 
@@ -24,10 +23,7 @@ class Consultation(Base):
     date_heure = Column(DateTime, nullable=False)
     motif = Column(Text, nullable=False)
     medecin_id = Column(Integer, ForeignKey("medecins.medecin_id"))
-    statut = Column(
-        ENUM('en attente', 'en cours', 'terminée'),
-        default='en attente'
-    )
+    statut = Column(String(30), default='en attente')
     
     # Timestamps
     created_at = Column(DateTime, server_default=func.now())

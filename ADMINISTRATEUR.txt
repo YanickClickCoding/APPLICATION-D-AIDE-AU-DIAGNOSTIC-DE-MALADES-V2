@@ -1,0 +1,105 @@
+1. ADMINISTRATEUR
+Gestion du système IA
+
+Configurer seuils de confiance du modèle (minimum, alerte)
+Ajuster hyperparamètres (n_estimators, max_depth)
+Lancer entraînement du modèle Random Forest
+Suivre progression et résultats (accuracy, precision, recall, F1-score)
+Gérer versions de modèles
+Nettoyer anciens modèles et logs
+Monitorer ressources serveur (CPU, RAM, disque)
+Gestion des utilisateurs
+
+Créer comptes (admin, médecin, infirmier)
+Attribuer rôles et permissions
+Modifier informations utilisateurs
+Activer/désactiver comptes
+Réinitialiser mots de passe
+Supprimer utilisateurs (sauf son propre compte)
+Gestion du personnel médical
+
+Créer profils médecins (spécialité, téléphone, disponibilité)
+Créer profils infirmiers
+Modifier informations personnel
+Gérer disponibilités
+Supprimer profils
+Supervision
+
+Consulter dashboard administrateur avec KPIs
+Voir statistiques d'utilisation système
+Analyser performance modèle IA
+Suivre activité du personnel
+Générer rapports mensuels
+2. MÉDECIN
+Gestion des patients
+
+Consulter liste complète des patients
+Rechercher et filtrer patients
+Voir dossier médical complet (antécédents, historique consultations, diagnostics, traitements)
+Consulter examens médicaux antérieurs
+Gestion des consultations
+
+Voir consultations en attente (préparées par infirmiers)
+Reprendre consultation infirmier (récupérer symptômes, signes vitaux, analyse IA préliminaire)
+Créer consultation complète (workflow 9 étapes)
+Ajouter examens médicaux (biologie, imagerie, autres)
+Saisir type, nom, résultats, valeurs numériques, dates
+Diagnostic assisté par IA
+
+Demander prédiction IA (avec symptômes + signes vitaux + examens)
+Voir diagnostic proposé avec niveau de confiance
+Consulter diagnostics alternatifs (top 3)
+Voir explication IA (pourquoi ce diagnostic, facteurs contributifs, features importantes)
+Valider diagnostic IA (confirmer et finaliser consultation)
+Rejeter diagnostic IA (saisir diagnostic correct, expliquer raison, contribuer à amélioration modèle)
+Créer diagnostic manuel (sans IA)
+Prescription et suivi
+
+Prescrire traitements et créer ordonnances
+Ajouter médicaments avec posologie et durée
+Vérifier contre-indications et allergies
+Créer rendez-vous de suivi
+Noter évolution patient
+Ajuster traitements
+Analytics et rapports
+
+Consulter dashboard personnel (consultations récentes, patients, statistiques)
+Voir analytics globales (distribution diagnostics, top maladies, taux approbation IA)
+Visualiser graphiques (top diagnostics, répartition statuts, distribution confiance)
+Générer rapports patients
+3. INFIRMIER
+Gestion des patients
+
+Enregistrer nouveaux patients (nom, prénoms, date naissance, sexe, groupe sanguin)
+Saisir coordonnées (téléphone, email, adresse)
+Modifier informations patients
+Corriger erreurs de saisie
+Pré-consultation (Workflow collaboratif)
+
+Créer consultation rapide (urgences)
+Initialiser consultation (enregistrer/récupérer patient, définir motif)
+Saisir symptômes (nom, sévérité: légère/modérée/sévère, durée en jours, description)
+Saisir signes vitaux :
+Tension artérielle (systolique/diastolique)
+Fréquence cardiaque (bpm)
+Température corporelle (°C)
+Fréquence respiratoire (rpm)
+Saturation oxygène (SpO2 %)
+Poids et taille (calcul automatique IMC)
+Analyse IA préliminaire
+
+Demander analyse IA avec symptômes + signes vitaux
+Recevoir prédiction préliminaire (top 3 diagnostics possibles)
+Voir niveau de confiance
+Transmission au médecin
+
+Finaliser pré-consultation (enregistrer workflow partiel)
+Changer statut consultation = "en_attente_medecin"
+Affecter à un médecin (optionnel)
+Consulter consultations en attente et suivre statut
+4. PATIENT
+N'a pas d'accès au système
+Reçoit les soins médicaux
+Ses données personnelles et médicales sont enregistrées
+Ses données sont protégées (RGPD, confidentialité)
+Reçoit ordonnances et rapports imprimés

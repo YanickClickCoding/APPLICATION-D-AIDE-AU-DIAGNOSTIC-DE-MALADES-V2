@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0f9ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e0f2fe;stop-opacity:1" />
+    </linearGradient>
+    
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+      <feOffset dx="2" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <style>
+      .actor-head { fill: #4F46E5; }
+      .actor-body { stroke: #4F46E5; stroke-width: 3; fill: none; }
+      .actor-text { font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; fill: #1F2937; text-anchor: middle; }
+      
+      .usecase { fill: white; stroke: #4F46E5; stroke-width: 2; filter: url(#shadow); }
+      .usecase-text { font-family: Arial, sans-serif; font-size: 13px; fill: #1F2937; text-anchor: middle; }
+      
+      .system-box { fill: none; stroke: #6B7280; stroke-width: 2; stroke-dasharray: 5,5; }
+      .system-title { font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; fill: #1F2937; }
+      
+      .relation { stroke: #6B7280; stroke-width: 1.5; fill: none; }
+      .relation-include { stroke: #10B981; stroke-dasharray: 5,3; }
+      .relation-extend { stroke: #F59E0B; stroke-dasharray: 5,3; }
+      
+      .title { font-family: Arial, sans-serif; font-size: 28px; font-weight: bold; fill: #1F2937; text-anchor: middle; }
+      .subtitle { font-family: Arial, sans-serif; font-size: 16px; fill: #6B7280; text-anchor: middle; }
+      
+      .legend-text { font-family: Arial, sans-serif; font-size: 12px; fill: #1F2937; }
+      .section-title { font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; fill: #4F46E5; }
+    </style>
+  </defs>
+  
+  <rect width="1200" height="900" fill="url(#bgGradient)"/>
+  
+  <text x="600" y="40" class="title">Diagramme de Cas d'Utilisation - Authentification</text>
+  <text x="600" y="70" class="subtitle">Système de Diagnostic Médical - SANTÉ PLUS</text>
+  
+  <rect x="200" y="120" width="800" height="600" class="system-box"/>
+  <text x="600" y="150" class="system-title">Système d'Authentification</text>
+  
+  <!-- ACTEUR PRINCIPAL: Utilisateur -->
+  <g id="utilisateur">
+    <circle cx="100" cy="400" r="25" class="actor-head"/>
+    <line x1="100" y1="425" x2="100" y2="485" class="actor-body"/>
+    <line x1="100" y1="445" x2="65" y2="470" class="actor-body"/>
+    <line x1="100" y1="445" x2="135" y2="470" class="actor-body"/>
+    <line x1="100" y1="485" x2="65" y2="520" class="actor-body"/>
+    <line x1="100" y1="485" x2="135" y2="520" class="actor-body"/>
+    <text x="100" y="550" class="actor-text">Utilisateur</text>
+  </g>
+  
+  <!-- ACTEUR SECONDAIRE: Système -->
+  <g id="systeme">
+    <circle cx="1100" cy="400" r="25" class="actor-head"/>
+    <line x1="1100" y1="425" x2="1100" y2="485" class="actor-body"/>
+    <line x1="1100" y1="445" x2="1065" y2="470" class="actor-body"/>
+    <line x1="1100" y1="445" x2="1135" y2="470" class="actor-body"/>
+    <line x1="1100" y1="485" x2="1065" y2="520" class="actor-body"/>
+    <line x1="1100" y1="485" x2="1135" y2="520" class="actor-body"/>
+    <text x="1100" y="550" class="actor-text">Système</text>
+  </g>
+  
+  <!-- CAS D'UTILISATION PRINCIPAUX -->
+  
+  <!-- UC1: Se connecter -->
+  <ellipse cx="400" cy="250" rx="100" ry="40" class="usecase"/>
+  <text x="400" y="255" class="usecase-text">Se connecter</text>
+  
+  <!-- UC2: Se déconnecter -->
+  <ellipse cx="400" cy="350" rx="100" ry="40" class="usecase"/>
+  <text x="400" y="355" class="usecase-text">Se déconnecter</text>
+  
+  <!-- UC3: Créer un compte -->
+  <ellipse cx="400" cy="450" rx="100" ry="40" class="usecase"/>
+  <text x="400" y="455" class="usecase-text">Créer un compte</text>
+  
+  <!-- UC4: Rafraîchir le token -->
+  <ellipse cx="400" cy="550" rx="100" ry="40" class="usecase"/>
+  <text x="400" y="555" class="usecase-text">Rafraîchir le token</text>
+  
+  <!-- UC5: Consulter son profil -->
+  <ellipse cx="400" cy="650" rx="110" ry="40" class="usecase"/>
+  <text x="400" y="655" class="usecase-text">Consulter son profil</text>
+  
+  <!-- CAS D'UTILISATION INCLUS -->
+  
+  <!-- UC6: Valider les identifiants -->
+  <ellipse cx="700" cy="250" rx="110" ry="40" class="usecase"/>
+  <text x="700" y="245" class="usecase-text">Valider les</text>
+  <text x="700" y="260" class="usecase-text">identifiants</text>
+  
+  <!-- UC7: Vérifier le mot de passe -->
+  <ellipse cx="900" cy="200" rx="110" ry="40" class="usecase"/>
+  <text x="900" y="195" class="usecase-text">Vérifier le</text>
+  <text x="900" y="210" class="usecase-text">mot de passe</text>
+  
+  <!-- UC8: Générer token JWT -->
+  <ellipse cx="900" cy="300" rx="110" ry="40" class="usecase"/>
+  <text x="900" y="295" class="usecase-text">Générer</text>
+  <text x="900" y="310" class="usecase-text">token JWT</text>
+  
+  <!-- UC9: Hasher le mot de passe -->
+  <ellipse cx="700" cy="450" rx="110" ry="40" class="usecase"/>
+  <text x="700" y="445" class="usecase-text">Hasher le</text>
+  <text x="700" y="460" class="usecase-text">mot de passe</text>
+  
+  <!-- UC10: Vérifier le token -->
+  <ellipse cx="700" cy="550" rx="110" ry="40" class="usecase"/>
+  <text x="700" y="545" class="usecase-text">Vérifier le</text>
+  <text x="700" y="560" class="usecase-text">token JWT</text>
+  
+  <!-- UC11: Décoder le token -->
+  <ellipse cx="900" cy="550" rx="110" ry="40" class="usecase"/>
+  <text x="900" y="545" class="usecase-text">Décoder le</text>
+  <text x="900" y="560" class="usecase-text">token JWT</text>
+  
+  <!-- RELATIONS UTILISATEUR -> CAS D'UTILISATION -->
+  <line x1="135" y1="400" x2="300" y2="250" class="relation"/>
+  <line x1="135" y1="400" x2="300" y2="350" class="relation"/>
+  <line x1="135" y1="400" x2="300" y2="450" class="relation"/>
+  <line x1="135" y1="400" x2="300" y2="550" class="relation"/>
+  <line x1="135" y1="400" x2="290" y2="650" class="relation"/>
+  
+  <!-- RELATIONS INCLUDE -->
+  <line x1="500" y1="250" x2="590" y2="250" class="relation relation-include"/>
+  <text x="545" y="240" class="legend-text" style="fill:#10B981;">include</text>
+  
+  <line x1="700" y1="210" x2="790" y2="200" class="relation relation-include"/>
+  <text x="745" y="200" class="legend-text" style="fill:#10B981;">include</text>
+  
+  <line x1="700" y1="290" x2="790" y2="300" class="relation relation-include"/>
+  <text x="745" y="290" class="legend-text" style="fill:#10B981;">include</text>
+  
+  <line x1="500" y1="450" x2="590" y2="450" class="relation relation-include"/>
+  <text x="545" y="440" class="legend-text" style="fill:#10B981;">include</text>
+  
+  <line x1="500" y1="550" x2="590" y2="550" class="relation relation-include"/>
+  <text x="545" y="540" class="legend-text" style="fill:#10B981;">include</text>
+  
+  <line x1="810" y1="550" x2="790" y2="550" class="relation relation-include"/>
+  <text x="800" y="540" class="legend-text" style="fill:#10B981;">include</text>
+  
+  <!-- RELATIONS EXTEND -->
+  <line x1="400" y1="610" x2="400" y2="590" class="relation relation-extend"/>
+  <text x="410" y="600" class="legend-text" style="fill:#F59E0B;">extend</text>
+  
+  <!-- RELATIONS SYSTÈME -->
+  <line x1="1010" y1="200" x2="1065" y2="400" class="relation"/>
+  <line x1="1010" y1="300" x2="1065" y2="400" class="relation"/>
+  <line x1="810" y1="450" x2="1065" y2="400" class="relation"/>
+  <line x1="810" y1="550" x2="1065" y2="400" class="relation"/>
+  <line x1="1010" y1="550" x2="1065" y2="400" class="relation"/>
+  
+  <!-- LÉGENDE -->
+  <g id="legend">
+    <rect x="50" y="750" width="500" height="120" fill="white" stroke="#6B7280" stroke-width="2" rx="10" filter="url(#shadow)"/>
+    <text x="300" y="780" class="section-title" text-anchor="middle">LÉGENDE</text>
+    
+    <line x1="70" y1="805" x2="150" y2="805" class="relation"/>
+    <text x="160" y="810" class="legend-text">Association</text>
+    
+    <line x1="70" y1="835" x2="150" y2="835" class="relation relation-include"/>
+    <text x="160" y="840" class="legend-text">include (relation obligatoire)</text>
+    
+    <line x1="70" y1="865" x2="150" y2="865" class="relation relation-extend"/>
+    <text x="160" y="870" class="legend-text">extend (relation optionnelle)</text>
+  </g>
+  
+  <!-- DESCRIPTION DES CAS -->
+  <g id="description">
+    <rect x="600" y="750" width="550" height="120" fill="white" stroke="#6B7280" stroke-width="2" rx="10" filter="url(#shadow)"/>
+    <text x="875" y="780" class="section-title" text-anchor="middle">DESCRIPTION</text>
+    
+    <text x="620" y="805" class="legend-text">
+      <tspan font-weight="bold">Se connecter :</tspan> Authentification avec email et mot de passe
+    </text>
+    <text x="620" y="825" class="legend-text">
+      <tspan font-weight="bold">Créer un compte :</tspan> Inscription d'un nouvel utilisateur
+    </text>
+    <text x="620" y="845" class="legend-text">
+      <tspan font-weight="bold">Rafraîchir le token :</tspan> Renouveler le JWT avant expiration
+    </text>
+    <text x="620" y="865" class="legend-text">
+      <tspan font-weight="bold">Sécurité :</tspan> JWT (HS256) + bcrypt + Token 24h
+    </text>
+  </g>
+  
+  <text x="600" y="895" class="subtitle" text-anchor="middle">SANTÉ PLUS - Clinique Privée - Cotonou, Bénin</text>
+  
+</svg>

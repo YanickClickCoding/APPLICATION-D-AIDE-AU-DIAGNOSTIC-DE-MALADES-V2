@@ -208,11 +208,13 @@ def get_recent_consultations(limit: int = 10, db: Session = Depends(get_db)) -> 
     return [
         {
             "id": c.consultation_id,
-            "patient_id": c.patient_id,  # Inclure le patient_id pour accéder au dossier
+            "patient_id": c.patient_id,
             "nom_patient": c.nom_patient,
             "date": c.date_heure.isoformat(),
+            "date_heure": c.date_heure.isoformat(),
             "motif": c.motif,
-            "statut": c.statut
+            "statut": c.statut,
+            "medecin_id": c.medecin_id,
         }
         for c in consultations
     ]
@@ -221,22 +223,18 @@ def get_recent_consultations(limit: int = 10, db: Session = Depends(get_db)) -> 
 @router.get("/personnel/disponible")
 def get_personnel_disponible(db: Session = Depends(get_db)) -> Dict:
     """
-    Personnel médical disponible (médecins et infirmiers)
+    Personnel médical disponible (médecins et infirmiers).
+    Retourne tous les médecins disponibles de la table 'medecins'.
+    Les utilisateurs avec role='medecin' créés via l'admin sont automatiquement
+    synchronisés vers la table 'medecins' à la création.
     """
-    # Médecins disponibles
-    medecins_dispo = db.query(Medecin).filter(
-        Medecin.disponible == True
-    ).all()
-    
+    medecins_dispo = db.query(Medecin).filter(Medecin.disponible == True).order_by(Medecin.nom).all()
     total_medecins = db.query(func.count(Medecin.medecin_id)).scalar() or 0
-    
+
     # Infirmiers disponibles
-    infirmiers_dispo = db.query(Infirmier).filter(
-        Infirmier.disponible == True
-    ).all()
-    
+    infirmiers_dispo = db.query(Infirmier).filter(Infirmier.disponible == True).all()
     total_infirmiers = db.query(func.count(Infirmier.infirmier_id)).scalar() or 0
-    
+
     return {
         "medecins": {
             "disponibles": len(medecins_dispo),
@@ -247,10 +245,10 @@ def get_personnel_disponible(db: Session = Depends(get_db)) -> Dict:
                     "nom": m.nom,
                     "prenoms": m.prenoms,
                     "specialite": m.specialite,
-                    "telephone": m.telephone
+                    "telephone": m.telephone,
                 }
                 for m in medecins_dispo
-            ]
+            ],
         },
         "infirmiers": {
             "disponibles": len(infirmiers_dispo),
@@ -261,11 +259,11 @@ def get_personnel_disponible(db: Session = Depends(get_db)) -> Dict:
                     "nom": i.nom,
                     "prenoms": i.prenoms,
                     "telephone": i.telephone,
-                    "email": i.email
+                    "email": i.email,
                 }
                 for i in infirmiers_dispo
-            ]
-        }
+            ],
+        },
     }
 
 

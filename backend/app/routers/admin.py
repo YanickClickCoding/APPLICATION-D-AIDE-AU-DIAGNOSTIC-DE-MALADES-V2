@@ -228,6 +228,23 @@ def create_user(
         actif=True,
     )
     db.add(new_user)
+    db.flush()
+
+    # Auto-créer le profil médecin si le rôle est 'medecin'
+    if data.role == "medecin":
+        existing = db.query(Medecin).filter(
+            Medecin.nom == data.nom,
+            Medecin.prenoms == data.prenoms
+        ).first()
+        if not existing:
+            db.add(Medecin(
+                nom=data.nom,
+                prenoms=data.prenoms,
+                specialite="Médecin Général",
+                telephone="N/A",
+                disponible=True,
+            ))
+
     db.commit()
     db.refresh(new_user)
     return _user_to_dict(new_user)

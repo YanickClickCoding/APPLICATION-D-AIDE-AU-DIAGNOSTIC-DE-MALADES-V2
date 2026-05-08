@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1800" width="1400" height="1800">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0f9ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e0f2fe;stop-opacity:1" />
+    </linearGradient>
+    
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+      <feOffset dx="2" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#4F46E5" />
+    </marker>
+    
+    <marker id="arrowhead-return" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#10B981" />
+    </marker>
+    
+    <style>
+      .title { font-family: Arial, sans-serif; font-size: 28px; font-weight: bold; fill: #1F2937; text-anchor: middle; }
+      .subtitle { font-family: Arial, sans-serif; font-size: 16px; fill: #6B7280; text-anchor: middle; }
+      .actor-box { fill: #4F46E5; stroke: #3730A3; stroke-width: 2; filter: url(#shadow); }
+      .actor-text { font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; fill: white; text-anchor: middle; }
+      .lifeline { stroke: #9CA3AF; stroke-width: 2; stroke-dasharray: 5,5; }
+      .activation { fill: #E0E7FF; stroke: #4F46E5; stroke-width: 2; }
+      .message { stroke: #4F46E5; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .message-return { stroke: #10B981; stroke-width: 2; fill: none; stroke-dasharray: 5,3; marker-end: url(#arrowhead-return); }
+      .message-text { font-family: Arial, sans-serif; font-size: 12px; fill: #1F2937; }
+      .note { fill: #FEF3C7; stroke: #F59E0B; stroke-width: 2; filter: url(#shadow); }
+      .note-text { font-family: Arial, sans-serif; font-size: 11px; fill: #92400E; }
+      .section-title { font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; fill: #4F46E5; }
+      .alt-box { fill: none; stroke: #6B7280; stroke-width: 2; }
+      .alt-label { font-family: Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #1F2937; }
+    </style>
+  </defs>
+  
+  <rect width="1400" height="1800" fill="url(#bgGradient)"/>
+  
+  <text x="700" y="40" class="title">Diagramme de Séquence - Authentification</text>
+  <text x="700" y="70" class="subtitle">Système de Diagnostic Médical - SANTÉ PLUS</text>
+  
+  <!-- ACTEURS -->
+  <rect x="80" y="120" width="140" height="50" rx="5" class="actor-box"/>
+  <text x="150" y="150" class="actor-text">Utilisateur</text>
+  
+  <rect x="320" y="120" width="140" height="50" rx="5" class="actor-box"/>
+  <text x="390" y="150" class="actor-text">Frontend React</text>
+  
+  <rect x="560" y="120" width="140" height="50" rx="5" class="actor-box"/>
+  <text x="630" y="150" class="actor-text">API FastAPI</text>
+  
+  <rect x="800" y="120" width="140" height="50" rx="5" class="actor-box"/>
+  <text x="870" y="150" class="actor-text">Auth Service</text>
+  
+  <rect x="1040" y="120" width="140" height="50" rx="5" class="actor-box"/>
+  <text x="1110" y="150" class="actor-text">Base de données</text>
+  
+  <!-- LIFELINES -->
+  <line x1="150" y1="170" x2="150" y2="1650" class="lifeline"/>
+  <line x1="390" y1="170" x2="390" y2="1650" class="lifeline"/>
+  <line x1="630" y1="170" x2="630" y2="1650" class="lifeline"/>
+  <line x1="870" y1="170" x2="870" y2="1650" class="lifeline"/>
+  <line x1="1110" y1="170" x2="1110" y2="1650" class="lifeline"/>
+  
+  <!-- SCÉNARIO 1: CONNEXION RÉUSSIE -->
+  <text x="50" y="230" class="section-title">SCÉNARIO 1: CONNEXION RÉUSSIE</text>
+  
+  <!-- 1. Accès page login -->
+  <line x1="150" y1="260" x2="390" y2="260" class="message"/>
+  <text x="270" y="250" class="message-text">1. Accède à /login</text>
+  
+  <rect x="380" y="260" width="20" height="40" class="activation"/>
+  
+  <line x1="390" y1="300" x2="150" y2="300" class="message-return"/>
+  <text x="270" y="290" class="message-text">Affiche formulaire</text>
+  
+  <!-- 2. Saisie identifiants -->
+  <rect x="140" y="330" width="20" height="60" class="activation"/>
+  
+  <rect x="200" y="340" width="180" height="40" class="note"/>
+  <text x="290" y="355" class="note-text" text-anchor="middle">Email: user@santeplus.bj</text>
+  <text x="290" y="370" class="note-text" text-anchor="middle">Password: ********</text>
+  
+  <!-- 3. Soumission formulaire -->
+  <line x1="150" y1="410" x2="390" y2="410" class="message"/>
+  <text x="270" y="400" class="message-text">2. Soumet formulaire</text>
+  
+  <rect x="380" y="410" width="20" height="80" class="activation"/>
+  
+  <!-- 4. Validation frontend -->
+  <rect x="400" y="430" width="180" height="40" class="note"/>
+  <text x="490" y="445" class="note-text" text-anchor="middle">Validation:</text>
+  <text x="490" y="460" class="note-text" text-anchor="middle">- Email format OK</text>
+  
+  <!-- 5. POST /api/auth/login -->
+  <line x1="390" y1="490" x2="630" y2="490" class="message"/>
+  <text x="510" y="480" class="message-text">3. POST /api/auth/login</text>
+  <text x="510" y="495" class="message-text">{email, password}</text>
+  
+  <rect x="620" y="490" width="20" height="100" class="activation"/>
+  
+  <!-- 6. Authentification -->
+  <line x1="630" y1="520" x2="870" y2="520" class="message"/>
+  <text x="750" y="510" class="message-text">4. authenticate_user()</text>
+  
+  <rect x="860" y="520" width="20" height="200" class="activation"/>
+  
+  <!-- 7. Requête DB -->
+  <line x1="870" y1="550" x2="1110" y2="550" class="message"/>
+  <text x="990" y="540" class="message-text">5. SELECT * FROM utilisateurs</text>
+  <text x="990" y="555" class="message-text">WHERE email = ?</text>
+  
+  <rect x="1100" y="550" width="20" height="60" class="activation"/>
+  
+  <line x1="1110" y1="610" x2="870" y2="610" class="message-return"/>
+  <text x="990" y="600" class="message-text">User trouvé</text>
+  
+  <!-- 8. Vérification mot de passe -->
+  <rect x="880" y="630" width="180" height="40" class="note"/>
+  <text x="970" y="645" class="note-text" text-anchor="middle">bcrypt.checkpw()</text>
+  <text x="970" y="660" class="note-text" text-anchor="middle">✓ Mot de passe valide</text>
+  
+  <!-- 9. Génération JWT -->
+  <rect x="880" y="680" width="180" height="40" class="note"/>
+  <text x="970" y="695" class="note-text" text-anchor="middle">jwt.encode()</text>
+  <text x="970" y="710" class="note-text" text-anchor="middle">Token valide 24h</text>
+  
+  <line x1="870" y1="730" x2="630" y2="730" class="message-return"/>
+  <text x="750" y="720" class="message-text">Token JWT + User</text>
+  
+  <!-- 10. Réponse API -->
+  <line x1="630" y1="760" x2="390" y2="760" class="message-return"/>
+  <text x="510" y="750" class="message-text">200 OK</text>
+  <text x="510" y="765" class="message-text">{access_token, user}</text>
+  
+  <!-- 11. Stockage token -->
+  <rect x="380" y="790" width="20" height="60" class="activation"/>
+  
+  <rect x="200" y="800" width="180" height="40" class="note"/>
+  <text x="290" y="815" class="note-text" text-anchor="middle">localStorage.setItem()</text>
+  <text x="290" y="830" class="note-text" text-anchor="middle">'token', access_token</text>
+  
+  <!-- 12. Redirection -->
+  <line x1="390" y1="860" x2="150" y2="860" class="message-return"/>
+  <text x="270" y="850" class="message-text">Redirige vers /dashboard</text>
+  
+  <!-- SCÉNARIO 2: ÉCHEC AUTHENTIFICATION -->
+  <text x="50" y="930" class="section-title">SCÉNARIO 2: ÉCHEC AUTHENTIFICATION</text>
+  
+  <rect x="50" y="950" width="1300" height="280" class="alt-box"/>
+  <text x="70" y="970" class="alt-label">[alt] Mot de passe incorrect</text>
+  
+  <!-- Échec authentification -->
+  <line x1="150" y1="1000" x2="390" y2="1000" class="message"/>
+  <text x="270" y="990" class="message-text">Soumet mauvais password</text>
+  
+  <rect x="380" y="1000" width="20" height="80" class="activation"/>
+  
+  <line x1="390" y1="1020" x2="630" y2="1020" class="message"/>
+  <text x="510" y="1010" class="message-text">POST /api/auth/login</text>
+  
+  <rect x="620" y="1020" width="20" height="80" class="activation"/>
+  
+  <line x1="630" y1="1040" x2="870" y2="1040" class="message"/>
+  <text x="750" y="1030" class="message-text">authenticate_user()</text>
+  
+  <rect x="860" y="1040" width="20" height="80" class="activation"/>
+  
+  <line x1="870" y1="1060" x2="1110" y2="1060" class="message"/>
+  <text x="990" y="1050" class="message-text">SELECT user</text>
+  
+  <rect x="1100" y="1060" width="20" height="40" class="activation"/>
+  
+  <line x1="1110" y1="1100" x2="870" y2="1100" class="message-return"/>
+  <text x="990" y="1090" class="message-text">User trouvé</text>
+  
+  <rect x="880" y="1110" width="180" height="30" class="note"/>
+  <text x="970" y="1130" class="note-text" text-anchor="middle">✗ bcrypt.checkpw() = False</text>
+  
+  <line x1="870" y1="1150" x2="630" y2="1150" class="message-return"/>
+  <text x="750" y="1140" class="message-text">False (échec)</text>
+  
+  <line x1="630" y1="1180" x2="390" y2="1180" class="message-return"/>
+  <text x="510" y="1170" class="message-text">401 Unauthorized</text>
+  <text x="510" y="1185" class="message-text">"Email ou mot de passe incorrect"</text>
+  
+  <line x1="390" y1="1210" x2="150" y2="1210" class="message-return"/>
+  <text x="270" y="1200" class="message-text">Affiche erreur</text>
+  
+  <!-- SCÉNARIO 3: VÉRIFICATION TOKEN -->
+  <text x="50" y="1280" class="section-title">SCÉNARIO 3: VÉRIFICATION TOKEN (Requête protégée)</text>
+  
+  <!-- Requête avec token -->
+  <line x1="150" y1="1310" x2="390" y2="1310" class="message"/>
+  <text x="270" y="1300" class="message-text">Accède à page protégée</text>
+  
+  <rect x="380" y="1310" width="20" height="80" class="activation"/>
+  
+  <line x1="390" y1="1330" x2="630" y2="1330" class="message"/>
+  <text x="510" y="1320" class="message-text">GET /api/patients</text>
+  <text x="510" y="1335" class="message-text">Authorization: Bearer token</text>
+  
+  <rect x="620" y="1330" width="20" height="120" class="activation"/>
+  
+  <!-- Vérification token -->
+  <line x1="630" y1="1360" x2="870" y2="1360" class="message"/>
+  <text x="750" y="1350" class="message-text">get_current_user(token)</text>
+  
+  <rect x="860" y="1360" width="20" height="100" class="activation"/>
+  
+  <rect x="880" y="1370" width="180" height="40" class="note"/>
+  <text x="970" y="1385" class="note-text" text-anchor="middle">jwt.decode(token)</text>
+  <text x="970" y="1400" class="note-text" text-anchor="middle">✓ Token valide</text>
+  
+  <line x1="870" y1="1420" x2="1110" y2="1420" class="message"/>
+  <text x="990" y="1410" class="message-text">SELECT user WHERE email</text>
+  
+  <rect x="1100" y="1420" width="20" height="40" class="activation"/>
+  
+  <line x1="1110" y1="1460" x2="870" y2="1460" class="message-return"/>
+  <text x="990" y="1450" class="message-text">User actif</text>
+  
+  <line x1="870" y1="1480" x2="630" y2="1480" class="message-return"/>
+  <text x="750" y="1470" class="message-text">User authentifié</text>
+  
+  <line x1="630" y1="1510" x2="390" y2="1510" class="message-return"/>
+  <text x="510" y="1500" class="message-text">200 OK + Données</text>
+  
+  <line x1="390" y1="1540" x2="150" y2="1540" class="message-return"/>
+  <text x="270" y="1530" class="message-text">Affiche données</text>
+  
+  <!-- INFORMATIONS TECHNIQUES -->
+  <rect x="50" y="1600" width="1300" height="140" fill="white" stroke="#4F46E5" stroke-width="2" rx="10" filter="url(#shadow)"/>
+  
+  <text x="700" y="1630" class="section-title" text-anchor="middle">INFORMATIONS TECHNIQUES</text>
+  
+  <text x="70" y="1660" class="message-text">
+    <tspan font-weight="bold">Algorithme JWT:</tspan> HS256 (HMAC-SHA256)
+  </text>
+  <text x="70" y="1680" class="message-text">
+    <tspan font-weight="bold">Durée validité token:</tspan> 1440 minutes (24 heures)
+  </text>
+  <text x="70" y="1700" class="message-text">
+    <tspan font-weight="bold">Hash mot de passe:</tspan> bcrypt avec salt automatique
+  </text>
+  <text x="70" y="1720" class="message-text">
+    <tspan font-weight="bold">Stockage token:</tspan> localStorage (frontend) - Sécurisé HTTPS uniquement
+  </text>
+  
+  <text x="700" y="1770" class="subtitle" text-anchor="middle">SANTÉ PLUS - Clinique Privée - Cotonou, Bénin</text>
+  
+</svg>

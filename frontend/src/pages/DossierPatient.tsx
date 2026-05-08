@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, Activity, FileText, Pill, AlertCircle, User, Phone, Mail, MapPin, Cake, Edit } from 'lucide-react';
+import { ArrowLeft, Calendar, Activity, FileText, Pill, AlertCircle, User, Phone, Mail, MapPin, Cake, Edit, Brain, CheckCircle, XCircle, Droplet } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { patientsAPI, consultationsAPI } from '../services/api';
 
@@ -18,13 +18,21 @@ interface Patient {
   antecedents_medicaux?: string;
 }
 
+interface DiagnosticInfo {
+  nom_maladie: string;
+  certitude: number;
+  statut: string;
+  description?: string;
+  date_validation?: string;
+}
+
 interface Consultation {
   consultation_id: number;
-  date_heure: string;  // Utiliser date_heure au lieu de date
+  date_heure: string;
   motif: string;
   statut: string;
   medecin_nom?: string;
-  diagnostic?: string;
+  diagnostic?: DiagnosticInfo | null;
 }
 
 const DossierPatient = () => {
@@ -329,14 +337,67 @@ const DossierPatient = () => {
                         </div>
                       )}
 
-                      {consultation.diagnostic && (
-                        <div style={{ marginTop: '12px', padding: '12px', background: '#F3F4F6', borderRadius: '6px' }}>
-                          <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: 600, marginBottom: '4px' }}>
-                            DIAGNOSTIC
+                      {consultation.diagnostic ? (
+                        <div style={{ marginTop: '14px', padding: '14px 16px', background: 'linear-gradient(135deg, #EEF2FF, #F5F3FF)', borderRadius: '10px', border: '1px solid #C7D2FE' }}>
+                          {/* Header diagnostic */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <Brain size={14} style={{ color: '#4F46E5' }} />
+                              <span style={{ fontSize: '11px', fontWeight: 700, color: '#4F46E5', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                                Diagnostic IA
+                              </span>
+                            </div>
+                            <span style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '4px',
+                              padding: '2px 10px', borderRadius: '10px', fontSize: '11px', fontWeight: 700,
+                              background: consultation.diagnostic.statut === 'CONFIRMÉ' ? '#D1FAE5' : consultation.diagnostic.statut === 'REJETÉ' ? '#FEE2E2' : '#FEF3C7',
+                              color: consultation.diagnostic.statut === 'CONFIRMÉ' ? '#065F46' : consultation.diagnostic.statut === 'REJETÉ' ? '#991B1B' : '#92400E',
+                            }}>
+                              {consultation.diagnostic.statut === 'CONFIRMÉ'
+                                ? <><CheckCircle size={11} /> Confirmé</>
+                                : consultation.diagnostic.statut === 'REJETÉ'
+                                ? <><XCircle size={11} /> Rejeté</>
+                                : 'Provisoire'}
+                            </span>
                           </div>
-                          <div style={{ fontSize: '13px', color: '#1F2937' }}>
-                            {consultation.diagnostic}
+
+                          {/* Maladie + certitude */}
+                          <div style={{ fontSize: '17px', fontWeight: 800, color: '#3730A3', marginBottom: '8px' }}>
+                            {consultation.diagnostic.nom_maladie}
                           </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                            <span style={{ fontSize: '12px', color: '#6B7280' }}>Certitude :</span>
+                            <div style={{ flex: 1, height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
+                              <div style={{
+                                height: '100%',
+                                width: `${consultation.diagnostic.certitude}%`,
+                                background: consultation.diagnostic.certitude >= 70 ? 'linear-gradient(90deg,#10B981,#059669)' : consultation.diagnostic.certitude >= 50 ? 'linear-gradient(90deg,#F59E0B,#D97706)' : 'linear-gradient(90deg,#EF4444,#DC2626)',
+                                borderRadius: '3px', transition: 'width 0.6s ease'
+                              }} />
+                            </div>
+                            <strong style={{ fontSize: '13px', color: consultation.diagnostic.certitude >= 70 ? '#059669' : consultation.diagnostic.certitude >= 50 ? '#D97706' : '#DC2626' }}>
+                              {consultation.diagnostic.certitude}%
+                            </strong>
+                          </div>
+
+                          {/* Description */}
+                          {consultation.diagnostic.description && (
+                            <div style={{ fontSize: '12px', color: '#374151', lineHeight: 1.5, padding: '8px 10px', background: 'rgba(255,255,255,0.7)', borderRadius: '6px', marginBottom: '6px' }}>
+                              {consultation.diagnostic.description}
+                            </div>
+                          )}
+
+                          {/* Date validation */}
+                          {consultation.diagnostic.date_validation && (
+                            <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '6px' }}>
+                              <Calendar size={10} style={{ display: 'inline', marginRight: '4px' }} />
+                              Validé le {new Date(consultation.diagnostic.date_validation).toLocaleDateString('fr-FR')}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div style={{ marginTop: '10px', padding: '10px 14px', background: '#F9FAFB', borderRadius: '8px', border: '1px dashed #D1D5DB' }}>
+                          <span style={{ fontSize: '12px', color: '#9CA3AF', fontStyle: 'italic' }}>Aucun diagnostic enregistré pour cette consultation</span>
                         </div>
                       )}
                     </div>
