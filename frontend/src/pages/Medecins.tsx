@@ -9,7 +9,13 @@ const SPECIALITES = [
   "Chirurgie Générale", "Neurologie", "Ophtalmologie", "Dermatologie", 
   "Radiologie", "Anesthésiologie", "Rhumatologie", "Urologie", "ORL", 
   "Psychiatrie", "Pneumologie", "Endocrinologie", "Infectiologie", 
-  "Gastro-entérologie", "Hématologie", "Oncologie"
+  "Gastro-entérologie", "Hématologie", "Oncologie", "Néphrologie",
+  "Médecine Interne", "Médecine d'Urgence", "Gériatrie", "Stomatologie",
+  "Chirurgie Orthopédique", "Chirurgie Cardiaque", "Chirurgie Vasculaire",
+  "Chirurgie Pédiatrique", "Chirurgie Plastique", "Neurochirurgie",
+  "Allergologie", "Médecine du Travail", "Médecine Physique et Réadaptation",
+  "Médecine Nucléaire", "Génétique Médicale", "Anatomopathologie",
+  "Biologie Médicale", "Santé Publique", "Réanimation", "Addictologie"
 ];
 
 const Medecins = () => {

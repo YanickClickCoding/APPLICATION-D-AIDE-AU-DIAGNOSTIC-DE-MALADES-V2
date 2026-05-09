@@ -376,6 +376,13 @@ body.sp-body {
     margin-bottom: 28px;
 }
 
+.sp-dashboard-main-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
 .sp-stat-card {
     background: #fff;
     border-radius: var(--sp-radius);
@@ -1192,4 +1199,169 @@ body.sp-auth::after {
 .sp-form-input:focus {
     border-color: var(--sp-primary);
     box-shadow: 0 0 0 3px rgba(10, 75, 140, 0.1);
+}
+
+/* ============================================
+   RESPONSIVE DESIGN — Mobile & Tablet
+   ============================================ */
+
+/* Overlay pour mobile */
+.sp-sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 95;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (max-width: 1024px) {
+    :root {
+        --sp-sidebar-w: 260px;
+    }
+}
+
+@media (max-width: 991px) {
+    .sp-sidebar {
+        transform: translateX(-100%);
+        width: 280px;
+        z-index: 1000;
+        visibility: hidden;
+    }
+    
+    .sp-sidebar.open {
+        transform: translateX(0);
+        visibility: visible;
+    }
+    
+    .sp-main {
+        margin-left: 0;
+        width: 100%;
+        transition: filter 0.3s ease;
+    }
+
+    .sp-main.sidebar-open {
+        filter: blur(5px);
+        pointer-events: none;
+        user-select: none;
+    }
+    
+    .sp-menu-toggle {
+        display: flex;
+    }
+    
+    .sp-topbar {
+        padding: 0 16px;
+    }
+    
+    .sp-breadcrumb-home, .sp-breadcrumb-sep {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .sp-page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    
+    .sp-page-header > div:last-child {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .sp-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .sp-stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .sp-dashboard-main-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .sp-stat-card {
+        padding: 14px;
+        gap: 10px;
+    }
+    
+    .sp-stat-icon {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .sp-stat-value {
+        font-size: 28px;
+    }
+    
+    .sp-number-xl {
+        font-size: 28px !important;
+    }
+
+    .sp-stat-label {
+        font-size: 10px;
+    }
+    
+    .sp-content {
+        padding: 20px 16px;
+    }
+    
+    .sp-date-display {
+        display: none;
+    }
+    
+    .sp-topbar-right {
+        gap: 8px;
+    }
+    
+    .sp-role-badge {
+        padding: 3px 8px;
+        font-size: 10px;
+    }
+
+    /* Grid adaptation */
+    .sp-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .sp-card-header {
+        padding: 14px 16px;
+    }
+
+    .sp-toolbar {
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    .sp-search-box {
+        width: 100%;
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .sp-page-title {
+        font-size: 22px;
+    }
+    
+    .sp-stat-value {
+        font-size: 32px;
+    }
+    
+    .sp-number-xl {
+        font-size: 32px !important;
+    }
 }

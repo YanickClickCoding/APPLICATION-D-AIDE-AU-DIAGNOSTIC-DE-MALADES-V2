@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/Toast';
 import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle, CheckCircle, Loader } from 'lucide-react';
 
 const Login = () => {
   const { login } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState('');
@@ -33,8 +35,12 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      const user = await login(email, password);
       console.log('✅ Connexion réussie, redirection...');
+      
+      // Saluer l'utilisateur avec son nom
+      showToast(`Heureux de vous revoir, ${user.prenoms} ! Connexion réussie.`, "success");
+      
       // Navigation React Router (pas de reload)
       navigate('/', { replace: true });
     } catch (err: any) {

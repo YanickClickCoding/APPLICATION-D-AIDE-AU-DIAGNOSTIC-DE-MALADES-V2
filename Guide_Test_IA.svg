@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1400">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4f46e5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:1" />
+    </linearGradient>
+    <style>
+      .title { font: bold 32px 'Segoe UI', Roboto, sans-serif; fill: white; }
+      .subtitle { font: 16px 'Segoe UI', sans-serif; fill: rgba(255,255,255,0.8); }
+      .card-bg { fill: white; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.05)); }
+      .disease-name { font: bold 20px 'Segoe UI', sans-serif; fill: #1e293b; }
+      .label { font: bold 12px 'Segoe UI', sans-serif; fill: #64748b; text-transform: uppercase; }
+      .text { font: 14px 'Segoe UI', sans-serif; fill: #334155; }
+      .highlight { font: bold 14px 'Segoe UI', sans-serif; fill: #4f46e5; }
+      .icon-bg { fill: #f1f5f9; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1000" height="1400" fill="#f8fafc"/>
+  <rect width="1000" height="200" fill="url(#grad)"/>
+  
+  <text x="50" y="80" class="title">Guide de Test IA - 10 Maladies Clés</text>
+  <text x="50" y="115" class="subtitle">Saisissez ces données dans les consultations pour obtenir un score de confiance élevé (>90%)</text>
+
+  <!-- 1. Paludisme -->
+  <g transform="translate(50, 230)">
+    <rect width="430" height="200" rx="15" class="card-bg"/>
+    <text x="25" y="40" class="disease-name">1. Paludisme (Malaria)</text>
+    <text x="25" y="70" class="label">Symptômes :</text>
+    <text x="25" y="90" class="text">Frissons, Maux de tête, Douleurs articulaires, Fatigue</text>
+    <text x="25" y="125" class="label">Signes Vitaux :</text>
+    <text x="25" y="145" class="highlight">Température: 39.5°C</text>
+    <text x="25" y="175" class="label">Examen :</text>
+    <text x="90" y="175" class="text">Goutte Épaisse (GE) = Positif</text>
+  </g>
+
+  <!-- 2. Diabète Type 2 -->
+  <g transform="translate(520, 230)">
+    <rect width="430" height="200" rx="15" class="card-bg"/>
+    <text x="25" y="40" class="disease-name">2. Diabète Type 2</text>
+    <text x="25" y="70" class="label">Symptômes :</text>
+    <text x="25" y="90" class="text">Soif excessive (polydipsie), Urines fréquentes, Faim</text>
+    <text x="25" y="125" class="label">Signes Vitaux :</text>
+    <text x="25" y="145" class="highlight">IMC: 32.5 (Obésité)</text>
+    <text x="25" y="175" class="label">Examen :</text>
+    <text x="90" y="175" class="text">Glucose à jeun = 180 mg/dL</text>
+  </g>
+
+  <!-- 3. Hypertension Artérielle -->
+  <g transform="translate(50, 450)">
+    <rect width="430" height="200" rx="15" class="card-bg"/>
+    <text x="25" y="40" class="disease-name">3. Hypertension Artérielle</text>
+    <text x="25" y="70" class="label">Symptômes :</text>
+    <text x="25" y="90" class="text">Bourdonnements d'oreilles, Vertiges, Vision floue</text>
+    <text x="25" y="125" class="label">Signes Vitaux :</text>
+    <text x="25" y="145" class="highlight">Tension: 165 / 105 mmHg</text>
+    <text x="25" y="175" class="label">Examen :</text>
+    <text x="90" y="175" class="text">Rien de spécifique nécessaire</text>
+  </g>
+
+  <!-- 4. Infection Urinaire -->
+  <g transform="translate(520, 450)">
+    <rect width="430" height="200" rx="15" class="card-bg"/>
+    <text x="25" y="40" class="disease-name">4. Infection Urinaire</text>
+    <text x="25" y="70" class="label">Symptômes :</text>
+    <text x="25" y="90" class="text">Brûlures urinaires, Douleurs pelviennes, Urgence</text>
+    <text x="25" y="125" class="label">Signes Vitaux :</text>
+    <text x="25" y="145" class="highlight">Température: 38.2°C</text>
+    <text x="25" y="175" class="label">Examen :</text>
+    <text x="90" y="175" class="text">Globules Blancs (Urine) = Élevés</text>
+  </g>
+
+  <!-- 5. Grippe Saisonnière -->
+  <g transform="translate(50, 670)">
+    <rect width="430" height="200" rx="15" class="card-bg"/>
+    <text x="25" y="40" class="disease-name">5. Grippe Saisonnière</text>
+    <text x="25" y="70" class="label">Symptômes :</text>
+    <text x="25" y="90" class="text">Toux sèche, Nez qui coule, Courbatures, Éternuements</text>
+    <text x="25" y="125" class="label">Signes Vitaux :</text>
+    <text x="25" y="145" class="highlight">Fréq. Resp: 22 /min | Temp: 38.8°C</text>
+    <text x="25" y="175" class="label">Examen :</text>
+    <text x="90" y="175" class="text">CRP = Légèrement élevée (15 mg/L)</text>
+  </g>
+
+  <!-- 6. Asthme (Crise) -->
+  <g transform="translate(520, 670)">
+    <rect width="430" height="200" rx="15" class="card-bg"/>
+    <text x="25" y="40" class="disease-name">6. Asthme (Crise)</text>
+    <text x="25" y="70" class="label">Symptômes :</text>
+    <text x="25" y="90" class="text">Sifflement respiratoire, Essoufflement, Oppression</text>
+    <text x="25" y="125" class="label">Signes Vitaux :</text>
+    <text x="25" y="145" class="highlight">Sat. O2: 92% | Fréq. Resp: 28 /min</text>
+    <text x="25" y="175" class="label">Examen :</text>
+    <text x="90" y="175" class="text">Radio thorax (optionnel)</text>
+  </g>
+
+  <!-- 7. Gastro-entérite -->
+  <g transform="translate(50, 890)">
+    <rect width="430" height="200" rx="15" class="card-bg"/>
+    <text x="25" y="40" class="disease-name">7. Gastro-entérite</text>
+    <text x="25" y="70" class="label">Symptômes :</text>
+    <text x="25" y="90" class="text">Nausées, Vomissements, Diarrhée, Crampes abdo.</text>
+    <text x="25" y="125" class="label">Signes Vitaux :</text>
+    <text x="25" y="145" class="highlight">Tension basse (90/60) | Pouls: 110 bpm</text>
+    <text x="25" y="175" class="label">Examen :</text>
+    <text x="90" y="175" class="text">Signes de déshydratation</text>
+  </g>
+
+  <!-- 8. Anémie Ferriprive -->
+  <g transform="translate(520, 890)">
+    <rect width="430" height="200" rx="15" class="card-bg"/>
+    <text x="25" y="40" class="disease-name">8. Anémie Ferriprive</text>
+    <text x="25" y="70" class="label">Symptômes :</text>
+    <text x="25" y="90" class="text">Pâleur, Ongles cassants, Essoufflement à l'effort</text>
+    <text x="25" y="125" class="label">Signes Vitaux :</text>
+    <text x="25" y="145" class="highlight">Fréq. Cardiaque: 95 bpm (repos)</text>
+    <text x="25" y="175" class="label">Examen :</text>
+    <text x="90" y="175" class="highlight">Hémoglobine = 8.5 g/dL</text>
+  </g>
+
+  <!-- 9. Pneumonie -->
+  <g transform="translate(50, 1110)">
+    <rect width="430" height="200" rx="15" class="card-bg"/>
+    <text x="25" y="40" class="disease-name">9. Pneumonie</text>
+    <text x="25" y="70" class="label">Symptômes :</text>
+    <text x="25" y="90" class="text">Toux avec glaires, Douleur thorax, Confusion</text>
+    <text x="25" y="125" class="label">Signes Vitaux :</text>
+    <text x="25" y="145" class="highlight">Temp: 39.8°C | Sat. O2: 89%</text>
+    <text x="25" y="175" class="label">Examen :</text>
+    <text x="90" y="175" class="text">Globules Blancs = 18,000 /µL</text>
+  </g>
+
+  <!-- 10. Fièvre Typhoïde -->
+  <g transform="translate(520, 1110)">
+    <rect width="430" height="200" rx="15" class="card-bg"/>
+    <text x="25" y="40" class="disease-name">10. Fièvre Typhoïde</text>
+    <text x="25" y="70" class="label">Symptômes :</text>
+    <text x="25" y="90" class="text">Fièvre en escalier, Taches rosées, Constipation</text>
+    <text x="25" y="125" class="label">Signes Vitaux :</text>
+    <text x="25" y="145" class="highlight">Temp: 40.1°C | Pouls lent relatif</text>
+    <text x="25" y="175" class="label">Examen :</text>
+    <text x="90" y="175" class="text">Widal (ou Hémoculture) = Positif</text>
+  </g>
+
+  <rect x="50" y="1330" width="900" height="40" rx="10" fill="#eff6ff"/>
+  <text x="500" y="1355" text-anchor="middle" font="bold 14px 'Segoe UI', sans-serif" fill="#1d4ed8">ASTUCE : Remplissez TOUJOURS au moins 3 symptômes ET les signes vitaux pour un score optimal.</text>
+
+</svg>

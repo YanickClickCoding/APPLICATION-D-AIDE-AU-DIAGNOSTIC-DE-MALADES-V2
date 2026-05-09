@@ -5,6 +5,7 @@ Tous les endpoints sont protégés : token JWT admin requis.
 import os
 import platform
 import threading
+import logging
 from datetime import datetime
 from typing import Dict, List, Optional
 
@@ -67,6 +68,8 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=6)
     role: str = Field("medecin", pattern="^(admin|medecin|infirmier)$")
+    specialite: Optional[str] = None
+    telephone: Optional[str] = None
 
 class UserUpdate(BaseModel):
     nom: Optional[str] = Field(None, min_length=1, max_length=100)
@@ -240,8 +243,8 @@ def create_user(
             db.add(Medecin(
                 nom=data.nom,
                 prenoms=data.prenoms,
-                specialite="Médecin Général",
-                telephone="N/A",
+                specialite=data.specialite or "Médecin Général",
+                telephone=data.telephone or "N/A",
                 disponible=True,
             ))
 
@@ -576,9 +579,33 @@ def cleanup_logs(admin: User = Depends(get_current_admin)):
     if not os.path.exists(log_file):
         return {"message": "Fichier de log introuvable", "done": False}
     try:
-        open(log_file, "w").close()
-        return {"message": "Logs vidés", "done": True}
-    except OSError as exc:
+        # Fermer les handlers existants pour libérer le fichier (important sur Windows)
+        for handler in logging.root.handlers[:]:
+            if isinstance(handler, logging.FileHandler):
+                handler.close()
+                logging.root.removeHandler(handler)
+        
+        # Vider le fichier
+        with open(log_file, "w", encoding="utf-8") as f:
+            f.write(f"--- Logs réinitialisés le {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ---\n")
+        
+        # Réinitialiser le logging
+        from ..utils.logger import setup_logging
+        from ..config import settings
+        setup_logging(log_level=settings.LOG_LEVEL, log_file=settings.LOG_FILE)
+        
+        logger = logging.getLogger(__name__)
+        logger.info("♻️ Système de logs réinitialisé après nettoyage")
+        
+        return {"message": "Logs vidés et système de logging redémarré", "done": True}
+    except Exception as exc:
+        # Tenter de restaurer le logging en cas d'erreur
+        try:
+            from ..utils.logger import setup_logging
+            from ..config import settings
+            setup_logging(log_level=settings.LOG_LEVEL, log_file=settings.LOG_FILE)
+        except:
+            pass
         raise HTTPException(status_code=500, detail=str(exc))
 
 

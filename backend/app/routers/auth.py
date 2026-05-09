@@ -242,6 +242,14 @@ async def login(
     
     logger.info(f"✅ Connexion réussie: {user.email} ({user.role})")
     
+    # Récupérer l'ID médecin si c'est un médecin
+    medecin_id = None
+    if user.role == "medecin":
+        from ..models.medecin import Medecin
+        med = db.query(Medecin).filter(Medecin.nom == user.nom, Medecin.prenoms == user.prenoms).first()
+        if med:
+            medecin_id = med.medecin_id
+
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -251,7 +259,8 @@ async def login(
             "prenoms": user.prenoms,
             "email": user.email,
             "role": user.role,
-            "actif": user.actif
+            "actif": user.actif,
+            "medecin_id": medecin_id
         }
     }
 
@@ -290,6 +299,14 @@ async def login_form(
     user.last_login = datetime.now()
     db.commit()
     
+    # Récupérer l'ID médecin si c'est un médecin
+    medecin_id = None
+    if user.role == "medecin":
+        from ..models.medecin import Medecin
+        med = db.query(Medecin).filter(Medecin.nom == user.nom, Medecin.prenoms == user.prenoms).first()
+        if med:
+            medecin_id = med.medecin_id
+
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -299,7 +316,8 @@ async def login_form(
             "prenoms": user.prenoms,
             "email": user.email,
             "role": user.role,
-            "actif": user.actif
+            "actif": user.actif,
+            "medecin_id": medecin_id
         }
     }
 
@@ -343,6 +361,14 @@ async def refresh_token(current_user: User = Depends(get_current_active_user)):
     
     logger.info(f"Token rafraîchi: {current_user.email}")
     
+    # Récupérer l'ID médecin si c'est un médecin
+    medecin_id = None
+    if current_user.role == "medecin":
+        from ..models.medecin import Medecin
+        med = db.query(Medecin).filter(Medecin.nom == current_user.nom, Medecin.prenoms == current_user.prenoms).first()
+        if med:
+            medecin_id = med.medecin_id
+
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -352,6 +378,7 @@ async def refresh_token(current_user: User = Depends(get_current_active_user)):
             "prenoms": current_user.prenoms,
             "email": current_user.email,
             "role": current_user.role,
-            "actif": current_user.actif
+            "actif": current_user.actif,
+            "medecin_id": medecin_id
         }
     }

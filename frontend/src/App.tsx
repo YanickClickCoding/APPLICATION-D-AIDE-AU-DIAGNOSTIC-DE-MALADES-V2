@@ -23,14 +23,15 @@ const PrivateRoute = ({ children, adminOnly = false, medicalOnly = false, noInfi
   const { isAuthenticated, isAdmin, user } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (adminOnly && !isAdmin) return <Navigate to="/" replace />;
-  if (medicalOnly && user?.role !== 'medecin' && user?.role !== 'infirmier') return <Navigate to="/consultations" replace />;
+  if (medicalOnly && !isAdmin && user?.role !== 'medecin' && user?.role !== 'infirmier') return <Navigate to="/consultations" replace />;
   if (noInfirmier && !isAdmin && user?.role !== 'medecin') return <Navigate to="/" replace />;
   return <>{children}</>;
 };
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
   const location = useLocation();
   const { user, isAdmin, logout } = useAuth();
+  const [showConfirm, setShowConfirm] = React.useState(false);
   
   useEffect(() => {
     // @ts-ignore
@@ -41,7 +42,7 @@ const Sidebar = () => {
   }, [location.pathname]); // Seulement quand la route change
   
   return (
-    <div className="sp-sidebar" id="sidebar">
+    <div className={`sp-sidebar ${isOpen ? 'open' : ''}`} id="sidebar">
       <div className="sp-logo-area">
           <div className="sp-logo-icon">
               <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
@@ -60,12 +61,12 @@ const Sidebar = () => {
           <div className="sp-nav-label">Navigation</div>
           <nav>
               {/* Tableau de bord — admin ET médecin */}
-              <Link to="/" className={`sp-nav-item ${location.pathname === '/' ? 'active' : ''}`}>
+              <Link to="/" className={`sp-nav-item ${location.pathname === '/' ? 'active' : ''}`} onClick={onClose}>
                   <i data-feather="grid"></i>
                   <span>Tableau de bord</span>
               </Link>
 
-              <Link to="/consultations" className={`sp-nav-item ${location.pathname === '/consultations' ? 'active' : ''}`}>
+              <Link to="/consultations" className={`sp-nav-item ${location.pathname === '/consultations' ? 'active' : ''}`} onClick={onClose}>
                   <Calendar size={18} />
                   <span>Consultations</span>
               </Link>
@@ -73,11 +74,11 @@ const Sidebar = () => {
               {/* Nav médecin */}
               {!isAdmin && user?.role === 'medecin' && (
                 <>
-                  <Link to="/mes-patients" className={`sp-nav-item ${location.pathname === '/mes-patients' ? 'active' : ''}`}>
+                  <Link to="/mes-patients" className={`sp-nav-item ${location.pathname === '/mes-patients' ? 'active' : ''}`} onClick={onClose}>
                       <User size={18} />
                       <span>Mes Patients</span>
                   </Link>
-                  <Link to="/diagnostics" className={`sp-nav-item ${location.pathname === '/diagnostics' ? 'active' : ''}`}>
+                  <Link to="/diagnostics" className={`sp-nav-item ${location.pathname === '/diagnostics' ? 'active' : ''}`} onClick={onClose}>
                       <Brain size={18} />
                       <span>Diagnostics IA</span>
                   </Link>
@@ -87,27 +88,27 @@ const Sidebar = () => {
               {/* Nav admin */}
               {isAdmin && (
                 <>
-                  <Link to="/mes-patients" className={`sp-nav-item ${location.pathname === '/mes-patients' ? 'active' : ''}`}>
+                  <Link to="/mes-patients" className={`sp-nav-item ${location.pathname === '/mes-patients' ? 'active' : ''}`} onClick={onClose}>
                       <User size={18} />
                       <span>Mes Patients</span>
                   </Link>
-                  <Link to="/diagnostics" className={`sp-nav-item ${location.pathname === '/diagnostics' ? 'active' : ''}`}>
+                  <Link to="/diagnostics" className={`sp-nav-item ${location.pathname === '/diagnostics' ? 'active' : ''}`} onClick={onClose}>
                       <Brain size={18} />
                       <span>Diagnostics IA</span>
                   </Link>
-                  <Link to="/personnel" className={`sp-nav-item ${location.pathname === '/personnel' ? 'active' : ''}`}>
+                  <Link to="/personnel" className={`sp-nav-item ${location.pathname === '/personnel' ? 'active' : ''}`} onClick={onClose}>
                       <UserCheck size={18} />
                       <span>Personnel Médical</span>
                   </Link>
-                  <Link to="/utilisateurs" className={`sp-nav-item ${location.pathname === '/utilisateurs' ? 'active' : ''}`}>
+                  <Link to="/utilisateurs" className={`sp-nav-item ${location.pathname === '/utilisateurs' ? 'active' : ''}`} onClick={onClose}>
                       <Users size={18} />
                       <span>Utilisateurs</span>
                   </Link>
-                  <Link to="/identifiants" className={`sp-nav-item ${location.pathname === '/identifiants' ? 'active' : ''}`}>
+                  <Link to="/identifiants" className={`sp-nav-item ${location.pathname === '/identifiants' ? 'active' : ''}`} onClick={onClose}>
                       <i data-feather="key"></i>
                       <span>Identifiants</span>
                   </Link>
-                  <Link to="/admin/systeme" className={`sp-nav-item ${location.pathname === '/admin/systeme' ? 'active' : ''}`}>
+                  <Link to="/admin/systeme" className={`sp-nav-item ${location.pathname === '/admin/systeme' ? 'active' : ''}`} onClick={onClose}>
                       <Settings size={18} />
                       <span>Système</span>
                   </Link>
@@ -129,10 +130,26 @@ const Sidebar = () => {
                   </div>
               </div>
           </div>
-          <button onClick={logout} className="sp-logout-btn" style={{ width: '100%', border: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center' }}>
+          <button onClick={() => setShowConfirm(true)} className="sp-logout-btn" style={{ width: '100%', border: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center' }}>
               <LogOut size={18} />
               <span>Déconnexion</span>
           </button>
+
+          {showConfirm && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+              <div className="sp-card" style={{ width: '320px', padding: '24px', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+                <div style={{ background: '#FEE2E2', color: '#EF4444', width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                  <LogOut size={24} />
+                </div>
+                <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 700, color: '#1F2937' }}>Déconnexion</h3>
+                <p style={{ margin: '0 0 24px', fontSize: '14px', color: '#6B7280' }}>Êtes-vous sûr de vouloir vous déconnecter ?</p>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button className="sp-btn sp-btn-outline" style={{ flex: 1 }} onClick={() => setShowConfirm(false)}>Annuler</button>
+                  <button className="sp-btn" style={{ flex: 1, background: '#EF4444', color: '#fff' }} onClick={() => { logout(); onClose(); }}>Déconnexion</button>
+                </div>
+              </div>
+            </div>
+          )}
       </div>
     </div>
   );
@@ -143,8 +160,10 @@ interface PendingConsult { consultation_id: number; nom_patient: string; motif: 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { isAdmin, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [pendingList, setPendingList] = React.useState<PendingConsult[]>([]);
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const bellRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -188,11 +207,20 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   
   return (
     <>
-      <Sidebar />
-      <div className="sp-main">
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      {/* Overlay pour fermer le menu sur mobile + flou arrière-plan */}
+      {sidebarOpen && <div className="sp-sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+      
+      <div className={`sp-main ${sidebarOpen ? 'sidebar-open' : ''}`}>
           {/* Top Bar */}
           <div className="sp-topbar">
               <div className="sp-topbar-left">
+                  <button 
+                    className="sp-menu-toggle" 
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                  >
+                    <i data-feather="menu"></i>
+                  </button>
                   <div className="sp-breadcrumb">
                       <span className="sp-breadcrumb-home">Accueil</span>
                       <span className="sp-breadcrumb-sep">›</span>

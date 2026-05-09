@@ -169,8 +169,9 @@ const Dashboard = () => {
               <div>
                   {recent.map(row => {
                     const mName = getMedecinName(row.medecin_id);
-                    const sc: Record<string, string> = { 'en attente': 'attente', 'en cours': 'cours', 'terminée': 'terminee' };
+                    const sc: Record<string, string> = { 'en attente': 'attente', 'en cours': 'cours', 'terminée': 'terminee', 'en_attente_medecin': 'attente' };
                     const cls = sc[row.statut] || 'attente';
+                    const label = row.statut === 'en_attente_medecin' ? 'Att. médecin' : row.statut;
                     
                     return (
                       <div key={row.consultation_id} style={{display:'flex', alignItems:'center', gap:'14px', padding:'13px 20px', borderBottom:'1px solid var(--sp-gray-100)'}}>
@@ -185,7 +186,7 @@ const Dashboard = () => {
                                   {new Date(row.date_heure).toLocaleString('fr-FR')} {mName && `· ${mName}`}
                               </div>
                           </div>
-                          <span className={`sp-badge ${cls}`} style={{ fontSize: '10px' }}>{row.statut}</span>
+                          <span className={`sp-badge ${cls}`} style={{ fontSize: '10px' }}>{label}</span>
                       </div>
                     );
                   })}

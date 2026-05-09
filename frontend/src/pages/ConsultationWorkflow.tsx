@@ -7,7 +7,7 @@ import {
   ArrowRight, ArrowLeft, X, AlertCircle, Thermometer,
   Heart, Wind, Droplet, Weight, Ruler, FlaskConical,
   Pill, Calendar, Plus, Lightbulb, RefreshCw, ClipboardList,
-  UserCheck, Send
+  UserCheck, Send, Search
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -170,7 +170,8 @@ export default function ConsultationWorkflow() {
 
   const reprendreId = searchParams.get('reprendre');
   const isInfirmier = user?.role === 'infirmier';
-  const isReprendre = !!reprendreId && !isInfirmier;
+  const isAdmin = user?.role === 'admin';
+  const isReprendre = !!reprendreId && !isInfirmier && !isAdmin;
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -178,8 +179,16 @@ export default function ConsultationWorkflow() {
 
   // État infirmier
   const [medecinId, setMedecinId] = useState<number | null>(null);
+  const [medecinSearch, setMedecinSearch] = useState('');
   const [medecins, setMedecins] = useState<{ id: number; nom: string; prenoms: string; specialite?: string }[]>([]);
   const [infirmierSubmitted, setInfirmierSubmitted] = useState(false);
+
+  // Auto-affectation si le compte est un médecin
+  useEffect(() => {
+    if (user?.role === 'medecin' && user.medecin_id) {
+      setMedecinId(user.medecin_id);
+    }
+  }, [user]);
 
   // State par étape
   const [patient, setPatient] = useState<PatientData>({ nom: '', prenoms: '', date_naissance: '', sexe: 'M', groupe_sanguin: '' });
@@ -195,6 +204,11 @@ export default function ConsultationWorkflow() {
   const [notesValidation, setNotesValidation] = useState('');
   const [ordonnance, setOrdonnance] = useState<MedicamentOrdonnance[]>([]);
   const [suivi, setSuivi] = useState<SuiviData>({ date_prochain_rdv: '', instructions_patient: '', notes_medecin: '' });
+
+  const filteredMedecins = medecins.filter(m => {
+    const term = medecinSearch.toLowerCase();
+    return (m.nom.toLowerCase().includes(term) || m.prenoms.toLowerCase().includes(term) || (m.specialite || '').toLowerCase().includes(term));
+  });
 
   // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -241,14 +255,14 @@ export default function ConsultationWorkflow() {
 
   // ── Effects ────────────────────────────────────────────────────────────────
 
-  // Infirmier : charger la liste des médecins
+  // Infirmier ou Admin : charger la liste des médecins
   useEffect(() => {
-    if (!isInfirmier) return;
+    if (!isInfirmier && !isAdmin) return;
     fetch('http://localhost:8000/api/analytics/personnel/disponible')
       .then(r => r.json())
       .then(d => setMedecins((d.medecins?.liste || []).map((m: any) => ({ id: m.id, nom: m.nom, prenoms: m.prenoms, specialite: m.specialite }))))
       .catch(() => {});
-  }, [isInfirmier]);
+  }, [isInfirmier, isAdmin]);
 
   // Médecin reprend une consultation existante
   useEffect(() => {
@@ -256,6 +270,13 @@ export default function ConsultationWorkflow() {
     fetch(`http://localhost:8000/api/consultations/${reprendreId}/donnees-resume`)
       .then(r => r.json())
       .then(d => {
+        // Vérification de sécurité : Seul le médecin affecté peut reprendre
+        if (user?.role === 'medecin' && user.medecin_id !== d.medecin_id) {
+          showToast("Désolé, vous n'êtes pas le médecin affecté à cette consultation.", 'error');
+          navigate('/consultations');
+          return;
+        }
+        
         if (d.patient) setPatient(p => ({ ...p, ...d.patient }));
         if (d.motif) setMotif(d.motif);
         if (d.symptomes?.length) {
@@ -349,7 +370,7 @@ export default function ConsultationWorkflow() {
     } finally { setLoading(false); }
   };
 
-  // Infirmier soumet les étapes 1-3 et notifie le médecin
+  // Infirmier ou Admin soumet les étapes 1-3 et notifie le médecin
   const handleSubmitInfirmier = async () => {
     if (!medecinId) { showToast('Veuillez sélectionner un médecin', 'error'); return; }
     setLoading(true);
@@ -444,7 +465,7 @@ export default function ConsultationWorkflow() {
               Les données ont été enregistrées et le médecin assigné a été notifié.
             </p>
             <p style={{ color: '#9CA3AF', marginBottom: '36px', fontSize: '13px' }}>
-              Le médecin pourra continuer à partir de l'étape Examens pour finaliser le diagnostic.
+              Le médecin pourra continuer à partir de l'étape {isAdmin || isInfirmier ? 'Examens' : 'Symptômes'} pour finaliser le diagnostic.
             </p>
             <button onClick={() => navigate('/consultations')} className="sp-btn sp-btn-primary">
               Retour aux consultations
@@ -465,7 +486,7 @@ export default function ConsultationWorkflow() {
             {isReprendre ? `Continuer la consultation #${reprendreId}` : 'Nouvelle Consultation'}
           </h1>
           <p className="sp-page-subtitle">
-            {isInfirmier ? 'Saisie infirmier · Étapes 1–3' : `Workflow assisté par IA · Étape ${step}/${TOTAL}`}
+            {isAdmin || isInfirmier ? 'Saisie initiale · Étapes 1–3' : `Workflow assisté par IA · Étape ${step}/${TOTAL}`}
           </p>
         </div>
       </div>
@@ -503,17 +524,30 @@ export default function ConsultationWorkflow() {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
                 <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1F2937' }}>Informations du Patient</h2>
-                {roleBadge('Accueil')}
+                {roleBadge(isAdmin ? 'Administrateur' : 'Accueil')}
               </div>
-              {/* Sélecteur médecin — infirmier uniquement */}
-              {isInfirmier && (
+              {/* Sélecteur médecin — infirmier ou admin */}
+              {(isInfirmier || isAdmin) && (
                 <div style={{ marginBottom: '20px', padding: '16px', background: '#EEF2FF', borderRadius: '10px', border: '1px solid #C7D2FE' }}>
                   <label className="sp-form-label" style={{ color: '#4338CA', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
                     <UserCheck size={14} />Médecin assigné <span style={{ color: '#EF4444' }}>*</span>
                   </label>
+                  
+                  <div style={{ position: 'relative', marginBottom: '10px' }}>
+                    <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }} />
+                    <input 
+                      type="text" 
+                      className="sp-form-input" 
+                      style={{ paddingLeft: '34px', height: '36px', fontSize: '13px' }}
+                      placeholder="Rechercher par nom ou spécialité..."
+                      value={medecinSearch}
+                      onChange={e => setMedecinSearch(e.target.value)}
+                    />
+                  </div>
+
                   <select className="sp-form-select" value={medecinId || ''} onChange={e => setMedecinId(Number(e.target.value) || null)}>
-                    <option value="">— Sélectionner un médecin —</option>
-                    {medecins.map(m => (
+                    <option value="">— {filteredMedecins.length === 0 ? 'Aucun médecin trouvé' : 'Sélectionner un médecin'} —</option>
+                    {filteredMedecins.map(m => (
                       <option key={m.id} value={m.id}>Dr. {m.prenoms} {m.nom}{m.specialite ? ` — ${m.specialite}` : ''}</option>
                     ))}
                   </select>
@@ -528,6 +562,7 @@ export default function ConsultationWorkflow() {
                 <textarea className="sp-form-textarea" rows={2} value={motif} onChange={e => setMotif(e.target.value)} placeholder="Raison de la visite aujourd'hui..." />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                {/* Patient fields loop */}
                 {[
                   { label: 'Nom', key: 'nom', type: 'text', required: true },
                   { label: 'Prénoms', key: 'prenoms', type: 'text', required: true },
@@ -537,7 +572,13 @@ export default function ConsultationWorkflow() {
                 ].map(f => (
                   <div key={f.key} className="sp-form-group">
                     <label className="sp-form-label">{f.label} {f.required && <span style={{ color: '#EF4444' }}>*</span>}</label>
-                    <input type={f.type} className="sp-form-input" value={(patient as any)[f.key] || ''} onChange={e => setPatient({ ...patient, [f.key]: e.target.value })} />
+                    <input 
+                      type={f.type} 
+                      className="sp-form-input" 
+                      max={f.type === 'date' ? new Date().toISOString().split('T')[0] : undefined}
+                      value={(patient as any)[f.key] || ''} 
+                      onChange={e => setPatient({ ...patient, [f.key]: e.target.value })} 
+                    />
                   </div>
                 ))}
                 <div className="sp-form-group">

@@ -516,6 +516,8 @@ export interface AdminUserCreate {
   email: string;
   password: string;
   role: 'admin' | 'medecin' | 'infirmier';
+  specialite?: string;
+  telephone?: string;
 }
 
 export interface AdminUserUpdate {

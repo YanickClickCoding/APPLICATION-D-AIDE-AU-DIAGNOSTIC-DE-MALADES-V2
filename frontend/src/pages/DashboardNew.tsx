@@ -237,8 +237,8 @@ const Dashboard = () => {
                   <RefreshCw size={18} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} /> 
                   Rafraîchir
               </button>
-              {user?.role === 'medecin' && (
-                <Link to="/consultations" className="sp-btn sp-btn-primary">
+              {(user?.role === 'admin' || user?.role === 'medecin' || user?.role === 'infirmier') && (
+                <Link to="/consultation/nouvelle" className="sp-btn sp-btn-primary">
                     <PlusCircle size={18} /> Nouvelle consultation
                 </Link>
               )}
@@ -260,7 +260,7 @@ const Dashboard = () => {
           <StatCard label="Taux d'approbation" value={statsData.tauxApprobation} icon={TrendingUp} accent="#F59E0B" bgIcon="#fef3c7" colorIcon="#D97706" />
       </div>
 
-      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:'20px'}} className="sp-fade-in">
+      <div className="sp-dashboard-main-grid sp-fade-in">
           {/* Personnel disponible */}
           <div className="sp-card">
               <div className="sp-card-header">
@@ -316,9 +316,9 @@ const Dashboard = () => {
               </div>
               <div>
                   {recentConsultations.map(row => {
-                    const sc: Record<string, string> = { 'en attente': 'attente', 'en cours': 'cours', 'terminée': 'terminee' };
+                    const sc: Record<string, string> = { 'en attente': 'attente', 'en cours': 'cours', 'terminée': 'terminee', 'en_attente_medecin': 'attente' };
                     const cls = sc[row.statut] || 'attente';
-                    const statutLabel: Record<string, string> = { 'en attente': 'En attente', 'en cours': 'En cours', 'terminée': 'Terminée' };
+                    const statutLabel: Record<string, string> = { 'en attente': 'En attente', 'en cours': 'En cours', 'terminée': 'Terminée', 'en_attente_medecin': 'Att. médecin' };
                     
                     return (
                       <div key={row.id} style={{display:'flex', alignItems:'center', gap:'14px', padding:'13px 20px', borderBottom:'1px solid var(--sp-gray-100)'}}>

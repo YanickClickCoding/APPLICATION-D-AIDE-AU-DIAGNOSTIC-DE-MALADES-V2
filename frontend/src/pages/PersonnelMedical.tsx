@@ -9,6 +9,20 @@ import { adminAPI, type AdminMedecin, type AdminMedecinCreate, type AdminInfirmi
 const EMPTY_MEDECIN: AdminMedecinCreate = { nom: '', prenoms: '', specialite: '', telephone: '', disponible: true };
 const EMPTY_INFIRMIER: AdminInfirmierCreate = { nom: '', prenoms: '', telephone: '', email: '', disponible: true };
 
+const SPECIALITES = [
+  "Médecine Générale", "Cardiologie", "Pédiatrie", "Gynécologie-Obstétrique", 
+  "Chirurgie Générale", "Neurologie", "Ophtalmologie", "Dermatologie", 
+  "Radiologie", "Anesthésiologie", "Rhumatologie", "Urologie", "ORL", 
+  "Psychiatrie", "Pneumologie", "Endocrinologie", "Infectiologie", 
+  "Gastro-entérologie", "Hématologie", "Oncologie", "Néphrologie",
+  "Médecine Interne", "Médecine d'Urgence", "Gériatrie", "Stomatologie",
+  "Chirurgie Orthopédique", "Chirurgie Cardiaque", "Chirurgie Vasculaire",
+  "Chirurgie Pédiatrique", "Chirurgie Plastique", "Neurochirurgie",
+  "Allergologie", "Médecine du Travail", "Médecine Physique et Réadaptation",
+  "Médecine Nucléaire", "Génétique Médicale", "Anatomopathologie",
+  "Biologie Médicale", "Santé Publique", "Réanimation", "Addictologie"
+];
+
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '8px 10px', border: '1px solid #D1D5DB',
   borderRadius: 6, fontSize: 13, boxSizing: 'border-box',
@@ -22,15 +36,12 @@ const PersonnelMedical = () => {
   const [activeTab, setActiveTab] = useState<'medecins' | 'infirmiers'>('medecins');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Create modals
-  const [createMedecinModal, setCreateMedecinModal] = useState(false);
-  const [createInfirmierModal, setCreateInfirmierModal] = useState(false);
-  const [createMedecinForm, setCreateMedecinForm] = useState<AdminMedecinCreate>(EMPTY_MEDECIN);
-  const [createInfirmierForm, setCreateInfirmierForm] = useState<AdminInfirmierCreate>(EMPTY_INFIRMIER);
-  const [createMedecinLoading, setCreateMedecinLoading] = useState(false);
-  const [createInfirmierLoading, setCreateInfirmierLoading] = useState(false);
-  const [createMedecinError, setCreateMedecinError] = useState('');
-  const [createInfirmierError, setCreateInfirmierError] = useState('');
+  // Create modal
+  const [createModal, setCreateModal] = useState(false);
+  const [createRole, setCreateRole] = useState<'medecin' | 'infirmier'>('medecin');
+  const [createForm, setCreateForm] = useState<any>(EMPTY_MEDECIN);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createError, setCreateError] = useState('');
 
   // Edit modals
   const [editMedecin, setEditMedecin] = useState<AdminMedecin | null>(null);
@@ -65,23 +76,26 @@ const PersonnelMedical = () => {
 
   // ── Médecins CRUD ──────────────────────────────────────────
 
-  const handleCreateMedecin = async (e: React.FormEvent) => {
+  const handleCreatePersonnel = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
-    setCreateMedecinLoading(true);
-    setCreateMedecinError('');
+    setCreateLoading(true);
+    setCreateError('');
     try {
-      const m = await adminAPI.createMedecin(token, createMedecinForm);
-      setMedecins(prev => [...prev, m]);
-      setCreateMedecinModal(false);
-      setCreateMedecinForm(EMPTY_MEDECIN);
+      if (createRole === 'medecin') {
+        const m = await adminAPI.createMedecin(token, createForm as AdminMedecinCreate);
+        setMedecins(prev => [...prev, m]);
+      } else {
+        const inf = await adminAPI.createInfirmier(token, createForm as AdminInfirmierCreate);
+        setInfirmiers(prev => [...prev, inf]);
+      }
+      setCreateModal(false);
     } catch (e: any) {
-      setCreateMedecinError(e.detail || 'Erreur lors de la création');
+      setCreateError(e.detail || 'Erreur lors de la création');
     } finally {
-      setCreateMedecinLoading(false);
+      setCreateLoading(false);
     }
   };
-
   const handleUpdateMedecin = async () => {
     if (!editMedecin || !token) return;
     setEditMedecinLoading(true);
@@ -114,25 +128,6 @@ const PersonnelMedical = () => {
       setMedecins(prev => prev.map(x => x.medecin_id === updated.medecin_id ? updated : x));
     } catch (e: any) {
       alert(e.detail || 'Erreur');
-    }
-  };
-
-  // ── Infirmiers CRUD ────────────────────────────────────────
-
-  const handleCreateInfirmier = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!token) return;
-    setCreateInfirmierLoading(true);
-    setCreateInfirmierError('');
-    try {
-      const inf = await adminAPI.createInfirmier(token, createInfirmierForm);
-      setInfirmiers(prev => [...prev, inf]);
-      setCreateInfirmierModal(false);
-      setCreateInfirmierForm(EMPTY_INFIRMIER);
-    } catch (e: any) {
-      setCreateInfirmierError(e.detail || 'Erreur lors de la création');
-    } finally {
-      setCreateInfirmierLoading(false);
     }
   };
 
@@ -206,11 +201,8 @@ const PersonnelMedical = () => {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="sp-btn sp-btn-primary" onClick={() => { setCreateMedecinModal(true); setCreateMedecinError(''); }}>
-            <Plus size={18} /> Ajouter médecin
-          </button>
-          <button className="sp-btn sp-btn-outline" onClick={() => { setCreateInfirmierModal(true); setCreateInfirmierError(''); }}>
-            <Plus size={18} /> Ajouter infirmier
+          <button className="sp-btn sp-btn-primary" onClick={() => { setCreateRole('medecin'); setCreateForm(EMPTY_MEDECIN); setCreateModal(true); setCreateError(''); }}>
+            <Plus size={18} /> Ajouter personnel
           </button>
         </div>
       </div>
@@ -409,77 +401,77 @@ const PersonnelMedical = () => {
         </div>
       </div>
 
-      {/* ── Modal créer médecin ───────────────────────────────── */}
-      {createMedecinModal && (
+      {/* ── Modal Créer Personnel ─────────────────────────────── */}
+      {createModal && (
         <div className="sp-modal-overlay open">
           <div className="sp-modal" style={{ maxWidth: 440 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Nouveau médecin</h3>
-              <button onClick={() => setCreateMedecinModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>
+                {createRole === 'medecin' ? 'Nouveau médecin' : 'Nouvel infirmier'}
+              </h3>
+              <button onClick={() => setCreateModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
             </div>
-            <form onSubmit={handleCreateMedecin}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Nom *</label>
-                  <input required value={createMedecinForm.nom} onChange={e => setCreateMedecinForm(f => ({ ...f, nom: e.target.value }))} style={inputStyle} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Prénoms *</label>
-                  <input required value={createMedecinForm.prenoms} onChange={e => setCreateMedecinForm(f => ({ ...f, prenoms: e.target.value }))} style={inputStyle} />
-                </div>
-              </div>
+            <form onSubmit={handleCreatePersonnel}>
               <div style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Spécialité *</label>
-                <input required value={createMedecinForm.specialite} onChange={e => setCreateMedecinForm(f => ({ ...f, specialite: e.target.value }))} style={inputStyle} />
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Rôle *</label>
+                <select 
+                  required 
+                  value={createRole} 
+                  onChange={e => {
+                    const newRole = e.target.value as 'medecin' | 'infirmier';
+                    setCreateRole(newRole);
+                    setCreateForm(newRole === 'medecin' ? EMPTY_MEDECIN : EMPTY_INFIRMIER);
+                  }} 
+                  style={inputStyle}
+                >
+                  <option value="medecin">Médecin</option>
+                  <option value="infirmier">Infirmier</option>
+                </select>
               </div>
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Téléphone *</label>
-                <input required value={createMedecinForm.telephone} onChange={e => setCreateMedecinForm(f => ({ ...f, telephone: e.target.value }))} style={inputStyle} />
-              </div>
-              {createMedecinError && <p style={{ color: '#DC2626', fontSize: 12, marginBottom: 12 }}>{createMedecinError}</p>}
-              <div className="sp-modal-actions">
-                <button type="button" className="sp-btn sp-btn-ghost" onClick={() => setCreateMedecinModal(false)}>Annuler</button>
-                <button type="submit" className="sp-btn sp-btn-primary" disabled={createMedecinLoading}>
-                  <Plus size={16} /> {createMedecinLoading ? 'Ajout...' : 'Ajouter'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
-      {/* ── Modal créer infirmier ─────────────────────────────── */}
-      {createInfirmierModal && (
-        <div className="sp-modal-overlay open">
-          <div className="sp-modal" style={{ maxWidth: 440 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Nouvel infirmier</h3>
-              <button onClick={() => setCreateInfirmierModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
-            </div>
-            <form onSubmit={handleCreateInfirmier}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Nom *</label>
-                  <input required value={createInfirmierForm.nom} onChange={e => setCreateInfirmierForm(f => ({ ...f, nom: e.target.value }))} style={inputStyle} />
+                  <input required value={createForm.nom} onChange={e => setCreateForm((f: any) => ({ ...f, nom: e.target.value }))} style={inputStyle} />
                 </div>
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Prénoms *</label>
-                  <input required value={createInfirmierForm.prenoms} onChange={e => setCreateInfirmierForm(f => ({ ...f, prenoms: e.target.value }))} style={inputStyle} />
+                  <input required value={createForm.prenoms} onChange={e => setCreateForm((f: any) => ({ ...f, prenoms: e.target.value }))} style={inputStyle} />
                 </div>
               </div>
-              <div style={{ marginBottom: 12 }}>
+
+              {createRole === 'medecin' && (
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Spécialité *</label>
+                  <select 
+                    required 
+                    value={createForm.specialite} 
+                    onChange={e => setCreateForm((f: any) => ({ ...f, specialite: e.target.value }))} 
+                    style={inputStyle}
+                  >
+                    <option value="" disabled>Sélectionner une spécialité</option>
+                    {SPECIALITES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              )}
+
+              <div style={{ marginBottom: createRole === 'infirmier' ? 12 : 20 }}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Téléphone *</label>
-                <input required value={createInfirmierForm.telephone} onChange={e => setCreateInfirmierForm(f => ({ ...f, telephone: e.target.value }))} style={inputStyle} />
+                <input required value={createForm.telephone} onChange={e => setCreateForm((f: any) => ({ ...f, telephone: e.target.value }))} style={inputStyle} />
               </div>
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Email (optionnel)</label>
-                <input type="email" value={createInfirmierForm.email || ''} onChange={e => setCreateInfirmierForm(f => ({ ...f, email: e.target.value }))} style={inputStyle} />
-              </div>
-              {createInfirmierError && <p style={{ color: '#DC2626', fontSize: 12, marginBottom: 12 }}>{createInfirmierError}</p>}
+
+              {createRole === 'infirmier' && (
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Email (optionnel)</label>
+                  <input type="email" value={createForm.email || ''} onChange={e => setCreateForm((f: any) => ({ ...f, email: e.target.value }))} style={inputStyle} />
+                </div>
+              )}
+
+              {createError && <p style={{ color: '#DC2626', fontSize: 12, marginBottom: 12 }}>{createError}</p>}
               <div className="sp-modal-actions">
-                <button type="button" className="sp-btn sp-btn-ghost" onClick={() => setCreateInfirmierModal(false)}>Annuler</button>
-                <button type="submit" className="sp-btn sp-btn-primary" disabled={createInfirmierLoading}>
-                  <Plus size={16} /> {createInfirmierLoading ? 'Ajout...' : 'Ajouter'}
+                <button type="button" className="sp-btn sp-btn-ghost" onClick={() => setCreateModal(false)}>Annuler</button>
+                <button type="submit" className="sp-btn sp-btn-primary" disabled={createLoading}>
+                  <Plus size={16} /> {createLoading ? 'Ajout...' : 'Ajouter'}
                 </button>
               </div>
             </form>
@@ -507,7 +499,14 @@ const PersonnelMedical = () => {
             </div>
             <div style={{ marginBottom: 12 }}>
               <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Spécialité</label>
-              <input value={editMedecinForm.specialite || ''} onChange={e => setEditMedecinForm(f => ({ ...f, specialite: e.target.value }))} style={inputStyle} />
+              <select 
+                value={editMedecinForm.specialite || ''} 
+                onChange={e => setEditMedecinForm(f => ({ ...f, specialite: e.target.value }))} 
+                style={inputStyle}
+              >
+                <option value="" disabled>Sélectionner une spécialité</option>
+                {SPECIALITES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
             </div>
             <div style={{ marginBottom: 20 }}>
               <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Téléphone</label>

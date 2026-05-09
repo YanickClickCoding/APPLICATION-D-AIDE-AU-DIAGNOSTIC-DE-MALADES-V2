@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, Activity, FileText, Pill, AlertCircle, User, Phone, Mail, MapPin, Cake, Edit, Brain, CheckCircle, XCircle, Droplet } from 'lucide-react';
+import { ArrowLeft, Calendar, Activity, FileText, Pill, AlertCircle, User, Phone, Mail, MapPin, Cake, Edit, Brain, CheckCircle, XCircle, Droplet, Printer, Download, Clipboard } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { patientsAPI, consultationsAPI } from '../services/api';
 
@@ -114,6 +114,39 @@ const DossierPatient = () => {
     return `${prenoms.charAt(0)}${nom.charAt(0)}`.toUpperCase();
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleExportCSV = () => {
+    if (!patient) return;
+    
+    // Header
+    let csv = "DOSSIER MÉDICAL\n";
+    csv += `Patient:;${patient.prenoms} ${patient.nom}\n`;
+    csv += `ID:;${patient.patient_id}\n`;
+    csv += `Né(e) le:;${new Date(patient.date_naissance).toLocaleDateString('fr-FR')}\n`;
+    csv += `Sexe:;${patient.sexe}\n`;
+    csv += `Téléphone:;${patient.telephone}\n`;
+    csv += `\nHISTORIQUE DES CONSULTATIONS\n`;
+    csv += "ID;Date;Motif;Médecin;Diagnostic;Statut\n";
+    
+    consultations.forEach(c => {
+      const diag = c.diagnostic ? c.diagnostic.nom_maladie : "N/A";
+      csv += `${c.consultation_id};${new Date(c.date_heure).toLocaleDateString('fr-FR')};"${c.motif.replace(/"/g, '""')}";${c.medecin_nom || 'N/A'};${diag};${c.statut}\n`;
+    });
+    
+    const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Dossier_${patient.nom}_${patient.prenoms}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <>
       <div className="sp-page-header sp-fade-in">
@@ -122,12 +155,22 @@ const DossierPatient = () => {
           <p className="sp-page-subtitle">{consultations.length} visite(s)</p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
-          <Link to="/consultations" className="sp-btn sp-btn-outline">
-            <ArrowLeft size={18} /> Retour aux consultations
+          <Link to="/consultations" className="sp-btn sp-btn-outline no-print">
+            <ArrowLeft size={18} /> Retour
           </Link>
+          {(user?.role === 'admin' || user?.role === 'medecin') && (
+            <>
+              <button className="sp-btn sp-btn-outline no-print" onClick={handlePrint}>
+                <Printer size={18} /> Imprimer
+              </button>
+              <button className="sp-btn sp-btn-outline no-print" onClick={handleExportCSV}>
+                <Download size={18} /> Exporter CSV
+              </button>
+            </>
+          )}
           {user?.role === 'admin' && (
-            <button className="sp-btn sp-btn-primary">
-              <Edit size={18} /> Modifier le dossier
+            <button className="sp-btn sp-btn-primary no-print">
+              <Edit size={18} /> Modifier
             </button>
           )}
         </div>
@@ -408,6 +451,131 @@ const DossierPatient = () => {
           </div>
         </div>
       </div>
+      {/* ── Section Impression (Cachée à l'écran) ──────────────────── */}
+      <div className="print-only medical-folder" style={{ display: 'none' }}>
+        <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: '20px', marginBottom: '30px' }}>
+          <h1 style={{ fontSize: '28px', textTransform: 'uppercase', marginBottom: '5px' }}>SANTÉ PLUS IA</h1>
+          <p style={{ fontSize: '14px', margin: 0 }}>Application d'Aide au Diagnostic Médical</p>
+          <p style={{ fontSize: '12px', color: '#666' }}>Rapport généré le {new Date().toLocaleString('fr-FR')}</p>
+        </div>
+
+        <div style={{ marginBottom: '30px' }}>
+          <h2 style={{ fontSize: '20px', borderBottom: '1px solid #ccc', paddingBottom: '5px', marginBottom: '15px' }}>IDENTITÉ DU PATIENT</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <tbody>
+              <tr>
+                <td style={{ width: '25%', padding: '8px 0', fontWeight: 'bold' }}>Nom Complet:</td>
+                <td style={{ padding: '8px 0' }}>{patient.prenoms} {patient.nom}</td>
+                <td style={{ width: '25%', padding: '8px 0', fontWeight: 'bold' }}>ID Patient:</td>
+                <td style={{ padding: '8px 0' }}>#{patient.patient_id.toString().padStart(4, '0')}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '8px 0', fontWeight: 'bold' }}>Date de Naissance:</td>
+                <td style={{ padding: '8px 0' }}>{new Date(patient.date_naissance).toLocaleDateString('fr-FR')} ({calculateAge(patient.date_naissance)} ans)</td>
+                <td style={{ padding: '8px 0', fontWeight: 'bold' }}>Sexe:</td>
+                <td style={{ padding: '8px 0' }}>{patient.sexe === 'M' ? 'Masculin' : 'Féminin'}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '8px 0', fontWeight: 'bold' }}>Téléphone:</td>
+                <td style={{ padding: '8px 0' }}>{patient.telephone}</td>
+                <td style={{ padding: '8px 0', fontWeight: 'bold' }}>Email:</td>
+                <td style={{ padding: '8px 0' }}>{patient.email || 'N/A'}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '8px 0', fontWeight: 'bold' }}>Groupe Sanguin:</td>
+                <td style={{ padding: '8px 0' }}>{patient.groupe_sanguin || 'Inconnu'}</td>
+                <td style={{ padding: '8px 0', fontWeight: 'bold' }}>Adresse:</td>
+                <td style={{ padding: '8px 0' }}>{patient.adresse || 'N/A'}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {(patient.allergies || patient.antecedents_medicaux) && (
+          <div style={{ marginBottom: '30px' }}>
+            <h2 style={{ fontSize: '20px', borderBottom: '1px solid #ccc', paddingBottom: '5px', marginBottom: '15px' }}>ALERTE ET ANTÉCÉDENTS</h2>
+            {patient.allergies && (
+              <div style={{ marginBottom: '10px' }}>
+                <strong style={{ color: '#d32f2f' }}>ALLERGIES: </strong>
+                <span>{patient.allergies}</span>
+              </div>
+            )}
+            {patient.antecedents_medicaux && (
+              <div>
+                <strong>ANTÉCÉDENTS: </strong>
+                <span>{patient.antecedents_medicaux}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div>
+          <h2 style={{ fontSize: '20px', borderBottom: '1px solid #ccc', paddingBottom: '5px', marginBottom: '15px' }}>HISTORIQUE MÉDICAL</h2>
+          {consultations.length === 0 ? (
+            <p>Aucun historique de consultation.</p>
+          ) : (
+            consultations.map((c) => (
+              <div key={c.consultation_id} style={{ marginBottom: '25px', padding: '15px', border: '1px solid #eee', borderRadius: '5px', pageBreakInside: 'avoid' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', borderBottom: '1px dashed #eee', paddingBottom: '5px' }}>
+                  <span style={{ fontWeight: 'bold' }}>Consultation #{c.consultation_id.toString().padStart(4, '0')}</span>
+                  <span>{new Date(c.date_heure).toLocaleString('fr-FR')}</span>
+                </div>
+                <div style={{ marginBottom: '8px' }}>
+                  <strong>Motif: </strong> {c.motif}
+                </div>
+                {c.medecin_nom && (
+                  <div style={{ marginBottom: '8px' }}>
+                    <strong>Praticien: </strong> Dr. {c.medecin_nom}
+                  </div>
+                )}
+                {c.diagnostic && (
+                  <div style={{ marginTop: '10px', padding: '10px', background: '#f5f5f5', borderRadius: '4px' }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>DIAGNOSTIC IA : {c.diagnostic.nom_maladie}</div>
+                    <div style={{ fontSize: '12px' }}>
+                      Confiance: {c.diagnostic.certitude}% | Statut: {c.diagnostic.statut}
+                    </div>
+                    {c.diagnostic.description && (
+                      <div style={{ marginTop: '5px', fontStyle: 'italic', fontSize: '13px' }}>
+                        {c.diagnostic.description}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+
+        <div style={{ marginTop: '50px', textAlign: 'right' }}>
+          <div style={{ display: 'inline-block', width: '200px', borderTop: '1px solid #000', paddingTop: '10px', textAlign: 'center' }}>
+            Cachet et Signature
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .print-only, .print-only * {
+            visibility: visible;
+          }
+          .print-only {
+            display: block !important;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+          }
+          .no-print {
+            display: none !important;
+          }
+          @page {
+            margin: 2cm;
+          }
+        }
+      `}</style>
     </>
   );
 };

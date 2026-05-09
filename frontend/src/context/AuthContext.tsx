@@ -8,12 +8,13 @@ interface User {
   email: string;
   role: string;
   actif: boolean;
+  medecin_id?: number;
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   logout: () => void;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -59,6 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('sp_user', JSON.stringify(response.user));
       
       console.log('✅ Token et utilisateur sauvegardés');
+      return response.user;
     } catch (error) {
       console.error('❌ Erreur dans AuthContext.login:', error);
       throw error;

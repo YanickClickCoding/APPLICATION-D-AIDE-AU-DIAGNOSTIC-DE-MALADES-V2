@@ -6,7 +6,21 @@ import {
   Mail, Calendar, Lock, X, Plus, Edit2, ToggleLeft, ToggleRight,
 } from 'lucide-react';
 
-const EMPTY_CREATE: AdminUserCreate = { nom: '', prenoms: '', email: '', password: '', role: 'medecin' };
+const EMPTY_CREATE: AdminUserCreate = { nom: '', prenoms: '', email: '', password: '', role: 'medecin', specialite: '', telephone: '' };
+
+const SPECIALITES = [
+  "Médecine Générale", "Cardiologie", "Pédiatrie", "Gynécologie-Obstétrique", 
+  "Chirurgie Générale", "Neurologie", "Ophtalmologie", "Dermatologie", 
+  "Radiologie", "Anesthésiologie", "Rhumatologie", "Urologie", "ORL", 
+  "Psychiatrie", "Pneumologie", "Endocrinologie", "Infectiologie", 
+  "Gastro-entérologie", "Hématologie", "Oncologie", "Néphrologie",
+  "Médecine Interne", "Médecine d'Urgence", "Gériatrie", "Stomatologie",
+  "Chirurgie Orthopédique", "Chirurgie Cardiaque", "Chirurgie Vasculaire",
+  "Chirurgie Pédiatrique", "Chirurgie Plastique", "Neurochirurgie",
+  "Allergologie", "Médecine du Travail", "Médecine Physique et Réadaptation",
+  "Médecine Nucléaire", "Génétique Médicale", "Anatomopathologie",
+  "Biologie Médicale", "Santé Publique", "Réanimation", "Addictologie"
+];
 
 const Utilisateurs = () => {
   const { user: currentUser, token, isLoading: authLoading } = useAuth();
@@ -376,7 +390,7 @@ const Utilisateurs = () => {
                 <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Mot de passe * (min. 6 caractères)</label>
                 <input type="password" required minLength={6} value={createForm.password} onChange={e => setCreateForm(f => ({ ...f, password: e.target.value }))} style={inputStyle} />
               </div>
-              <div style={{ marginBottom: 20 }}>
+              <div style={{ marginBottom: createForm.role === 'medecin' ? 12 : 20 }}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Rôle *</label>
                 <select value={createForm.role} onChange={e => setCreateForm(f => ({ ...f, role: e.target.value as any }))} style={inputStyle}>
                   <option value="medecin">Médecin</option>
@@ -384,6 +398,33 @@ const Utilisateurs = () => {
                   <option value="admin">Administrateur</option>
                 </select>
               </div>
+
+              {createForm.role === 'medecin' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Spécialité *</label>
+                    <select 
+                      required 
+                      value={createForm.specialite} 
+                      onChange={e => setCreateForm(f => ({ ...f, specialite: e.target.value }))} 
+                      style={inputStyle}
+                    >
+                      <option value="" disabled>Sélectionner</option>
+                      {SPECIALITES.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Téléphone *</label>
+                    <input 
+                      required 
+                      placeholder="+229..."
+                      value={createForm.telephone} 
+                      onChange={e => setCreateForm(f => ({ ...f, telephone: e.target.value }))} 
+                      style={inputStyle} 
+                    />
+                  </div>
+                </div>
+              )}
               {createError && <p style={{ color: '#DC2626', fontSize: 12, marginBottom: 12 }}>{createError}</p>}
               <div className="sp-modal-actions">
                 <button type="button" className="sp-btn sp-btn-ghost" onClick={() => { setCreateModal(false); setCreateForm(EMPTY_CREATE); setCreateError(''); }}>Annuler</button>

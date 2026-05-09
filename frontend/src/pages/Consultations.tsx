@@ -45,20 +45,49 @@ const Consultations = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      const token = localStorage.getItem('sp_token');
+      
       const [consultationsData, personnelData] = await Promise.all([
         analyticsAPI.getRecentConsultations(200),
         analyticsAPI.getPersonnelDisponible()
       ]);
       setConsultations(consultationsData);
-      // Le backend retourne { id, nom, prenoms, specialite, telephone } — on mappe vers Medecin
-      setMedecins((personnelData.medecins.liste || []).map((m: any) => ({
-        medecin_id: m.id,
-        nom: m.nom,
-        prenoms: m.prenoms,
-        specialite: m.specialite || '',
-        telephone: m.telephone || '',
-        disponible: true, // le backend ne retourne que les disponibles
-      })));
+
+      // Si admin, on récupère TOUS les médecins pour pouvoir réaffecter même à ceux non marqués "dispo"
+      // ou simplement pour voir les noms de ceux déjà affectés mais occupés.
+      if (isAdmin && token) {
+        try {
+          const allMedecins = await adminAPI.getMedecins(token);
+          setMedecins(allMedecins.map(m => ({
+            medecin_id: m.medecin_id,
+            nom: m.nom,
+            prenoms: m.prenoms,
+            specialite: m.specialite,
+            telephone: m.telephone,
+            disponible: m.disponible
+          })));
+        } catch (adminErr) {
+          console.error('Erreur lors du chargement de tous les médecins:', adminErr);
+          // Fallback sur les dispos si l'appel admin échoue
+          setMedecins((personnelData.medecins.liste || []).map((m: any) => ({
+            medecin_id: m.id,
+            nom: m.nom,
+            prenoms: m.prenoms,
+            specialite: m.specialite || '',
+            telephone: m.telephone || '',
+            disponible: true,
+          })));
+        }
+      } else {
+        setMedecins((personnelData.medecins.liste || []).map((m: any) => ({
+          medecin_id: m.id,
+          nom: m.nom,
+          prenoms: m.prenoms,
+          specialite: m.specialite || '',
+          telephone: m.telephone || '',
+          disponible: true,
+        })));
+      }
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error);
       showToast('Impossible de charger les consultations', 'error');
@@ -367,11 +396,30 @@ const Consultations = () => {
                             {(!c.statut || c.statut === 'en_attente_medecin') ? (
                               <div style={{ display: 'flex', gap: '8px', width: '100%', alignItems: 'center' }}>
                                 {user?.role === 'medecin' && (
-                                  <Link to={`/consultation/nouvelle?reprendre=${c.id}`} className="sp-btn sp-btn-primary" style={{ padding: '6px 14px', fontSize: '12px', height: '32px', borderRadius: '10px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <Play size={14} /> Continuer
-                                  </Link>
+                                  c.medecin_id === user.medecin_id ? (
+                                    <Link to={`/consultation/nouvelle?reprendre=${c.id}`} className="sp-btn sp-btn-primary" style={{ padding: '6px 14px', fontSize: '12px', height: '32px', borderRadius: '10px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <Play size={14} /> Continuer
+                                    </Link>
+                                  ) : (
+                                    <button 
+                                      onClick={() => showToast(`Cette consultation est réservée au Dr. ${getMedecinName(c.medecin_id)}`, 'info')}
+                                      className="sp-btn sp-btn-outline" 
+                                      style={{ padding: '6px 14px', fontSize: '12px', height: '32px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.7 }}
+                                    >
+                                      <Play size={14} /> Continuer
+                                    </button>
+                                  )
                                 )}
-                                <span style={{ fontSize: '11px', color: '#6366F1', fontStyle: 'italic' }}>En attente médecin</span>
+                                {isAdmin && (
+                                  <button 
+                                    className="sp-btn sp-btn-outline sp-btn-sm" 
+                                    style={{ padding: '6px 12px', fontSize: '12px', height: '32px', borderRadius: '10px' }} 
+                                    onClick={() => { setCurrentConsultId(c.id); setSelectedMedecinId(c.medecin_id?.toString() || ''); setAffectModalOpen(true); }}
+                                  >
+                                    <UserPlus size={14} /> {c.medecin_id ? 'Réaffecter' : 'Affecter'}
+                                  </button>
+                                )}
+                                {!isAdmin && <span style={{ fontSize: '11px', color: '#6366F1', fontStyle: 'italic' }}>En attente médecin</span>}
                                 {isAdmin && (
                                   <div style={{ marginLeft: 'auto' }}>
                                     <button className="sp-btn sp-btn-ghost sp-btn-sm" style={{ color: 'var(--sp-danger)', padding: '6px' }} onClick={() => { setConsultToDelete({ id: c.id, name: c.nom_patient }); setDeleteModalOpen(true); }}>
@@ -382,11 +430,11 @@ const Consultations = () => {
                               </div>
                             ) : (c.statut === 'en attente' || c.statut === 'en cours') ? (
                               <>
-                                <div style={{ display: 'flex', gap: '8px' }}>
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                   {c.statut === 'en attente' && (
                                     <>
-                                      <button className="sp-btn sp-btn-outline sp-btn-sm" style={{ padding: '6px 12px', fontSize: '12px', height: '32px', borderRadius: '10px' }} onClick={() => { setCurrentConsultId(c.id); setSelectedMedecinId(''); setAffectModalOpen(true); }}>
-                                        <UserPlus size={14} /> Affecter
+                                      <button className="sp-btn sp-btn-outline sp-btn-sm" style={{ padding: '6px 12px', fontSize: '12px', height: '32px', borderRadius: '10px' }} onClick={() => { setCurrentConsultId(c.id); setSelectedMedecinId(c.medecin_id?.toString() || ''); setAffectModalOpen(true); }}>
+                                        <UserPlus size={14} /> {c.medecin_id ? 'Réaffecter' : 'Affecter'}
                                       </button>
                                       {!c.medecin_id ? (
                                         <button onClick={() => setWarningModalOpen(true)} className="sp-btn sp-btn-warning sp-btn-sm" style={{ opacity: 0.5, cursor: 'not-allowed', padding: '6px 12px', fontSize: '12px', height: '32px', borderRadius: '10px', background: '#fbc05d' }}>
@@ -400,9 +448,16 @@ const Consultations = () => {
                                     </>
                                   )}
                                   {c.statut === 'en cours' && (
-                                    <button onClick={() => handleStatutChange(c.id, 'terminée')} className="sp-btn sp-btn-success sp-btn-sm" style={{ padding: '6px 12px', fontSize: '12px', height: '32px', borderRadius: '10px' }}>
-                                      <Check size={14} /> Terminer
-                                    </button>
+                                    <>
+                                      {isAdmin && (
+                                        <button className="sp-btn sp-btn-outline sp-btn-sm" style={{ padding: '6px 12px', fontSize: '12px', height: '32px', borderRadius: '10px' }} onClick={() => { setCurrentConsultId(c.id); setSelectedMedecinId(c.medecin_id?.toString() || ''); setAffectModalOpen(true); }}>
+                                          <UserPlus size={14} /> Réaffecter
+                                        </button>
+                                      )}
+                                      <button onClick={() => handleStatutChange(c.id, 'terminée')} className="sp-btn sp-btn-success sp-btn-sm" style={{ padding: '6px 12px', fontSize: '12px', height: '32px', borderRadius: '10px' }}>
+                                        <Check size={14} /> Terminer
+                                      </button>
+                                    </>
                                   )}
                                 </div>
                                 <div style={{ marginLeft: 'auto', display: 'flex', gap: '4px' }}>
@@ -481,14 +536,24 @@ const Consultations = () => {
                             <td>
                               <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                                 {(!c.statut || c.statut === 'en_attente_medecin') && user?.role === 'medecin' && (
-                                  <Link to={`/consultation/nouvelle?reprendre=${c.id}`} className="sp-btn sp-btn-primary sp-btn-sm" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <Play size={14} /> Continuer
-                                  </Link>
+                                  c.medecin_id === user.medecin_id ? (
+                                    <Link to={`/consultation/nouvelle?reprendre=${c.id}`} className="sp-btn sp-btn-primary sp-btn-sm" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                      <Play size={14} /> Continuer
+                                    </Link>
+                                  ) : (
+                                    <button 
+                                      onClick={() => showToast(`Réservé au Dr. ${getMedecinName(c.medecin_id)}`, 'info')}
+                                      className="sp-btn sp-btn-outline sp-btn-sm" 
+                                      style={{ display: 'flex', alignItems: 'center', gap: '4px', opacity: 0.7 }}
+                                    >
+                                      <Play size={14} /> Continuer
+                                    </button>
+                                  )
                                 )}
                                 {c.statut === 'en attente' && (
                                   <>
-                                    <button className="sp-btn sp-btn-outline sp-btn-sm" onClick={() => { setCurrentConsultId(c.id); setSelectedMedecinId(''); setAffectModalOpen(true); }}>
-                                      <UserPlus size={14} />
+                                    <button className="sp-btn sp-btn-outline sp-btn-sm" onClick={() => { setCurrentConsultId(c.id); setSelectedMedecinId(c.medecin_id?.toString() || ''); setAffectModalOpen(true); }}>
+                                      <UserPlus size={14} /> {c.medecin_id ? 'Réaffecter' : 'Affecter'}
                                     </button>
                                     {!c.medecin_id ? (
                                       <button onClick={() => setWarningModalOpen(true)} className="sp-btn sp-btn-warning sp-btn-sm" style={{ opacity: 0.5, cursor: 'not-allowed' }} title="Affectation requise">
@@ -502,9 +567,21 @@ const Consultations = () => {
                                   </>
                                 )}
                                 {c.statut === 'en cours' && (
-                                  <button onClick={() => handleStatutChange(c.id, 'terminée')} className="sp-btn sp-btn-success sp-btn-sm">
-                                    <Check size={14} />
-                                  </button>
+                                  <>
+                                    {isAdmin && (
+                                      <button className="sp-btn sp-btn-outline sp-btn-sm" onClick={() => { setCurrentConsultId(c.id); setSelectedMedecinId(c.medecin_id?.toString() || ''); setAffectModalOpen(true); }}>
+                                        <UserPlus size={14} /> Réaffecter
+                                      </button>
+                                    )}
+                                    <button onClick={() => handleStatutChange(c.id, 'terminée')} className="sp-btn sp-btn-success sp-btn-sm">
+                                      <Check size={14} />
+                                    </button>
+                                  </>
+                                )}
+                                {(!c.statut || c.statut === 'en_attente_medecin') && isAdmin && (
+                                   <button className="sp-btn sp-btn-outline sp-btn-sm" onClick={() => { setCurrentConsultId(c.id); setSelectedMedecinId(c.medecin_id?.toString() || ''); setAffectModalOpen(true); }}>
+                                     <UserPlus size={14} /> {c.medecin_id ? 'Réaffecter' : 'Affecter'}
+                                   </button>
                                 )}
                                 <button onClick={() => openForm(c)} className="sp-btn sp-btn-ghost sp-btn-sm">
                                   <Edit2 size={14} />
@@ -533,9 +610,11 @@ const Consultations = () => {
                 <h3 style={{ marginBottom: '1rem' }}>Affecter un médecin</h3>
                 <form onSubmit={handleAffecter}>
                   <div className="sp-form-group">
-                    <label className="sp-form-label">Choisir un médecin disponible</label>
+                    <label className="sp-form-label">
+                      {isAdmin ? 'Sélectionner le nouveau médecin' : 'Choisir un médecin disponible'}
+                    </label>
                     {medecins.length === 0 ? (
-                      <p style={{ color: '#EF4444', fontSize: '13px' }}>Aucun médecin disponible pour le moment.</p>
+                      <p style={{ color: '#EF4444', fontSize: '13px' }}>Aucun médecin trouvé.</p>
                     ) : (
                       <select
                         className="sp-form-select"
@@ -546,7 +625,7 @@ const Consultations = () => {
                         <option value="">Sélectionner...</option>
                         {medecins.map(m => (
                           <option key={m.medecin_id} value={m.medecin_id}>
-                            Dr. {m.prenoms} {m.nom}{m.specialite ? ` (${m.specialite})` : ''}
+                            Dr. {m.prenoms} {m.nom}{m.specialite ? ` (${m.specialite})` : ''} {!m.disponible && '(Indisponible)'}
                           </option>
                         ))}
                       </select>
@@ -631,6 +710,7 @@ const Consultations = () => {
                         className="sp-form-input"
                         style={{ paddingLeft: '40px' }}
                         required
+                        max={new Date().toISOString().slice(0, 16)}
                         value={(formData.date_heure || '').slice(0, 16)}
                         onChange={e => setFormData({ ...formData, date_heure: e.target.value })}
                       />

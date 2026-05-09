@@ -52,8 +52,16 @@ const DashboardMedecin = () => {
 
   const statusColors: Record<string, { bg: string; text: string; border: string }> = {
     'en attente': { bg: '#FEF3C7', text: '#92400E', border: '#FCD34D' },
+    'en_attente_medecin': { bg: '#EEF2FF', text: '#4F46E5', border: '#C7D2FE' },
     'en cours':   { bg: '#DBEAFE', text: '#1E40AF', border: '#93C5FD' },
     'terminée':   { bg: '#D1FAE5', text: '#065F46', border: '#6EE7B7' },
+  };
+
+  const statusLabels: Record<string, string> = {
+    'en attente': 'En attente',
+    'en_attente_medecin': 'Att. médecin',
+    'en cours': 'En cours',
+    'terminée': 'Terminée',
   };
 
   if (loading) {
@@ -201,7 +209,7 @@ const DashboardMedecin = () => {
                       borderRadius: '12px', fontSize: '11px', fontWeight: 600,
                       border: `1px solid ${colors.border}`, flexShrink: 0
                     }}>
-                      {c.statut}
+                      {statusLabels[c.statut] || c.statut}
                     </span>
                   </div>
                 );

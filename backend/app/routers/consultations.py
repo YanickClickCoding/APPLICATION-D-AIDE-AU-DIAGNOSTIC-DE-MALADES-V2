@@ -679,6 +679,7 @@ def get_donnees_resume(consultation_id: int, db: Session = Depends(get_db)):
     rev_sev = {'LEGER': 'Légère', 'MODERE': 'Modérée', 'SEVERE': 'Sévère'}
     return {
         "consultation_id": c.consultation_id,
+        "medecin_id": c.medecin_id,
         "motif": c.motif or '',
         "patient": {
             "nom": patient.nom if patient else '',
