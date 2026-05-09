@@ -1,0 +1,453 @@
+# Cas d'Utilisation — Santé Plus IA
+## Application d'Aide au Diagnostic de Maladies
+
+---
+
+## 1. ACTEURS DU SYSTÈME
+
+| Acteur | Description | Droits |
+|--------|-------------|--------|
+| **Administrateur** | Gère le système, les utilisateurs et le modèle IA | Accès total |
+| **Médecin** | Réalise les diagnostics, valide l'IA, rédige les ordonnances | Accès médical complet |
+| **Infirmier** | Enregistre les patients, collecte les symptômes et les signes vitaux | Accès saisie uniquement |
+| **Système IA** | Analyse les données et propose des diagnostics automatiquement | Acteur interne (Random Forest) |
+
+---
+
+## 2. CAS D'UTILISATION PAR ACTEUR
+
+---
+
+### 2.1 AUTHENTIFICATION (tous les acteurs)
+
+| ID | Cas d'utilisation | Acteurs | Description |
+|----|-------------------|---------|-------------|
+| UC-01 | Se connecter | Admin, Médecin, Infirmier | Authentification par email + mot de passe, génération d'un jeton JWT 24h |
+| UC-02 | Se déconnecter | Admin, Médecin, Infirmier | Suppression du jeton côté client, redirection vers login |
+| UC-03 | Rafraîchir le jeton | Admin, Médecin, Infirmier | Renouvellement automatique du JWT avant expiration |
+
+---
+
+### 2.2 GESTION DES PATIENTS
+
+| ID | Cas d'utilisation | Acteurs | Description |
+|----|-------------------|---------|-------------|
+| UC-04 | Enregistrer un patient | Médecin, Infirmier | Saisie de nom, prénoms, date naissance, sexe, groupe sanguin, téléphone, email |
+| UC-05 | Consulter la liste des patients | Admin, Médecin | Affichage paginé avec recherche par nom/téléphone |
+| UC-06 | Consulter le dossier patient | Admin, Médecin | Accès à l'historique complet : consultations, diagnostics, ordonnances, suivis |
+| UC-07 | Modifier un patient | Admin | Mise à jour des informations démographiques et médicales |
+| UC-08 | Supprimer un patient | Admin | Suppression avec cascade des données liées |
+
+---
+
+### 2.3 WORKFLOW DE CONSULTATION (9 ÉTAPES)
+
+#### Étapes Infirmier (1–3)
+
+| ID | Cas d'utilisation | Acteurs | Étape |
+|----|-------------------|---------|-------|
+| UC-09 | Initier une consultation | Médecin, Infirmier | Étape 1 : Enregistrement du patient + saisie du motif + sélection du médecin (infirmier uniquement) |
+| UC-10 | Saisir les symptômes | Médecin, Infirmier | Étape 2 : Nom du symptôme, sévérité (Légère/Modérée/Sévère), durée en jours, description |
+| UC-11 | Mesurer les signes vitaux | Médecin, Infirmier | Étape 3 : TA systolique/diastolique, FC, FR, température, SpO₂, poids, taille, IMC auto-calculé |
+| UC-12 | Soumettre au médecin | Infirmier | Étape 3 → Envoi au médecin assigné, statut passe à `en_attente_medecin` |
+
+#### Étapes Médecin (4–9)
+
+| ID | Cas d'utilisation | Acteurs | Étape |
+|----|-------------------|---------|-------|
+| UC-13 | Déclencher l'analyse IA préliminaire | Système IA (auto) | Étape 4 : Prédiction basée sur symptômes + signes vitaux, suggestion d'examens |
+| UC-14 | Gérer les examens complémentaires | Médecin | Étape 5 : Ajouter/modifier/supprimer examens (Biologie, Imagerie, ECG, Clinique), saisir résultats |
+| UC-15 | Déclencher le diagnostic IA final | Système IA (auto) | Étape 6 : Prédiction enrichie avec résultats d'examens, confidence affinée |
+| UC-16 | Valider ou corriger le diagnostic IA | Médecin | Étape 7 : Confirmer la suggestion IA ou saisir un diagnostic corrigé avec notes |
+| UC-17 | Rédiger une ordonnance | Médecin | Étape 8 : Saisie de médicaments (nom, dosage, fréquence, durée, instructions) |
+| UC-18 | Planifier le suivi | Médecin | Étape 9 : Date prochain RDV, instructions patient, notes de clôture |
+| UC-19 | Clôturer la consultation | Médecin | Étape 9 → Soumission finale, statut `terminée`, redirection vers diagnostics |
+
+---
+
+### 2.4 GESTION DES CONSULTATIONS
+
+| ID | Cas d'utilisation | Acteurs | Description |
+|----|-------------------|---------|-------------|
+| UC-20 | Créer une consultation rapide | Médecin, Infirmier | Saisie simplifiée nom/prénoms/sexe + motif, patient enregistré immédiatement |
+| UC-21 | Consulter la liste des consultations | Admin, Médecin, Infirmier | Vue grille ou tableau, filtre par statut, recherche par patient/médecin/motif |
+| UC-22 | Filtrer les consultations par statut | Admin, Médecin, Infirmier | Filtres : Tous / En attente / Att. médecin / En cours / Terminée |
+| UC-23 | Affecter un médecin | Admin, Médecin | Sélection dans la liste des médecins disponibles via modale |
+| UC-24 | Démarrer une consultation | Médecin | Passage du statut `en attente` → `en cours` |
+| UC-25 | Reprendre une consultation | Médecin | Chargement des données infirmier (étapes 1–3) et continuation à partir des examens (étape 5) |
+| UC-26 | Modifier une consultation | Admin | Mise à jour du motif, de la date, du médecin, du statut |
+| UC-27 | Supprimer une consultation | Admin | Suppression avec confirmation et cascade (symptômes, vitaux, examens, diagnostics) |
+
+---
+
+### 2.5 NOTIFICATIONS ET ALERTES
+
+| ID | Cas d'utilisation | Acteurs | Description |
+|----|-------------------|---------|-------------|
+| UC-28 | Recevoir une notification de consultation | Médecin | Icône cloche avec badge de comptage, actualisation toutes les 30 secondes |
+| UC-29 | Voir les consultations en attente | Médecin | Liste déroulante des consultations `en_attente_medecin` avec patient, motif, horodatage |
+| UC-30 | Naviguer vers une consultation depuis la notification | Médecin | Clic sur la notification → redirection vers `/consultation/nouvelle?reprendre={id}` |
+| UC-31 | Recevoir des alertes de signes vitaux | Médecin, Infirmier | Badges jaunes si : T° ≥ 38.5°C, FC > 100 bpm, TA syst. > 140 mmHg, SpO₂ < 94% |
+
+---
+
+### 2.6 DIAGNOSTICS IA (page analytique)
+
+| ID | Cas d'utilisation | Acteurs | Description |
+|----|-------------------|---------|-------------|
+| UC-32 | Consulter les diagnostics IA | Admin, Médecin | Taux d'approbation, confiance moyenne, top diagnostics |
+| UC-33 | Visualiser la distribution des diagnostics | Admin, Médecin | Graphique barre : top 10 maladies détectées |
+| UC-34 | Visualiser la distribution des statuts | Admin, Médecin | Graphique circulaire : CONFIRMÉ / REJETÉ / PROVISOIRE |
+| UC-35 | Visualiser la distribution des niveaux de confiance | Admin, Médecin | Histogramme : Haute (>70%) / Moyenne (50-70%) / Faible (<50%) |
+| UC-36 | Consulter les performances du modèle | Admin, Médecin | Taux de rejet, nombre par niveau de confiance |
+
+---
+
+### 2.7 GESTION DES UTILISATEURS (Admin)
+
+| ID | Cas d'utilisation | Acteurs | Description |
+|----|-------------------|---------|-------------|
+| UC-37 | Créer un compte utilisateur | Admin | Nom, prénoms, email, mot de passe, rôle (Admin/Médecin/Infirmier) |
+| UC-38 | Lister les utilisateurs | Admin | Vue grille/tableau, recherche, filtre par rôle |
+| UC-39 | Modifier un utilisateur | Admin | Mise à jour email, rôle, nom, mot de passe (optionnel) |
+| UC-40 | Activer/désactiver un compte | Admin | Bascule du statut `actif`, désactivé = ne peut plus se connecter |
+| UC-41 | Supprimer un utilisateur | Admin | Suppression définitive avec confirmation |
+
+---
+
+### 2.8 GESTION DU PERSONNEL MÉDICAL (Admin)
+
+| ID | Cas d'utilisation | Acteurs | Description |
+|----|-------------------|---------|-------------|
+| UC-42 | Ajouter un médecin | Admin | Nom, prénoms, spécialité, téléphone, disponibilité |
+| UC-43 | Lister les médecins | Admin | Affichage avec spécialité, téléphone, statut disponible |
+| UC-44 | Modifier un médecin | Admin | Mise à jour de toutes les informations |
+| UC-45 | Supprimer un médecin | Admin | Retrait de la liste des médecins disponibles |
+| UC-46 | Gérer la disponibilité d'un médecin | Admin | Bascule disponible/indisponible (affecte la liste d'affectation) |
+| UC-47 | Ajouter un infirmier | Admin | Nom, prénoms, téléphone, email, disponibilité |
+| UC-48 | Gérer les infirmiers | Admin | CRUD identique aux médecins |
+
+---
+
+### 2.9 ADMINISTRATION DU SYSTÈME (Admin)
+
+| ID | Cas d'utilisation | Acteurs | Description |
+|----|-------------------|---------|-------------|
+| UC-49 | Consulter l'état du système | Admin | Statut serveur, version Python, port Uvicorn, ressources CPU/RAM/Disque |
+| UC-50 | Consulter l'état du modèle IA | Admin | Modèle chargé, version, nombre de features et de classes, chemin du fichier |
+| UC-51 | Configurer les paramètres IA | Admin | Seuil de confiance min, seuil d'alerte bas, n_estimators, max_depth |
+| UC-52 | Entraîner le modèle IA | Admin | Lancement en arrière-plan, suivi en temps réel (accuracy, précision, rappel, F1-score) |
+| UC-53 | Consulter les résultats d'entraînement | Admin | Métriques, durée, fichier généré, nombre d'échantillons/features/classes |
+| UC-54 | Nettoyer les anciens modèles | Admin | Suppression des fichiers `.pkl` obsolètes pour libérer l'espace disque |
+| UC-55 | Nettoyer les journaux | Admin | Suppression/archivage des fichiers de logs d'entraînement |
+
+---
+
+### 2.10 TABLEAU DE BORD ANALYTIQUE
+
+| ID | Cas d'utilisation | Acteurs | Description |
+|----|-------------------|---------|-------------|
+| UC-56 | Consulter le tableau de bord | Admin, Médecin, Infirmier | KPIs : total patients, consultations, consultations du jour, diagnostics IA, taux approbation |
+| UC-57 | Visualiser les consultations récentes | Admin, Médecin | Liste des 6 dernières consultations avec statut et lien vers dossier |
+| UC-58 | Consulter la disponibilité du personnel | Admin, Médecin | Médecins X/Y disponibles, Infirmiers X/Y disponibles (barres de progression) |
+| UC-59 | Visualiser les statistiques globales | Admin, Médecin | Graphique en anneau : répartition des consultations par statut et catégorie |
+| UC-60 | Rafraîchir les données du tableau de bord | Admin, Médecin, Infirmier | Bouton de rechargement manuel des KPIs |
+
+---
+
+## 3. RELATIONS ENTRE CAS D'UTILISATION
+
+```
+UC-09 (Initier consultation) <<include>> UC-04 (Enregistrer patient)
+UC-12 (Soumettre au médecin) <<extend>>  UC-23 (Affecter médecin)
+UC-25 (Reprendre consultation) <<include>> UC-14 (Gérer examens)
+UC-13 (Analyse IA prélim.) <<include>>   UC-10 (Saisir symptômes) + UC-11 (Signes vitaux)
+UC-15 (Diagnostic IA final) <<include>>  UC-13 + UC-14 (Examens)
+UC-16 (Valider/corriger) <<extend>>      UC-15 (Diagnostic IA final)
+UC-37 (Créer utilisateur) <<extend>>     UC-42 (Ajouter médecin) [si rôle=médecin]
+UC-52 (Entraîner modèle) <<include>>     UC-50 (État modèle IA)
+```
+
+---
+
+## 4. CAS D'UTILISATION CONCRET
+
+### Titre : Consultation d'un patient febrifile avec diagnostic du paludisme
+
+**Contexte** : Clinique Privée Santé Plus, Cotonou — Jeudi 7 mai 2026 à 08h30
+
+**Acteurs impliqués** : Marie-Claire Afi DOSSOU (Infirmier), Dr. Émile HOUENOU (Médecin)
+
+---
+
+#### PHASE 1 — Accueil et saisie infirmier (UC-09, UC-10, UC-11, UC-12)
+
+**08:30** — Un patient se présente à l'accueil de la clinique. L'infirmière Marie-Claire ouvre l'application et clique sur **"Nouvelle consultation complète"**.
+
+**Étape 1 — Informations du patient :**
+L'infirmière saisit :
+- Nom : **AGOSSOU**
+- Prénoms : **Koffi René**
+- Date de naissance : **12/03/1988** (38 ans)
+- Sexe : **Masculin**
+- Groupe sanguin : **O+**
+- Téléphone : **+229 97 12 34 56**
+
+Motif de consultation : *"Fièvre persistante depuis 4 jours, frissons, maux de tête intenses"*
+
+Elle sélectionne le médecin assigné : **Dr. Émile HOUENOU** dans la liste déroulante.
+
+→ Clic sur "Suivant" : le système appelle `POST /api/consultations/init`, **le patient est immédiatement enregistré en base de données** avec `consultation_id = 0037`.
+
+**Étape 2 — Saisie des symptômes :**
+L'infirmière ajoute 3 symptômes :
+
+| Symptôme | Sévérité | Durée |
+|----------|----------|-------|
+| Fièvre | Sévère | 4 jours |
+| Céphalées (maux de tête) | Modérée | 3 jours |
+| Frissons | Modérée | 4 jours |
+
+→ Clic sur "Suivant"
+
+**Étape 3 — Mesure des signes vitaux :**
+L'infirmière mesure et saisit :
+
+| Paramètre | Valeur | Alerte |
+|-----------|--------|--------|
+| Tension systolique | 118 mmHg | — |
+| Tension diastolique | 76 mmHg | — |
+| Fréquence cardiaque | 108 bpm | ⚠ > 100 |
+| Fréquence respiratoire | 22 rpm | ⚠ > 20 |
+| Température | **39.2°C** | ⚠ ≥ 38.5 |
+| Saturation O₂ | 96% | — |
+| Poids | 72 kg | — |
+| Taille | 175 cm | IMC : 23.5 |
+
+L'interface affiche **3 badges d'alerte jaunes** signalant les valeurs anormales.
+
+**08:47** — L'infirmière clique sur **"Envoyer au médecin"** :
+- Le système appelle `POST /api/consultations/workflow-partiel`
+- La consultation `#0037` passe au statut `en_attente_medecin`
+- Un **toast vert** confirme : *"Consultation envoyée au médecin avec succès"*
+- L'infirmière est redirigée vers un écran de confirmation
+
+---
+
+#### PHASE 2 — Notification et prise en charge médecin (UC-28, UC-29, UC-30)
+
+**08:48** — Le Dr. Émile HOUENOU, connecté sur son poste, voit apparaître **une notification rouge (1)** sur l'icône de cloche en haut à droite.
+
+Il ouvre le panneau de notifications :
+> 🔔 **Koffi René AGOSSOU** — Fièvre persistante depuis 4 jours, frissons... *(il y a 1 min)*
+
+Il clique sur la notification → le système le redirige vers `/consultation/nouvelle?reprendre=37`.
+
+---
+
+#### PHASE 3 — Analyse IA préliminaire (UC-13, UC-25)
+
+**Étape 4 — Analyse IA préliminaire :**
+Le Dr. HOUENOU consulte le résumé des données infirmier (symptômes + signes vitaux) et clique sur **"Lancer l'analyse préliminaire"**.
+
+Le système appelle `POST /api/ml/predict-direct` avec :
+```json
+{
+  "age": 38,
+  "sexe": "M",
+  "duree_symptomes_jours": 4,
+  "severite": "SEVERE",
+  "vitaux": { "temperature": 39.2, "frequence_cardiaque": 108, ... },
+  "symptomes": ["Fièvre", "Céphalées", "Frissons"]
+}
+```
+
+**Résultat de l'IA :**
+```
+🤖 Analyse préliminaire
+Hypothèse principale : Paludisme falciparum — 84.3%
+Alternatives :
+  2. Typhoïde (Salmonellose) — 62.1%
+  3. Dengue — 41.8%
+```
+
+Le système **pré-remplit automatiquement** les examens suggérés :
+- ✅ NFS (Numération Formule Sanguine)
+- ✅ CRP (Protéine C-réactive)
+- ✅ Frottis sanguin + GE ← suggéré pour Paludisme
+- ✅ TDR Paludisme ← suggéré pour Paludisme
+- ✅ Hémoculture ← suggéré pour Typhoïde
+- ✅ Widal ← suggéré pour Typhoïde
+
+---
+
+#### PHASE 4 — Examens et diagnostic final (UC-14, UC-15, UC-16)
+
+**Étape 5 — Examens complémentaires :**
+Le médecin réalise ou prescrit les examens. Il supprime **Hémoculture** et **Widal** (moins probable vu le contexte), et complète les résultats :
+
+| Examen | Résultat | Valeur |
+|--------|----------|--------|
+| NFS | Anémie modérée — Hb 9.2 g/dL | 9.2 g/dL |
+| CRP | Élevée | 87 mg/L |
+| Frottis sanguin + GE | **Plasmodium falciparum +++ (parasitémie 3.2%)** | Positif |
+| TDR Paludisme | **POSITIF** | Positif |
+
+→ Clic sur "Lancer diagnostic final"
+
+**Étape 6 — Diagnostic IA final :**
+Le système relance `POST /api/ml/predict-direct` avec les données enrichies des examens.
+
+**Résultat final de l'IA :**
+```
+🤖 Diagnostic final
+Diagnostic : Paludisme falciparum — 97.1%
+Alternatives :
+  2. Paludisme vivax — 18.4%
+  3. Anémie infectieuse — 12.6%
+```
+
+**Étape 7 — Validation médicale :**
+Le Dr. HOUENOU examine le résultat et clique sur **"Confirmer le diagnostic IA"**.
+
+> Diagnostic final retenu : **Paludisme falciparum** (confirmé biologiquement)
+> Notes cliniques : *"Frottis positif +++ avec parasitémie à 3.2%. Anémie secondaire au paludisme."*
+
+---
+
+#### PHASE 5 — Ordonnance et suivi (UC-17, UC-18, UC-19)
+
+**Étape 8 — Ordonnance :**
+Le médecin prescrit le traitement antipaludéen :
+
+| Médicament | Dosage | Fréquence | Durée | Instructions |
+|------------|--------|-----------|-------|-------------|
+| Artéméther/Luméfantrine (Coartem) | 4 comprimés | 2×/jour | 3 jours | À prendre avec un repas gras |
+| Paracétamol 500mg | 2 comprimés | 3×/jour | 5 jours | En cas de fièvre > 38°C |
+| Sulfate de fer | 200mg | 1×/jour | 30 jours | Pour corriger l'anémie |
+
+**Étape 9 — Planification du suivi :**
+- **Prochain RDV** : 14/05/2026 (dans 7 jours)
+- **Instructions patient** : *"Prendre tous les médicaments même si la fièvre disparaît. Repos absolu 3 jours. Consulter en urgence si vomissements, troubles de la conscience ou fièvre > 40°C."*
+- **Notes médecin** : *"Contrôle NFS à J7 pour vérification de la clairance parasitaire et évolution de l'anémie."*
+
+**09:15** — Le Dr. HOUENOU clique sur **"Clôturer la consultation"**.
+
+Le système :
+1. Appelle `POST /api/consultations/37/workflow-complet`
+2. Enregistre : consultation, symptômes, signes vitaux, 4 examens, 2 analyses IA, 1 diagnostic CONFIRMÉ, 3 médicaments, 1 suivi
+3. Passe la consultation au statut `terminée`
+4. Affiche un **toast vert** : *"Consultation enregistrée ! Affichage des diagnostics IA..."*
+5. Redirige vers la page **Diagnostics IA** en 1.5 secondes
+
+---
+
+#### RÉSUMÉ DU SCÉNARIO
+
+| Étape | Acteur | Action | Durée |
+|-------|--------|--------|-------|
+| Accueil | Infirmier | Enregistrement patient | 5 min |
+| Étape 1 | Infirmier | Saisie infos + motif | 3 min |
+| Étape 2 | Infirmier | Saisie 3 symptômes | 2 min |
+| Étape 3 | Infirmier | Mesure signes vitaux | 5 min |
+| Notification | Médecin | Réception alerte | — |
+| Étape 4 | Système IA | Analyse préliminaire | < 2 sec |
+| Étape 5 | Médecin | Examens + résultats | 20 min |
+| Étape 6 | Système IA | Diagnostic final | < 2 sec |
+| Étape 7 | Médecin | Validation diagnostic | 2 min |
+| Étape 8 | Médecin | Ordonnance (3 médicaments) | 3 min |
+| Étape 9 | Médecin | Suivi + clôture | 2 min |
+| **Total** | | | **~45 min** |
+
+**Valeur ajoutée de l'IA :** Le modèle a orienté d'emblée vers le paludisme (84.3% dès l'analyse préliminaire) et a atteint **97.1% de confiance** après les examens — cohérent avec la confirmation biologique. Le médecin a économisé du temps dans l'interprétation initiale et a reçu une suggestion d'examens ciblés (TDR Paludisme, Frottis).
+
+---
+
+## 5. LISTE COMPLÈTE DES 60 CAS D'UTILISATION (pour le diagramme UML)
+
+```
+ACTEUR : TOUS LES UTILISATEURS
+  UC-01  Se connecter
+  UC-02  Se déconnecter
+  UC-03  Rafraîchir le jeton d'authentification
+
+ACTEUR : INFIRMIER
+  UC-04  Enregistrer un nouveau patient
+  UC-09  Initier une consultation complète
+  UC-10  Saisir les symptômes du patient
+  UC-11  Mesurer et enregistrer les signes vitaux
+  UC-12  Soumettre la consultation au médecin
+  UC-20  Créer une consultation rapide
+  UC-21  Consulter la liste des consultations
+  UC-22  Filtrer les consultations par statut
+  UC-31  Recevoir des alertes de signes vitaux anormaux
+  UC-56  Consulter le tableau de bord (KPIs)
+  UC-60  Rafraîchir les données du tableau de bord
+
+ACTEUR : MÉDECIN
+  UC-04  Enregistrer un nouveau patient
+  UC-05  Consulter la liste des patients
+  UC-06  Consulter le dossier patient complet
+  UC-09  Initier une consultation complète
+  UC-13  Déclencher l'analyse IA préliminaire (automatique)
+  UC-14  Gérer les examens complémentaires
+  UC-15  Déclencher le diagnostic IA final (automatique)
+  UC-16  Valider ou corriger le diagnostic IA
+  UC-17  Rédiger une ordonnance médicale
+  UC-18  Planifier le suivi du patient
+  UC-19  Clôturer la consultation
+  UC-20  Créer une consultation rapide
+  UC-21  Consulter la liste des consultations
+  UC-22  Filtrer les consultations par statut
+  UC-23  Affecter un médecin à une consultation
+  UC-24  Démarrer une consultation (en cours)
+  UC-25  Reprendre une consultation en attente
+  UC-26  Modifier une consultation
+  UC-28  Recevoir une notification de consultation
+  UC-29  Voir les consultations en attente
+  UC-30  Naviguer vers une consultation depuis une notification
+  UC-31  Recevoir des alertes de signes vitaux anormaux
+  UC-32  Consulter les diagnostics IA
+  UC-33  Visualiser la distribution des diagnostics
+  UC-34  Visualiser la distribution des statuts
+  UC-35  Visualiser la distribution des niveaux de confiance
+  UC-36  Consulter les performances du modèle IA
+  UC-56  Consulter le tableau de bord
+  UC-57  Visualiser les consultations récentes
+  UC-58  Consulter la disponibilité du personnel
+  UC-59  Visualiser les statistiques globales (graphique anneau)
+  UC-60  Rafraîchir les données du tableau de bord
+
+ACTEUR : ADMINISTRATEUR (inclut tout ce que fait le médecin, plus :)
+  UC-07  Modifier les informations d'un patient
+  UC-08  Supprimer un patient
+  UC-26  Modifier une consultation
+  UC-27  Supprimer une consultation
+  UC-37  Créer un compte utilisateur
+  UC-38  Lister les utilisateurs (tous rôles)
+  UC-39  Modifier un utilisateur (rôle, email, mot de passe)
+  UC-40  Activer / désactiver un compte utilisateur
+  UC-41  Supprimer un utilisateur
+  UC-42  Ajouter un médecin (profil médical)
+  UC-43  Lister les médecins
+  UC-44  Modifier un médecin
+  UC-45  Supprimer un médecin
+  UC-46  Gérer la disponibilité d'un médecin
+  UC-47  Ajouter un infirmier
+  UC-48  Gérer les infirmiers (CRUD complet)
+  UC-49  Consulter l'état du système (serveur, ressources)
+  UC-50  Consulter l'état du modèle IA
+  UC-51  Configurer les paramètres du modèle IA
+  UC-52  Entraîner le modèle IA (lancement + monitoring)
+  UC-53  Consulter les résultats d'entraînement
+  UC-54  Nettoyer les anciens fichiers modèle
+  UC-55  Nettoyer les journaux système
+
+ACTEUR : SYSTÈME IA (acteur interne)
+  UC-13  Analyse préliminaire (symptômes + signes vitaux)
+  UC-15  Diagnostic final (symptômes + vitaux + examens)
+```
+
+---
+
+*Document généré le 07/05/2026 — Santé Plus IA, Clinique Privée Cotonou*

@@ -409,10 +409,41 @@ body.sp-body {
 
 .sp-stat-value {
     font-family: 'Syne', sans-serif;
-    font-size: 32px;
+    font-size: 44px;
     font-weight: 800;
     color: var(--sp-gray-900);
     line-height: 1;
+    font-variant-numeric: lining-nums tabular-nums;
+    font-feature-settings: "lnum" 1, "tnum" 1;
+}
+
+/* Standardized number font for the entire dashboard */
+.sp-number {
+    font-family: 'Syne', sans-serif !important;
+    font-variant-numeric: lining-nums tabular-nums !important;
+    font-feature-settings: "lnum" 1, "tnum" 1 !important;
+}
+
+.sp-number-xl {
+    font-size: 44px !important;
+    font-weight: 800 !important;
+    line-height: 1;
+    letter-spacing: -0.02em;
+}
+
+.sp-number-lg {
+    font-size: 32px !important;
+    font-weight: 800 !important;
+}
+
+.sp-number-md {
+    font-size: 26px !important;
+    font-weight: 700 !important;
+}
+
+.sp-number-sm {
+    font-size: 22px !important;
+    font-weight: 600 !important;
 }
 .sp-stat-label {
     font-size: 12px;

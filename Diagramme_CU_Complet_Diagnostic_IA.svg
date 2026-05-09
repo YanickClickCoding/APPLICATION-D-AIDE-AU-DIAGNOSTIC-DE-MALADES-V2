@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1800" width="1400" height="1800">
+  <defs>
+    <style>
+      .actor { fill: none; stroke: #333; stroke-width: 2; }
+      .actor-head { fill: #333; }
+      .actor-text { fill: #333; font-family: Arial, sans-serif; font-size: 14px; text-anchor: middle; font-weight: bold; }
+      .usecase { fill: white; stroke: #4A90E2; stroke-width: 2; }
+      .usecase-text { fill: #333; font-family: Arial, sans-serif; font-size: 12px; text-anchor: middle; }
+      .system-box { fill: none; stroke: #2C3E50; stroke-width: 3; }
+      .system-title { fill: #2C3E50; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; text-anchor: middle; }
+      .association { stroke: #666; stroke-width: 2; fill: none; }
+      .include-line { stroke: #999; stroke-width: 1.5; stroke-dasharray: 5,5; fill: none; marker-end: url(#arrow-include); }
+      .extend-line { stroke: #999; stroke-width: 1.5; stroke-dasharray: 5,5; fill: none; marker-end: url(#arrow-extend); }
+      .relation-text { fill: #666; font-family: Arial, sans-serif; font-size: 10px; font-style: italic; }
+      .title { fill: #2C3E50; font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; text-anchor: middle; }
+      .subtitle { fill: #555; font-family: Arial, sans-serif; font-size: 14px; text-anchor: middle; }
+    </style>
+    <marker id="arrow-include" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#999" />
+    </marker>
+    <marker id="arrow-extend" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#999" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="700" y="40" class="title">DIAGRAMME DE CAS D'UTILISATION</text>
+  <text x="700" y="65" class="subtitle">Système de Diagnostic Médical Assisté par IA - SANTE PLUS</text>
+  <line x1="100" y1="75" x2="1300" y2="75" stroke="#2C3E50" stroke-width="2"/>
+
+  <!-- System Box -->
+  <rect x="300" y="100" width="1000" height="1600" class="system-box" rx="10"/>
+  <text x="800" y="130" class="system-title">Système de Diagnostic Médical Assisté par IA</text>
+
+  <!-- ACTORS -->
+  
+  <!-- Administrateur -->
+  <g id="admin-actor">
+    <circle cx="150" cy="200" r="15" class="actor-head"/>
+    <line x1="150" y1="215" x2="150" y2="260" class="actor"/>
+    <line x1="150" y1="230" x2="120" y2="250" class="actor"/>
+    <line x1="150" y1="230" x2="180" y2="250" class="actor"/>
+    <line x1="150" y1="260" x2="120" y2="290" class="actor"/>
+    <line x1="150" y1="260" x2="180" y2="290" class="actor"/>
+    <text x="150" y="310" class="actor-text">Administrateur</text>
+  </g>
+
+  <!-- Médecin -->
+  <g id="medecin-actor">
+    <circle cx="150" cy="600" r="15" class="actor-head"/>
+    <line x1="150" y1="615" x2="150" y2="660" class="actor"/>
+    <line x1="150" y1="630" x2="120" y2="650" class="actor"/>
+    <line x1="150" y1="630" x2="180" y2="650" class="actor"/>
+    <line x1="150" y1="660" x2="120" y2="690" class="actor"/>
+    <line x1="150" y1="660" x2="180" y2="690" class="actor"/>
+    <text x="150" y="710" class="actor-text">Médecin</text>
+  </g>
+
+  <!-- Infirmier -->
+  <g id="infirmier-actor">
+    <circle cx="150" cy="1100" r="15" class="actor-head"/>
+    <line x1="150" y1="1115" x2="150" y2="1160" class="actor"/>
+    <line x1="150" y1="1130" x2="120" y2="1150" class="actor"/>
+    <line x1="150" y1="1130" x2="180" y2="1150" class="actor"/>
+    <line x1="150" y1="1160" x2="120" y2="1190" class="actor"/>
+    <line x1="150" y1="1160" x2="180" y2="1190" class="actor"/>
+    <text x="150" y="1210" class="actor-text">Infirmier</text>
+  </g>
+
+  <!-- Système IA (acteur secondaire) -->
+  <g id="ia-actor">
+    <circle cx="1350" cy="900" r="15" class="actor-head"/>
+    <line x1="1350" y1="915" x2="1350" y2="960" class="actor"/>
+    <line x1="1350" y1="930" x2="1320" y2="950" class="actor"/>
+    <line x1="1350" y1="930" x2="1380" y2="950" class="actor"/>
+    <line x1="1350" y1="960" x2="1320" y2="990" class="actor"/>
+    <line x1="1350" y1="960" x2="1380" y2="990" class="actor"/>
+    <text x="1350" y="1010" class="actor-text">Système IA</text>
+  </g>
+
+  <!-- USE CASES - ADMINISTRATEUR -->
+  
+  <!-- UC1: Gérer les utilisateurs -->
+  <ellipse cx="550" cy="200" rx="120" ry="40" class="usecase"/>
+  <text x="550" y="205" class="usecase-text">Gérer les utilisateurs</text>
+  <line x1="180" y1="250" x2="430" y2="200" class="association"/>
+
+  <!-- UC2: Gérer les centres de santé -->
+  <ellipse cx="550" cy="280" rx="130" ry="40" class="usecase"/>
+  <text x="550" y="285" class="usecase-text">Gérer les centres</text>
+  <line x1="180" y1="260" x2="420" y2="280" class="association"/>
+
+  <!-- UC3: Consulter les statistiques -->
+  <ellipse cx="550" cy="360" rx="130" ry="40" class="usecase"/>
+  <text x="550" y="365" class="usecase-text">Consulter les statistiques</text>
+  <line x1="180" y1="270" x2="420" y2="360" class="association"/>
+
+  <!-- UC4: Gérer les paramètres système -->
+  <ellipse cx="550" cy="440" rx="140" ry="40" class="usecase"/>
+  <text x="550" y="445" class="usecase-text">Gérer les paramètres</text>
+  <line x1="180" y1="280" x2="410" y2="440" class="association"/>
+
+  <!-- USE CASES - MEDECIN -->
+  
+  <!-- UC5: Créer une consultation -->
+  <ellipse cx="550" cy="550" rx="130" ry="40" class="usecase"/>
+  <text x="550" y="555" class="usecase-text">Créer une consultation</text>
+  <line x1="180" y1="600" x2="420" y2="550" class="association"/>
+
+  <!-- UC6: Effectuer un diagnostic -->
+  <ellipse cx="550" cy="630" rx="130" ry="40" class="usecase"/>
+  <text x="550" y="635" class="usecase-text">Effectuer un diagnostic</text>
+  <line x1="180" y1="610" x2="420" y2="630" class="association"/>
+
+  <!-- UC7: Valider diagnostic IA -->
+  <ellipse cx="550" cy="710" rx="130" ry="40" class="usecase"/>
+  <text x="550" y="715" class="usecase-text">Valider diagnostic IA</text>
+  <line x1="180" y1="620" x2="420" y2="710" class="association"/>
+
+  <!-- UC8: Créer une prescription -->
+  <ellipse cx="550" cy="790" rx="130" ry="40" class="usecase"/>
+  <text x="550" y="795" class="usecase-text">Créer une prescription</text>
+  <line x1="180" y1="630" x2="420" y2="790" class="association"/>
+
+  <!-- UC9: Consulter l'historique patient -->
+  <ellipse cx="550" cy="870" rx="140" ry="40" class="usecase"/>
+  <text x="550" y="875" class="usecase-text">Consulter historique patient</text>
+  <line x1="180" y1="640" x2="410" y2="870" class="association"/>
+
+  <!-- UC10: Générer un rapport médical -->
+  <ellipse cx="550" cy="950" rx="140" ry="40" class="usecase"/>
+  <text x="550" y="955" class="usecase-text">Générer rapport médical</text>
+  <line x1="180" y1="650" x2="410" y2="950" class="association"/>
+
+  <!-- USE CASES - INFIRMIER -->
+  
+  <!-- UC11: Enregistrer un patient -->
+  <ellipse cx="550" cy="1050" rx="130" ry="40" class="usecase"/>
+  <text x="550" y="1055" class="usecase-text">Enregistrer un patient</text>
+  <line x1="180" y1="1100" x2="420" y2="1050" class="association"/>
+
+  <!-- UC12: Préparer une consultation -->
+  <ellipse cx="550" cy="1130" rx="140" ry="40" class="usecase"/>
+  <text x="550" y="1135" class="usecase-text">Préparer une consultation</text>
+  <line x1="180" y1="1110" x2="410" y2="1130" class="association"/>
+
+  <!-- UC13: Saisir les signes vitaux -->
+  <ellipse cx="550" cy="1210" rx="130" ry="40" class="usecase"/>
+  <text x="550" y="1215" class="usecase-text">Saisir les signes vitaux</text>
+  <line x1="180" y1="1120" x2="420" y2="1210" class="association"/>
+
+  <!-- UC14: Consulter les rendez-vous -->
+  <ellipse cx="550" cy="1290" rx="140" ry="40" class="usecase"/>
+  <text x="550" y="1295" class="usecase-text">Consulter les rendez-vous</text>
+  <line x1="180" y1="1130" x2="410" y2="1290" class="association"/>
+
+  <!-- USE CASES - SYSTEME IA -->
+  
+  <!-- UC15: Analyser les symptômes -->
+  <ellipse cx="1050" cy="800" rx="130" ry="40" class="usecase"/>
+  <text x="1050" y="805" class="usecase-text">Analyser les symptômes</text>
+  <line x1="1320" y1="950" x2="1180" y2="800" class="association"/>
+
+  <!-- UC16: Prédire une maladie -->
+  <ellipse cx="1050" cy="880" rx="130" ry="40" class="usecase"/>
+  <text x="1050" y="885" class="usecase-text">Prédire une maladie</text>
+  <line x1="1320" y1="960" x2="1180" y2="880" class="association"/>
+
+  <!-- UC17: Calculer score de confiance -->
+  <ellipse cx="1050" cy="960" rx="140" ry="40" class="usecase"/>
+  <text x="1050" y="965" class="usecase-text">Calculer score confiance</text>
+  <line x1="1320" y1="970" x2="1190" y2="960" class="association"/>
+
+  <!-- UC18: Suggérer examens -->
+  <ellipse cx="1050" cy="1040" rx="130" ry="40" class="usecase"/>
+  <text x="1050" y="1045" class="usecase-text">Suggérer examens</text>
+  <line x1="1320" y1="980" x2="1180" y2="1040" class="association"/>
+
+  <!-- USE CASES COMMUNS (inclus) -->
+  
+  <!-- UC19: S'authentifier -->
+  <ellipse cx="900" cy="180" rx="100" ry="35" class="usecase"/>
+  <text x="900" y="185" class="usecase-text">S'authentifier</text>
+
+  <!-- UC20: Vérifier les permissions -->
+  <ellipse cx="900" cy="260" rx="120" ry="35" class="usecase"/>
+  <text x="900" y="265" class="usecase-text">Vérifier permissions</text>
+
+  <!-- UC21: Enregistrer dans la BD -->
+  <ellipse cx="900" cy="1450" rx="130" ry="35" class="usecase"/>
+  <text x="900" y="1455" class="usecase-text">Enregistrer dans BD</text>
+
+  <!-- UC22: Valider les données -->
+  <ellipse cx="900" cy="1530" rx="120" ry="35" class="usecase"/>
+  <text x="900" y="1535" class="usecase-text">Valider les données</text>
+
+  <!-- UC23: Générer un PDF -->
+  <ellipse cx="900" cy="1610" rx="100" ry="35" class="usecase"/>
+  <text x="900" y="1615" class="usecase-text">Générer PDF</text>
+
+  <!-- RELATIONS INCLUDE -->
+  
+  <!-- Gérer utilisateurs -> S'authentifier -->
+  <line x1="670" y1="200" x2="800" y2="180" class="include-line"/>
+  <text x="720" y="185" class="relation-text">&lt;&lt;include&gt;&gt;</text>
+
+  <!-- Gérer centres -> S'authentifier -->
+  <line x1="670" y1="270" x2="800" y2="240" class="include-line"/>
+  <text x="720" y="250" class="relation-text">&lt;&lt;include&gt;&gt;</text>
+
+  <!-- Consulter statistiques -> S'authentifier -->
+  <line x1="650" y1="340" x2="820" y2="210" class="include-line"/>
+  <text x="720" y="270" class="relation-text">&lt;&lt;include&gt;&gt;</text>
+
+  <!-- Gérer paramètres -> S'authentifier -->
+  <line x1="640" y1="420" x2="840" y2="210" class="include-line"/>
+  <text x="720" y="310" class="relation-text">&lt;&lt;include&gt;&gt;</text>
+
+  <!-- Créer consultation -> S'authentifier -->
+  <line x1="650" y1="530" x2="850" y2="210" class="include-line"/>
+  <text x="730" y="360" class="relation-text">&lt;&lt;include&gt;&gt;</text>
+
+  <!-- Gérer utilisateurs -> Vérifier permissions -->
+  <line x1="670" y1="210" x2="780" y2="260" class="include-line"/>
+  <text x="710" y="230" class="relation-text">&lt;&lt;include&gt;&gt;</text>
+
+  <!-- Effectuer diagnostic -> Analyser symptômes -->
+  <line x1="680" y1="630" x2="920" y2="800" class="include-line"/>
+  <text x="780" y="710" class="relation-text">&lt;&lt;include&gt;&gt;</text>
+
+  <!-- Analyser symptômes -> Prédire maladie -->
+  <line x1="1050" y1="840" x2="1050" y2="840" class="include-line"/>
+  <line x1="1050" y1="840" x2="1050" y2="840" class="include-line"/>
+
+  <!-- Prédire maladie -> Calculer score -->
+  <line x1="1050" y1="920" x2="1050" y2="920" class="include-line"/>
+
+  <!-- Créer prescription -> Enregistrer BD -->
+  <line x1="630" y1="820" x2="820" y2="1430" class="include-line"/>
+  <text x="700" y="1120" class="relation-text">&lt;&lt;include&gt;&gt;</text>
+
+  <!-- Enregistrer patient -> Valider données -->
+  <line x1="650" y1="1080" x2="820" y2="1510" class="include-line"/>
+  <text x="710" y="1290" class="relation-text">&lt;&lt;include&gt;&gt;</text>
+
+  <!-- Enregistrer patient -> Enregistrer BD -->
+  <line x1="660" y1="1070" x2="800" y2="1430" class="include-line"/>
+  <text x="710" y="1240" class="relation-text">&lt;&lt;include&gt;&gt;</text>
+
+  <!-- Générer rapport -> Générer PDF -->
+  <line x1="650" y1="980" x2="830" y2="1590" class="include-line"/>
+  <text x="720" y="1280" class="relation-text">&lt;&lt;include&gt;&gt;</text>
+
+  <!-- RELATIONS EXTEND -->
+  
+  <!-- Valider diagnostic IA -> Effectuer diagnostic -->
+  <line x1="550" y1="670" x2="550" y2="670" class="extend-line"/>
+  <path d="M 550 670 Q 480 690 550 670" class="extend-line"/>
+  <text x="460" y="685" class="relation-text">&lt;&lt;extend&gt;&gt;</text>
+
+  <!-- Suggérer examens -> Prédire maladie -->
+  <line x1="1050" y1="1000" x2="1050" y2="920" class="extend-line"/>
+  <text x="1070" y="960" class="relation-text">&lt;&lt;extend&gt;&gt;</text>
+
+  <!-- Legend -->
+  <rect x="100" y="1400" width="180" height="280" fill="white" stroke="#2C3E50" stroke-width="2" rx="5"/>
+  <text x="190" y="1430" class="system-title" style="font-size: 14px;">LEGENDE</text>
+  
+  <!-- Actor example -->
+  <circle cx="140" cy="1460" r="10" class="actor-head"/>
+  <line x1="140" y1="1470" x2="140" y2="1495" class="actor"/>
+  <line x1="140" y1="1478" x2="125" y2="1488" class="actor"/>
+  <line x1="140" y1="1478" x2="155" y2="1488" class="actor"/>
+  <line x1="140" y1="1495" x2="125" y2="1510" class="actor"/>
+  <line x1="140" y1="1495" x2="155" y2="1510" class="actor"/>
+  <text x="200" y="1485" class="usecase-text" style="text-anchor: start; font-size: 11px;">Acteur</text>
+
+  <!-- Use case example -->
+  <ellipse cx="170" cy="1545" rx="50" ry="20" class="usecase"/>
+  <text x="170" y="1550" class="usecase-text" style="font-size: 10px;">Cas d'utilisation</text>
+
+  <!-- Association -->
+  <line x1="110" y1="1590" x2="170" y2="1590" class="association"/>
+  <text x="200" y="1595" class="usecase-text" style="text-anchor: start; font-size: 11px;">Association</text>
+
+  <!-- Include -->
+  <line x1="110" y1="1620" x2="170" y2="1620" class="include-line"/>
+  <text x="200" y="1625" class="usecase-text" style="text-anchor: start; font-size: 11px;">&lt;&lt;include&gt;&gt;</text>
+
+  <!-- Extend -->
+  <line x1="110" y1="1650" x2="170" y2="1650" class="extend-line"/>
+  <text x="200" y="1655" class="usecase-text" style="text-anchor: start; font-size: 11px;">&lt;&lt;extend&gt;&gt;</text>
+
+  <!-- Statistics -->
+  <rect x="100" y="1500" width="180" height="90" fill="#FFF9C4" stroke="#F57C00" stroke-width="1" rx="3"/>
+  <text x="190" y="1525" class="usecase-text" style="font-size: 11px; font-weight: bold;">STATISTIQUES</text>
+  <text x="110" y="1545" class="usecase-text" style="text-anchor: start; font-size: 10px;">• 4 Acteurs</text>
+  <text x="110" y="1560" class="usecase-text" style="text-anchor: start; font-size: 10px;">• 23 Cas d'utilisation</text>
+  <text x="110" y="1575" class="usecase-text" style="text-anchor: start; font-size: 10px;">• 9 Maladies détectables</text>
+
+  <!-- Footer -->
+  <line x1="100" y1="1720" x2="1300" y2="1720" stroke="#2C3E50" stroke-width="2"/>
+  <text x="700" y="1750" class="subtitle">Système SANTE PLUS - Clinique de Cotonou, Bénin</text>
+  <text x="700" y="1775" class="subtitle">© 2026 - Diagramme UML 2.5 - Modèle IA: Random Forest (Précision 95%)</text>
+
+</svg>

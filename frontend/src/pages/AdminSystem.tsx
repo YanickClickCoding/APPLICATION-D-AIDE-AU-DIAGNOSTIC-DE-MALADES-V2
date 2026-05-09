@@ -40,7 +40,7 @@ const Badge = ({ ok, label }: { ok: boolean; label: string }) => (
 
 const Stat = ({ label, value, unit = '' }: { label: string; value: any; unit?: string }) => (
   <div style={{ textAlign: 'center' }}>
-    <div style={{ fontSize: 22, fontWeight: 800, color: '#1E1B4B' }}>{value ?? '—'}{unit}</div>
+    <div className="sp-number sp-number-md" style={{ color: '#1E1B4B' }}>{value ?? '—'}{unit}</div>
     <div style={{ fontSize: 11, color: '#6B7280', fontWeight: 600, marginTop: 2 }}>{label}</div>
   </div>
 );
@@ -390,7 +390,7 @@ export default function AdminSystem() {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 12 }}>
                     {([['Précision', training.results.accuracy, '%'], ['F1-Score', training.results.f1_score, '%'], ['Classes', training.results.n_classes, ''], ['Durée', training.results.duration_s, 's']] as [string, any, string][]).map(([label, val, unit]) => (
                       <div key={label} style={{ textAlign: 'center', background: 'white', borderRadius: 8, padding: '8px 4px' }}>
-                        <div style={{ fontSize: 18, fontWeight: 800, color: '#065F46' }}>{val}{unit}</div>
+                        <div className="sp-number sp-number-sm" style={{ color: '#065F46' }}>{val}{unit}</div>
                         <div style={{ fontSize: 10, color: '#6B7280', fontWeight: 600 }}>{label}</div>
                       </div>
                     ))}

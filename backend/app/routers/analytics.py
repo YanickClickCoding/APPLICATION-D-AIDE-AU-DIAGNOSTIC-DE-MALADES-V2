@@ -72,6 +72,10 @@ def get_dashboard_stats(db: Session = Depends(get_db)) -> Dict:
         Consultation.statut == "terminée"
     ).scalar() or 0
     
+    consultations_en_attente_medecin = db.query(func.count(Consultation.consultation_id)).filter(
+        Consultation.statut == "en_attente_medecin"
+    ).scalar() or 0
+    
     # KPI 4: Nombre de diagnostics
     total_diagnostics = db.query(func.count(Diagnostic.diagnostic_id)).scalar() or 0
 
@@ -129,6 +133,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)) -> Dict:
             "patients_ce_mois": patients_this_month,
             "total_consultations": total_consultations,
             "consultations_en_attente": consultations_en_attente,
+            "consultations_en_attente_medecin": consultations_en_attente_medecin,
             "consultations_en_cours": consultations_en_cours,
             "consultations_terminees": consultations_terminees,
             "total_diagnostics": total_diagnostics,

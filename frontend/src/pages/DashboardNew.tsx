@@ -47,10 +47,10 @@ const StatCard = ({ label, value, total, icon: Icon, accent, bgIcon, colorIcon }
             <Icon style={{color: colorIcon, width:'24px', height:'24px'}} />
         </div>
         <div>
-            <div className="sp-stat-value" style={{ display: 'flex', alignItems: 'baseline', color: '#0f172a', fontFamily: "'Syne', sans-serif" }}>
-                <span style={{ fontSize: '38px', fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>{displayValue}</span>
+            <div className="sp-stat-value" style={{ display: 'flex', alignItems: 'baseline', color: '#0f172a' }}>
+                <span className="sp-number sp-number-xl">{displayValue}</span>
                 {total !== undefined && (
-                  <span style={{ fontSize: '24px', fontWeight: 700, color: '#94a3b8', marginLeft: '4px' }}>
+                  <span className="sp-number sp-number-lg" style={{ color: '#94a3b8', marginLeft: '4px' }}>
                     / {displayTotal}
                   </span>
                 )}
@@ -64,7 +64,7 @@ const StatCard = ({ label, value, total, icon: Icon, accent, bgIcon, colorIcon }
 const CenteredCounter = ({ value }: { value: number }) => {
   const displayValue = useCounter(value);
   return (
-    <div style={{fontSize: '24px', fontWeight: 700, color: '#64748B', fontFamily: "'DM Sans', sans-serif"}}>
+    <div className="sp-number sp-number-lg" style={{color: '#64748B'}}>
         {displayValue}
     </div>
   );
@@ -148,6 +148,7 @@ const Dashboard = () => {
   const statsData = {
     totalConsultations: stats.kpis.total_consultations,
     enAttente: stats.kpis.consultations_en_attente || 0,
+    enAttenteMedecin: stats.kpis.consultations_en_attente_medecin || 0,
     enCours: stats.kpis.consultations_en_cours || 0,
     terminees: stats.kpis.consultations_terminees || 0,
     medecinsDispo: personnel?.medecins.disponibles || 0,
@@ -162,20 +163,22 @@ const Dashboard = () => {
     tauxApprobation: stats.kpis.taux_approbation
   };
 
-  const totalStatsCount = statsData.totalConsultations + statsData.enCours + statsData.consultationsJour + statsData.totalPatients + statsData.diagnosticsIA;
+  const totalStatsCount = statsData.totalConsultations + statsData.enAttente + statsData.enAttenteMedecin + statsData.enCours + statsData.consultationsJour + statsData.totalPatients + statsData.diagnosticsIA;
 
   const chartData = {
-    labels: ['Total Consultations', 'En cours', 'Aujourd\'hui', 'Total Patients', 'Diagnostics IA', 'IA Approuvés'],
+    labels: ['Total Consultations', 'En attente', 'Attente médecin', 'En cours', 'Aujourd\'hui', 'Total Patients', 'Diagnostics IA', 'IA Approuvés'],
     datasets: [{
       data: totalStatsCount === 0 ? [1, 1] : [
         statsData.totalConsultations, 
+        statsData.enAttente,
+        statsData.enAttenteMedecin,
         statsData.enCours, 
         statsData.consultationsJour, 
         statsData.totalPatients,
         statsData.diagnosticsIA,
         statsData.diagnosticsApprouves
       ],
-      backgroundColor: totalStatsCount === 0 ? ['#4a4a4a', '#4a4a4a'] : ['#0A4B8C', '#3B82F6', '#EC4899', '#8B5CF6', '#6366F1', '#10B981'],
+      backgroundColor: totalStatsCount === 0 ? ['#4a4a4a', '#4a4a4a'] : ['#0A4B8C', '#F59E0B', '#FFFFFF', '#3B82F6', '#EC4899', '#8B5CF6', '#6366F1', '#10B981'],
       borderWidth: totalStatsCount === 0 ? 12 : 4,
       borderColor: '#242424',
       borderRadius: 10
@@ -196,10 +199,20 @@ const Dashboard = () => {
         display: totalStatsCount > 0,
         position: 'bottom' as const,
         labels: {
-          color: '#CBD5E1',
+          color: '#94a3b8',
           font: { family: "'DM Sans', sans-serif", size: 10 },
           padding: 10,
           boxWidth: 12
+        },
+        onHover: (event: any) => {
+          if (event.native && event.native.target) {
+            event.native.target.style.cursor = 'pointer';
+          }
+        },
+        onLeave: (event: any) => {
+          if (event.native && event.native.target) {
+            event.native.target.style.cursor = 'default';
+          }
         }
       },
       tooltip: { enabled: totalStatsCount > 0 }
@@ -260,7 +273,7 @@ const Dashboard = () => {
                   <div style={{marginBottom: '20px'}}>
                       <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px'}}>
                           <span style={{fontSize: '13px', color: '#6B7280', fontWeight: 600}}>Médecins</span>
-                          <span style={{fontSize: '20px', fontWeight: 700, color: '#4F46E5'}}>
+                          <span className="sp-number sp-number-md" style={{color: '#4F46E5'}}>
                               {personnel?.medecins.disponibles || 0}/{personnel?.medecins.total || 0}
                           </span>
                       </div>
@@ -276,7 +289,7 @@ const Dashboard = () => {
                   <div>
                       <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px'}}>
                           <span style={{fontSize: '13px', color: '#6B7280', fontWeight: 600}}>Infirmiers</span>
-                          <span style={{fontSize: '20px', fontWeight: 700, color: '#10B981'}}>
+                          <span className="sp-number sp-number-md" style={{color: '#10B981'}}>
                               {personnel?.infirmiers.disponibles || 0}/{personnel?.infirmiers.total || 0}
                           </span>
                       </div>
@@ -353,13 +366,13 @@ const Dashboard = () => {
                   </div>
                   <div style={{marginBottom: '16px'}}>
                       <div style={{fontSize: '12px', color: '#6B7280', marginBottom: '4px'}}>Précision du modèle</div>
-                      <div style={{fontSize: '16px', fontWeight: 600, color: '#4F46E5'}}>
+                      <div className="sp-number sp-number-sm" style={{color: '#4F46E5'}}>
                           {stats.model_accuracy ? `${(stats.model_accuracy * 100).toFixed(1)}%` : '94.6%'}
                       </div>
                   </div>
                   <div>
                       <div style={{fontSize: '12px', color: '#6B7280', marginBottom: '4px'}}>Maladies détectables</div>
-                      <div style={{fontSize: '16px', fontWeight: 600, color: '#8B5CF6'}}>
+                      <div className="sp-number sp-number-sm" style={{color: '#8B5CF6'}}>
                           121
                       </div>
                   </div>

@@ -82,6 +82,7 @@ export interface DashboardStats {
     patients_ce_mois: number;
     total_consultations: number;
     consultations_en_attente?: number; // Ajout
+    consultations_en_attente_medecin?: number; // Ajout
     consultations_en_cours?: number; // Ajout
     consultations_terminees?: number; // Ajout
     total_diagnostics: number;

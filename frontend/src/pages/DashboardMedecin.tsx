@@ -105,7 +105,7 @@ const DashboardMedecin = () => {
               <Users size={18} style={{ color: '#4F46E5' }} />
             </div>
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 700, color: '#1F2937' }}>{stats?.total_patients ?? 0}</div>
+          <div className="sp-number sp-number-lg" style={{ color: '#1F2937' }}>{stats?.total_patients ?? 0}</div>
           <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>patients enregistrés</div>
         </div>
 
@@ -116,7 +116,7 @@ const DashboardMedecin = () => {
               <Clock size={18} style={{ color: '#F59E0B' }} />
             </div>
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 700, color: '#1F2937' }}>{stats?.consultations_en_attente ?? 0}</div>
+          <div className="sp-number sp-number-lg" style={{ color: '#1F2937' }}>{stats?.consultations_en_attente ?? 0}</div>
           <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>consultations à traiter</div>
         </div>
 
@@ -127,7 +127,7 @@ const DashboardMedecin = () => {
               <Activity size={18} style={{ color: '#3B82F6' }} />
             </div>
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 700, color: '#1F2937' }}>{stats?.consultations_en_cours ?? 0}</div>
+          <div className="sp-number sp-number-lg" style={{ color: '#1F2937' }}>{stats?.consultations_en_cours ?? 0}</div>
           <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>consultations actives</div>
         </div>
 
@@ -138,7 +138,7 @@ const DashboardMedecin = () => {
               <CheckCircle size={18} style={{ color: '#10B981' }} />
             </div>
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 700, color: '#1F2937' }}>{stats?.consultations_terminees ?? 0}</div>
+          <div className="sp-number sp-number-lg" style={{ color: '#1F2937' }}>{stats?.consultations_terminees ?? 0}</div>
           <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>consultations clôturées</div>
         </div>
       </div>
@@ -226,19 +226,19 @@ const DashboardMedecin = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '13px', color: '#6B7280' }}>Diagnostics générés</span>
-                <span style={{ fontWeight: 700, color: '#1F2937' }}>{stats?.total_diagnostics ?? 0}</span>
+                <span className="sp-number sp-number-sm" style={{ color: '#1F2937' }}>{stats?.total_diagnostics ?? 0}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '13px', color: '#6B7280' }}>Taux d'approbation</span>
-                <span style={{ fontWeight: 700, color: '#10B981' }}>{stats?.taux_approbation ?? 0}%</span>
+                <span className="sp-number sp-number-sm" style={{ color: '#10B981' }}>{stats?.taux_approbation ?? 0}%</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '13px', color: '#6B7280' }}>Confiance moyenne</span>
-                <span style={{ fontWeight: 700, color: '#4F46E5' }}>{stats?.confiance_moyenne ?? 0}%</span>
+                <span className="sp-number sp-number-sm" style={{ color: '#4F46E5' }}>{stats?.confiance_moyenne ?? 0}%</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '13px', color: '#6B7280' }}>Maladies détectables</span>
-                <span style={{ fontWeight: 700, color: '#1F2937' }}>121</span>
+                <span className="sp-number sp-number-sm" style={{ color: '#1F2937' }}>121</span>
               </div>
             </div>
           </div>

@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 2200" width="1400" height="2200">
+  <defs>
+    <style>
+      .actor-box { fill: #4A90E2; stroke: #2E5C8A; stroke-width: 2; }
+      .actor-text { fill: white; font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; text-anchor: middle; }
+      .lifeline { stroke: #666; stroke-width: 2; stroke-dasharray: 5,5; }
+      .activation { fill: #E8F4F8; stroke: #4A90E2; stroke-width: 2; }
+      .message-arrow { stroke: #333; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .return-arrow { stroke: #666; stroke-width: 2; fill: none; stroke-dasharray: 5,5; marker-end: url(#arrowhead-return); }
+      .message-text { fill: #333; font-family: Arial, sans-serif; font-size: 12px; }
+      .note-box { fill: #FFF9C4; stroke: #F57C00; stroke-width: 1; }
+      .note-text { fill: #333; font-family: Arial, sans-serif; font-size: 11px; }
+      .title { fill: #2C3E50; font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; text-anchor: middle; }
+      .subtitle { fill: #555; font-family: Arial, sans-serif; font-size: 14px; text-anchor: middle; }
+      .section-label { fill: #E74C3C; font-family: Arial, sans-serif; font-size: 13px; font-weight: bold; }
+      .alt-box { fill: none; stroke: #E74C3C; stroke-width: 2; }
+      .alt-label { fill: white; font-family: Arial, sans-serif; font-size: 11px; font-weight: bold; }
+      .alt-label-bg { fill: #E74C3C; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#333" />
+    </marker>
+    <marker id="arrowhead-return" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#666" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="700" y="40" class="title">DIAGRAMME DE SEQUENCE - DIAGNOSTIC MEDICAL IA</text>
+  <text x="700" y="65" class="subtitle">Système de Diagnostic Assisté par Intelligence Artificielle</text>
+  <line x1="100" y1="75" x2="1300" y2="75" stroke="#2C3E50" stroke-width="2"/>
+
+  <!-- Actors -->
+  <!-- Médecin -->
+  <rect x="80" y="100" width="120" height="50" class="actor-box" rx="5"/>
+  <text x="140" y="130" class="actor-text">MEDECIN</text>
+  <line x1="140" y1="150" x2="140" y2="2100" class="lifeline"/>
+
+  <!-- Frontend React -->
+  <rect x="280" y="100" width="120" height="50" class="actor-box" rx="5"/>
+  <text x="340" y="125" class="actor-text">Frontend</text>
+  <text x="340" y="140" class="actor-text">React</text>
+  <line x1="340" y1="150" x2="340" y2="2100" class="lifeline"/>
+
+  <!-- API FastAPI -->
+  <rect x="480" y="100" width="120" height="50" class="actor-box" rx="5"/>
+  <text x="540" y="125" class="actor-text">API</text>
+  <text x="540" y="140" class="actor-text">FastAPI</text>
+  <line x1="540" y1="150" x2="540" y2="2100" class="lifeline"/>
+
+  <!-- Service Diagnostic -->
+  <rect x="680" y="100" width="120" height="50" class="actor-box" rx="5"/>
+  <text x="740" y="125" class="actor-text">Service</text>
+  <text x="740" y="140" class="actor-text">Diagnostic</text>
+  <line x1="740" y1="150" x2="740" y2="2100" class="lifeline"/>
+
+  <!-- Modèle IA -->
+  <rect x="880" y="100" width="120" height="50" class="actor-box" rx="5"/>
+  <text x="940" y="125" class="actor-text">Modèle IA</text>
+  <text x="940" y="140" class="actor-text">Random Forest</text>
+  <line x1="940" y1="150" x2="940" y2="2100" class="lifeline"/>
+
+  <!-- Base de données -->
+  <rect x="1080" y="100" width="120" height="50" class="actor-box" rx="5"/>
+  <text x="1140" y="125" class="actor-text">Base de</text>
+  <text x="1140" y="140" class="actor-text">Données MySQL</text>
+  <line x1="1140" y1="150" x2="1140" y2="2100" class="lifeline"/>
+
+  <!-- PHASE 1: Préparation de la consultation -->
+  <text x="100" y="200" class="section-label">PHASE 1: PREPARATION DE LA CONSULTATION</text>
+  
+  <!-- Message 1: Accéder à la page consultation -->
+  <line x1="140" y1="220" x2="340" y2="220" class="message-arrow"/>
+  <text x="200" y="215" class="message-text">1. Accéder à la page consultation</text>
+  
+  <!-- Activation Frontend -->
+  <rect x="330" y="220" width="20" height="60" class="activation"/>
+  
+  <!-- Message 2: GET /api/patients -->
+  <line x1="340" y1="240" x2="540" y2="240" class="message-arrow"/>
+  <text x="400" y="235" class="message-text">2. GET /api/patients</text>
+  
+  <!-- Activation API -->
+  <rect x="530" y="240" width="20" height="40" class="activation"/>
+  
+  <!-- Message 3: Récupérer liste patients -->
+  <line x1="540" y1="255" x2="1140" y2="255" class="message-arrow"/>
+  <text x="800" y="250" class="message-text">3. SELECT * FROM patients</text>
+  
+  <!-- Return: Liste patients -->
+  <line x1="1140" y1="270" x2="540" y2="270" class="return-arrow"/>
+  <text x="800" y="265" class="message-text">Liste patients</text>
+  
+  <!-- Return: Afficher patients -->
+  <line x1="540" y1="280" x2="340" y2="280" class="return-arrow"/>
+  <text x="400" y="295" class="message-text">JSON patients</text>
+  
+  <!-- Message 4: Sélectionner patient -->
+  <line x1="140" y1="310" x2="340" y2="310" class="message-arrow"/>
+  <text x="200" y="305" class="message-text">4. Sélectionner patient</text>
+  
+  <!-- PHASE 2: Saisie des données médicales -->
+  <text x="100" y="350" class="section-label">PHASE 2: SAISIE DES DONNEES MEDICALES</text>
+  
+  <!-- Message 5: Remplir formulaire -->
+  <line x1="140" y1="370" x2="340" y2="370" class="message-arrow"/>
+  <text x="200" y="365" class="message-text">5. Remplir formulaire diagnostic</text>
+  
+  <!-- Note: Données saisies -->
+  <rect x="50" y="385" width="250" height="80" class="note-box" rx="3"/>
+  <text x="60" y="405" class="note-text">Données saisies:</text>
+  <text x="60" y="420" class="note-text">- Symptômes (liste multiple)</text>
+  <text x="60" y="435" class="note-text">- Signes vitaux (température, tension, etc.)</text>
+  <text x="60" y="450" class="note-text">- Antécédents médicaux</text>
+  <text x="60" y="465" class="note-text">- Examens complémentaires</text>
+  
+  <!-- Activation Frontend -->
+  <rect x="330" y="370" width="20" height="120" class="activation"/>
+  
+  <!-- Message 6: Valider formulaire -->
+  <line x1="140" y1="490" x2="340" y2="490" class="message-arrow"/>
+  <text x="200" y="485" class="message-text">6. Soumettre formulaire</text>
+  
+  <!-- Message 7: Validation côté client -->
+  <line x1="340" y1="510" x2="340" y2="530" class="message-arrow"/>
+  <text x="360" y="520" class="message-text">7. Valider données</text>
+  
+  <!-- PHASE 3: Traitement et diagnostic IA -->
+  <text x="100" y="560" class="section-label">PHASE 3: TRAITEMENT ET DIAGNOSTIC IA</text>
+  
+  <!-- Message 8: POST /api/diagnostics -->
+  <line x1="340" y1="580" x2="540" y2="580" class="message-arrow"/>
+  <text x="400" y="575" class="message-text">8. POST /api/diagnostics</text>
+  
+  <!-- Activation API -->
+  <rect x="530" y="580" width="20" height="400" class="activation"/>
+  
+  <!-- Message 9: Créer consultation -->
+  <line x1="540" y1="600" x2="1140" y2="600" class="message-arrow"/>
+  <text x="800" y="595" class="message-text">9. INSERT INTO consultations</text>
+  
+  <!-- Return: ID consultation -->
+  <line x1="1140" y1="620" x2="540" y2="620" class="return-arrow"/>
+  <text x="800" y="615" class="message-text">consultation_id</text>
+  
+  <!-- Message 10: Préparer données pour IA -->
+  <line x1="540" y1="640" x2="740" y2="640" class="message-arrow"/>
+  <text x="600" y="635" class="message-text">10. Préparer features</text>
+  
+  <!-- Activation Service -->
+  <rect x="730" y="640" width="20" height="280" class="activation"/>
+  
+  <!-- Note: Préparation features -->
+  <rect x="760" y="655" width="220" height="70" class="note-box" rx="3"/>
+  <text x="770" y="675" class="note-text">Transformation des données:</text>
+  <text x="770" y="690" class="note-text">- Encodage symptômes (one-hot)</text>
+  <text x="770" y="705" class="note-text">- Normalisation signes vitaux</text>
+  <text x="770" y="720" class="note-text">- Vecteur de features (43 dimensions)</text>
+  
+  <!-- Message 11: Appel modèle IA -->
+  <line x1="740" y1="740" x2="940" y2="740" class="message-arrow"/>
+  <text x="800" y="735" class="message-text">11. predict(features)</text>
+  
+  <!-- Activation IA -->
+  <rect x="930" y="740" width="20" height="120" class="activation"/>
+  
+  <!-- Message 12: Traitement Random Forest -->
+  <line x1="940" y1="760" x2="940" y2="780" class="message-arrow"/>
+  <text x="960" y="770" class="message-text">12. Analyse par arbres de décision</text>
+  
+  <!-- Note: Modèle IA -->
+  <rect x="1000" y="795" width="200" height="55" class="note-box" rx="3"/>
+  <text x="1010" y="815" class="note-text">Random Forest (100 arbres)</text>
+  <text x="1010" y="830" class="note-text">- Prédiction maladie</text>
+  <text x="1010" y="845" class="note-text">- Score de confiance (0-1)</text>
+  
+  <!-- Return: Résultat prédiction -->
+  <line x1="940" y1="860" x2="740" y2="860" class="return-arrow"/>
+  <text x="800" y="855" class="message-text">Prédiction + confiance</text>
+  
+  <!-- Message 13: Enrichir résultat -->
+  <line x1="740" y1="880" x2="740" y2="900" class="message-arrow"/>
+  <text x="760" y="890" class="message-text">13. Enrichir diagnostic</text>
+  
+  <!-- Return: Diagnostic complet -->
+  <line x1="740" y1="920" x2="540" y2="920" class="return-arrow"/>
+  <text x="600" y="915" class="message-text">Diagnostic enrichi</text>
+  
+  <!-- Message 14: Sauvegarder diagnostic -->
+  <line x1="540" y1="940" x2="1140" y2="940" class="message-arrow"/>
+  <text x="800" y="935" class="message-text">14. INSERT INTO diagnostics_ia</text>
+  
+  <!-- Return: Confirmation -->
+  <line x1="1140" y1="960" x2="540" y2="960" class="return-arrow"/>
+  <text x="800" y="955" class="message-text">diagnostic_id</text>
+  
+  <!-- Return: Résultat au frontend -->
+  <line x1="540" y1="980" x2="340" y2="980" class="return-arrow"/>
+  <text x="400" y="975" class="message-text">JSON diagnostic complet</text>
+  
+  <!-- PHASE 4: Affichage et validation -->
+  <text x="100" y="1020" class="section-label">PHASE 4: AFFICHAGE ET VALIDATION MEDICALE</text>
+  
+  <!-- Activation Frontend -->
+  <rect x="330" y="1040" width="20" height="200" class="activation"/>
+  
+  <!-- Message 15: Afficher résultat -->
+  <line x1="340" y1="1040" x2="140" y2="1040" class="return-arrow"/>
+  <text x="200" y="1035" class="message-text">15. Afficher diagnostic IA</text>
+  
+  <!-- Note: Résultat affiché -->
+  <rect x="50" y="1055" width="250" height="95" class="note-box" rx="3"/>
+  <text x="60" y="1075" class="note-text">Résultat affiché:</text>
+  <text x="60" y="1090" class="note-text">- Maladie prédite</text>
+  <text x="60" y="1105" class="note-text">- Score de confiance (%)</text>
+  <text x="60" y="1120" class="note-text">- Symptômes analysés</text>
+  <text x="60" y="1135" class="note-text">- Recommandations</text>
+  <text x="60" y="1150" class="note-text">- Examens suggérés</text>
+  
+  <!-- Message 16: Analyser résultat -->
+  <line x1="140" y1="1170" x2="140" y2="1190" class="message-arrow"/>
+  <text x="160" y="1180" class="message-text">16. Analyser diagnostic IA</text>
+  
+  <!-- Alternative: Validation ou modification -->
+  <rect x="100" y="1210" width="500" height="380" class="alt-box" rx="5"/>
+  <rect x="100" y="1210" width="120" height="25" class="alt-label-bg" rx="5"/>
+  <text x="160" y="1227" class="alt-label">ALT [Décision médicale]</text>
+  
+  <!-- Cas 1: Validation -->
+  <text x="120" y="1260" class="note-text" font-weight="bold">[Diagnostic validé]</text>
+  
+  <!-- Message 17a: Valider diagnostic -->
+  <line x1="140" y1="1280" x2="340" y2="1280" class="message-arrow"/>
+  <text x="200" y="1275" class="message-text">17a. Valider diagnostic IA</text>
+  
+  <!-- Activation Frontend -->
+  <rect x="330" y="1280" width="20" height="60" class="activation"/>
+  
+  <!-- Message 18a: PUT /api/diagnostics/{id}/validate -->
+  <line x1="340" y1="1300" x2="540" y2="1300" class="message-arrow"/>
+  <text x="400" y="1295" class="message-text">18a. PUT /api/diagnostics/validate</text>
+  
+  <!-- Activation API -->
+  <rect x="530" y="1300" width="20" height="40" class="activation"/>
+  
+  <!-- Message 19a: UPDATE diagnostic -->
+  <line x1="540" y1="1320" x2="1140" y2="1320" class="message-arrow"/>
+  <text x="800" y="1315" class="message-text">19a. UPDATE statut = 'validé'</text>
+  
+  <!-- Return: Confirmation -->
+  <line x1="1140" y1="1340" x2="340" y2="1340" class="return-arrow"/>
+  <text x="700" y="1335" class="message-text">Confirmation validation</text>
+  
+  <!-- Séparateur -->
+  <line x1="110" y1="1370" x2="590" y2="1370" stroke="#E74C3C" stroke-width="1" stroke-dasharray="5,5"/>
+  
+  <!-- Cas 2: Modification -->
+  <text x="120" y="1400" class="note-text" font-weight="bold">[Diagnostic modifié]</text>
+  
+  <!-- Message 17b: Modifier diagnostic -->
+  <line x1="140" y1="1420" x2="340" y2="1420" class="message-arrow"/>
+  <text x="200" y="1415" class="message-text">17b. Modifier diagnostic</text>
+  
+  <!-- Activation Frontend -->
+  <rect x="330" y="1420" width="20" height="80" class="activation"/>
+  
+  <!-- Message 18b: Saisir corrections -->
+  <line x1="140" y1="1440" x2="340" y2="1440" class="message-arrow"/>
+  <text x="200" y="1435" class="message-text">18b. Saisir corrections</text>
+  
+  <!-- Message 19b: PUT /api/diagnostics/{id} -->
+  <line x1="340" y1="1460" x2="540" y2="1460" class="message-arrow"/>
+  <text x="400" y="1455" class="message-text">19b. PUT /api/diagnostics/{id}</text>
+  
+  <!-- Activation API -->
+  <rect x="530" y="1460" width="20" height="40" class="activation"/>
+  
+  <!-- Message 20b: UPDATE diagnostic -->
+  <line x1="540" y1="1480" x2="1140" y2="1480" class="message-arrow"/>
+  <text x="800" y="1475" class="message-text">20b. UPDATE diagnostic corrigé</text>
+  
+  <!-- Return: Confirmation -->
+  <line x1="1140" y1="1500" x2="340" y2="1500" class="return-arrow"/>
+  <text x="700" y="1495" class="message-text">Confirmation modification</text>
+  
+  <!-- Séparateur -->
+  <line x1="110" y1="1530" x2="590" y2="1530" stroke="#E74C3C" stroke-width="1" stroke-dasharray="5,5"/>
+  
+  <!-- Cas 3: Rejet -->
+  <text x="120" y="1560" class="note-text" font-weight="bold">[Diagnostic rejeté]</text>
+  
+  <!-- Message 17c: Rejeter diagnostic -->
+  <line x1="140" y1="1580" x2="340" y2="1580" class="message-arrow"/>
+  <text x="200" y="1575" class="message-text">17c. Rejeter diagnostic IA</text>
+  
+  <!-- Message 18c: DELETE /api/diagnostics/{id} -->
+  <line x1="340" y1="1600" x2="540" y2="1600" class="message-arrow"/>
+  <text x="400" y="1595" class="message-text">18c. DELETE /api/diagnostics/{id}</text>
+  
+  <!-- Message 19c: DELETE diagnostic -->
+  <line x1="540" y1="1620" x2="1140" y2="1620" class="message-arrow"/>
+  <text x="800" y="1615" class="message-text">19c. DELETE FROM diagnostics_ia</text>
+  
+  <!-- Return: Confirmation -->
+  <line x1="1140" y1="1640" x2="340" y2="1640" class="return-arrow"/>
+  <text x="700" y="1635" class="message-text">Confirmation suppression</text>
+  
+  <!-- PHASE 5: Prescription et suivi -->
+  <text x="100" y="1680" class="section-label">PHASE 5: PRESCRIPTION ET SUIVI</text>
+  
+  <!-- Message 20: Créer prescription -->
+  <line x1="140" y1="1700" x2="340" y2="1700" class="message-arrow"/>
+  <text x="200" y="1695" class="message-text">20. Créer prescription</text>
+  
+  <!-- Activation Frontend -->
+  <rect x="330" y="1700" width="20" height="80" class="activation"/>
+  
+  <!-- Message 21: POST /api/prescriptions -->
+  <line x1="340" y1="1720" x2="540" y2="1720" class="message-arrow"/>
+  <text x="400" y="1715" class="message-text">21. POST /api/prescriptions</text>
+  
+  <!-- Activation API -->
+  <rect x="530" y="1720" width="20" height="60" class="activation"/>
+  
+  <!-- Message 22: Sauvegarder prescription -->
+  <line x1="540" y1="1740" x2="1140" y2="1740" class="message-arrow"/>
+  <text x="800" y="1735" class="message-text">22. INSERT INTO prescriptions</text>
+  
+  <!-- Message 23: Lier à consultation -->
+  <line x1="540" y1="1760" x2="1140" y2="1760" class="message-arrow"/>
+  <text x="800" y="1755" class="message-text">23. UPDATE consultation</text>
+  
+  <!-- Return: Confirmation -->
+  <line x1="1140" y1="1780" x2="340" y2="1780" class="return-arrow"/>
+  <text x="700" y="1775" class="message-text">Prescription créée</text>
+  
+  <!-- Message 24: Afficher confirmation -->
+  <line x1="340" y1="1800" x2="140" y2="1800" class="return-arrow"/>
+  <text x="200" y="1795" class="message-text">24. Afficher confirmation</text>
+  
+  <!-- PHASE 6: Génération de rapports -->
+  <text x="100" y="1840" class="section-label">PHASE 6: GENERATION DE RAPPORTS</text>
+  
+  <!-- Message 25: Demander rapport -->
+  <line x1="140" y1="1860" x2="340" y2="1860" class="message-arrow"/>
+  <text x="200" y="1855" class="message-text">25. Générer rapport PDF</text>
+  
+  <!-- Activation Frontend -->
+  <rect x="330" y="1860" width="20" height="100" class="activation"/>
+  
+  <!-- Message 26: GET /api/consultations/{id}/rapport -->
+  <line x1="340" y1="1880" x2="540" y2="1880" class="message-arrow"/>
+  <text x="400" y="1875" class="message-text">26. GET /api/consultations/rapport</text>
+  
+  <!-- Activation API -->
+  <rect x="530" y="1880" width="20" height="80" class="activation"/>
+  
+  <!-- Message 27: Récupérer données complètes -->
+  <line x1="540" y1="1900" x2="1140" y2="1900" class="message-arrow"/>
+  <text x="800" y="1895" class="message-text">27. SELECT données consultation</text>
+  
+  <!-- Return: Données -->
+  <line x1="1140" y1="1920" x2="540" y2="1920" class="return-arrow"/>
+  <text x="800" y="1915" class="message-text">Données complètes</text>
+  
+  <!-- Message 28: Générer PDF -->
+  <line x1="540" y1="1940" x2="540" y2="1960" class="message-arrow"/>
+  <text x="560" y="1950" class="message-text">28. Générer PDF</text>
+  
+  <!-- Return: PDF -->
+  <line x1="540" y1="1960" x2="340" y2="1960" class="return-arrow"/>
+  <text x="400" y="1975" class="message-text">Fichier PDF</text>
+  
+  <!-- Message 29: Télécharger -->
+  <line x1="340" y1="1980" x2="140" y2="1980" class="return-arrow"/>
+  <text x="200" y="1995" class="message-text">29. Télécharger rapport</text>
+  
+  <!-- Note finale: Statistiques -->
+  <rect x="100" y="2020" width="1200" height="70" class="note-box" rx="5"/>
+  <text x="120" y="2045" class="note-text" font-weight="bold">INFORMATIONS TECHNIQUES:</text>
+  <text x="120" y="2065" class="note-text">• Modèle IA: Random Forest (100 arbres) - Précision: 95% - 9 maladies détectables</text>
+  <text x="120" y="2080" class="note-text">• Technologies: FastAPI (Python 3.11), React (TypeScript), MySQL 8.0, Scikit-learn 1.3</text>
+  
+  <!-- Footer -->
+  <line x1="100" y1="2110" x2="1300" y2="2110" stroke="#2C3E50" stroke-width="2"/>
+  <text x="700" y="2135" class="subtitle">Système SANTE PLUS - Clinique de Cotonou, Bénin</text>
+  <text x="700" y="2155" class="subtitle">© 2026 - Diagramme de Séquence UML 2.5</text>
+
+</svg>

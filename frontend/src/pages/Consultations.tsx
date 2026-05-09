@@ -169,19 +169,6 @@ const Consultations = () => {
         });
         setConsultations(prev => prev.map(c => c.id === formData.id ? { ...c, ...formData } as Consultation : c));
         showToast('Consultation mise à jour', 'success');
-      } else {
-        // Nouvelle consultation rapide avec patient enregistré
-        await consultationsAPI.createRapide({
-          nom: formData.nom || '',
-          prenoms: formData.prenoms || '',
-          sexe: formData.sexe || 'M',
-          date_naissance: formData.date_naissance,
-          nom_patient: `${formData.prenoms || ''} ${formData.nom || ''}`.trim(),
-          motif: formData.motif || '',
-          date_heure: formData.date_heure || new Date().toISOString(),
-        });
-        showToast('Consultation et patient enregistrés avec succès', 'success');
-        await fetchData();
       }
       setFormModalOpen(false);
     } catch (err: any) {
@@ -191,16 +178,8 @@ const Consultations = () => {
     }
   };
 
-  const openForm = (consult?: Consultation) => {
-    if (consult) {
-      setFormData(consult);
-    } else {
-      setFormData({
-        statut: 'en attente',
-        date_heure: new Date().toISOString().slice(0, 16),
-        sexe: 'M',
-      });
-    }
+  const openForm = (consult: Consultation) => {
+    setFormData(consult);
     setFormModalOpen(true);
   };
 
@@ -231,17 +210,11 @@ const Consultations = () => {
               <p className="sp-page-subtitle">{filteredConsultations.length} consultation(s) affichée(s)</p>
             </div>
             <div style={{ display: 'flex', gap: '12px' }}>
-              {(user?.role === 'medecin' || user?.role === 'infirmier') && (
-                <>
-                  <button onClick={() => openForm()} className="sp-btn sp-btn-outline">
-                    <PlusCircle size={18} />
-                    <span>Consultation rapide</span>
-                  </button>
-                  <Link to="/consultation/nouvelle" className="sp-btn sp-btn-primary">
-                    <PlusCircle size={18} />
-                    <span>Nouvelle consultation complète</span>
-                  </Link>
-                </>
+              {(isAdmin || user?.role === 'medecin' || user?.role === 'infirmier') && (
+                <Link to="/consultation/nouvelle" className="sp-btn sp-btn-primary">
+                  <PlusCircle size={18} />
+                  <span>Nouvelle consultation</span>
+                </Link>
               )}
             </div>
           </div>
@@ -630,7 +603,7 @@ const Consultations = () => {
                 <div className="sp-card-header" style={{ padding: '20px 24px', borderBottom: '1px solid var(--sp-gray-100)' }}>
                   <div className="sp-card-title">
                     {formData.id ? <Edit2 size={20} /> : <Clipboard size={20} />}
-                    {formData.id ? 'Modifier la consultation' : 'Nouvelle consultation rapide'}
+                    {formData.id ? 'Modifier la consultation' : 'Détails de la consultation'}
                   </div>
                   <button className="sp-btn sp-btn-ghost sp-btn-sm" style={{ padding: '4px' }} onClick={() => setFormModalOpen(false)}>
                     <X size={18} />
@@ -638,53 +611,16 @@ const Consultations = () => {
                 </div>
                 <form onSubmit={handleSaveConsultation} style={{ padding: '24px' }}>
                   {/* Mode création : saisie structurée nom/prénoms/sexe */}
-                  {!formData.id && (
-                    <>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '18px' }}>
-                        <div className="sp-form-group">
-                          <label className="sp-form-label">Nom <span style={{ color: '#EF4444' }}>*</span></label>
-                          <input type="text" className="sp-form-input" required placeholder="Nom de famille"
-                            value={formData.nom || ''}
-                            onChange={e => setFormData({ ...formData, nom: e.target.value })} />
-                        </div>
-                        <div className="sp-form-group">
-                          <label className="sp-form-label">Prénoms <span style={{ color: '#EF4444' }}>*</span></label>
-                          <input type="text" className="sp-form-input" required placeholder="Prénom(s)"
-                            value={formData.prenoms || ''}
-                            onChange={e => setFormData({ ...formData, prenoms: e.target.value })} />
-                        </div>
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '18px' }}>
-                        <div className="sp-form-group">
-                          <label className="sp-form-label">Sexe <span style={{ color: '#EF4444' }}>*</span></label>
-                          <select className="sp-form-select" value={formData.sexe || 'M'}
-                            onChange={e => setFormData({ ...formData, sexe: e.target.value as 'M' | 'F' })}>
-                            <option value="M">Masculin</option>
-                            <option value="F">Féminin</option>
-                          </select>
-                        </div>
-                        <div className="sp-form-group">
-                          <label className="sp-form-label">Date de naissance <span style={{ color: '#9CA3AF', fontSize: '11px' }}>(optionnel)</span></label>
-                          <input type="date" className="sp-form-input"
-                            value={formData.date_naissance || ''}
-                            onChange={e => setFormData({ ...formData, date_naissance: e.target.value })} />
-                        </div>
-                      </div>
-                    </>
-                  )}
-                  {/* Mode édition : affiche nom_patient comme texte brut */}
-                  {formData.id && (
-                    <div className="sp-form-group" style={{ marginBottom: '18px' }}>
-                      <label className="sp-form-label">Nom du patient <span style={{ color: '#EF4444' }}>*</span></label>
-                      <div className="sp-input-icon-wrap">
-                        <User size={18} className="sp-input-icon" />
-                        <input type="text" className="sp-form-input" style={{ paddingLeft: '40px' }} required
-                          placeholder="Nom complet du patient"
-                          value={formData.nom_patient || ''}
-                          onChange={e => setFormData({ ...formData, nom_patient: e.target.value })} />
-                      </div>
+                  <div className="sp-form-group" style={{ marginBottom: '18px' }}>
+                    <label className="sp-form-label">Nom du patient <span style={{ color: '#EF4444' }}>*</span></label>
+                    <div className="sp-input-icon-wrap">
+                      <User size={18} className="sp-input-icon" />
+                      <input type="text" className="sp-form-input" style={{ paddingLeft: '40px' }} required
+                        placeholder="Nom complet du patient"
+                        value={formData.nom_patient || ''}
+                        onChange={e => setFormData({ ...formData, nom_patient: e.target.value })} />
                     </div>
-                  )}
+                  </div>
 
                   <div className="sp-form-group" style={{ marginBottom: '18px' }}>
                     <label className="sp-form-label">Date et Heure <span style={{ color: '#EF4444' }}>*</span></label>
