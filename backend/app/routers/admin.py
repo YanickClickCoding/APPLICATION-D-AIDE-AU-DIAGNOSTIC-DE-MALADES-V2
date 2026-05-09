@@ -42,12 +42,19 @@ _training_state: Dict = {
 _training_lock = threading.Lock()
 
 # ─── Dataset ─────────────────────────────────────────────────────────────────
-_DATASET_FILENAME = "dataset_medical_robust_10000_cas.csv"
+# Utiliser le dataset enrichi avec les 3 nouveaux examens microbiologiques (BAAR, Culture, Xpert)
+_DATASET_FILENAME = "dataset_medical_robust_enhanced.csv"
+_DATASET_FILENAME_FALLBACK = "dataset_medical_robust_10000_cas.csv"  # Fallback si le nouveau n'existe pas
 _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 _DATASET_CANDIDATES = [
+    # Nouveau dataset enrichi (403 features)
     os.path.join("..", "les ressources dataset", _DATASET_FILENAME),
     os.path.join("..", "..", "les ressources dataset", _DATASET_FILENAME),
     os.path.join(_ROOT, "les ressources dataset", _DATASET_FILENAME),
+    # Fallback vers l'ancien dataset (400 features)
+    os.path.join("..", "les ressources dataset", _DATASET_FILENAME_FALLBACK),
+    os.path.join("..", "..", "les ressources dataset", _DATASET_FILENAME_FALLBACK),
+    os.path.join(_ROOT, "les ressources dataset", _DATASET_FILENAME_FALLBACK),
 ]
 
 

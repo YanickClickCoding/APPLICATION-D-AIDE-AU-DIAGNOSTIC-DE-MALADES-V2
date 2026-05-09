@@ -45,33 +45,126 @@ interface SuiviData {
   date_prochain_rdv: string; instructions_patient: string; notes_medecin: string;
 }
 
+// ─── Symptom autocomplete list ────────────────────────────────────────────────
+
+// Liste complète des 332 symptômes supportés par le modèle ML (extraits du metadata)
+const SYMPTOMES_SUPPORTES = [
+  "Adénopathie", "Agrandissement des mains pieds", "Albuminémie basse", "Anémie", "Angioedème", "Anorexie", "Anxiété", "Apnée du sommeil", "Arthralgie", "Ascite", "Atrophie musculaire", "Aucun symptôme", "Aucun symptôme habituellement", "Aura", "Ballonnements", "Besoin fréquent d'uriner", "Besoin impérieux de déféquer", "Bleus faciles", "Brûlures d'estomac", "Bulles", "Céphalées", "Cervicite", "Chaleur", "Chancre", "Cheveux cassants", "Choc", "Chute", "Cicatrices", "Cicatrisation lente", "Claudication", "Comédones", "Complications neuro", "Comportement inapproprié", "Confusion", "Congestion nasale", "Constipation", "Convulsions", "Crampes", "Crampes abdominales", "Crevasses", "Cyanose", "Déformation progressive", "Délirium", "Démangeaisons", "Démangeaisons nasales", "Démence", "Dépigmentation", "Dépôts lipidiques aux paupières", "Dépression", "Désorientaton", "Desquamation", "Diarrhée", "Diarrhée sanguinolente", "Difficulté à avaler", "Difficulté à parler", "Difficulté à respirer", "Difficulté de lecture", "Difficulté nocturne", "Difficultés à avaler", "Difficultés à parler", "Difficultés à uriner", "Difficultés de langage", "Difficultés de vision", "Douleur", "Douleur à l'effort", "Douleur abdominale", "Douleur abdominale supérieure", "Douleur articulaire soudaine", "Douleur au bras", "Douleur au bras épaule", "Douleur au repas", "Douleur auriculaire", "Douleur colique intense", "Douleur épigastrique", "Douleur faciale", "Douleur lombaire", "Douleur neuropathique", "Douleur oculaire", "Douleur pelvienne", "Douleur pelvi-périnéale", "Douleur périnéale", "Douleur testiculaire", "Douleur thoracique", "Douleur thoracique pleurétique", "Douleur thoracique sévère", "Douleur thyroïdienne", "Douleurs abdominales", "Douleurs articulaires", "Douleurs musculaires", "Douleurs musculaires diffuses", "Douleurs osseuses", "Durcissement cutané", "Dysarthrie", "Dysparéunie", "Dysphagie", "Dyspnée", "Dysurie", "Ecchymoses", "Écoulement", "Écoulement auriculaire", "Écoulement nasal", "Écoulement puriforme", "Écoulement urétral", "Efforts pour déféquer", "Éjaculation douloureuse", "Encéphalopathie", "Engourdissement", "Engourdissement des pieds", "Epistaxis", "Épistaxis", "Érosions", "Éruption", "Éruption cutanée", "Éruption malaire", "Éruption prurigineuse", "Essoufflement", "Essoufflement soudain", "Éternuements", "Évanouissement", "Évanouissements", "Excroissance cutanée", "Faiblesse", "Faiblesse ascendante", "Faiblesse musculaire", "Faiblesse soudaine", "Fatigue", "Fatigue oculaire", "Fatigue post-critique", "Fièvre", "Fièvre élevée", "Fièvre intermittente", "Fistules", "Flotteurs", "Flux faible", "Fragilité osseuse", "Fréquence urinaire", "Frissons", "Froid excessif", "Frottement péricardique", "Ganglions enflés", "Gaz", "Généralement sans symptôme", "Gonflement", "Gonflement des chevilles", "Gonflement des lèvres", "Gonflement d'un membre", "Grossissement du visage", "Groupées ou dispersées", "Halos colorés", "Hématurie", "Hémoptysie", "Hémorragie digestive", "Hépatomégalie", "Histaminémie", "Hoarseness", "Hypercholangiite", "Hyperlipidémie", "Hyperpigmentation", "Hypertension", "Hypertension portale", "Hypotension", "Ictère", "Impact psychologique", "Incontinence", "Infection", "Infections", "Infections fréquentes", "Infections urinaires", "Infectiosus", "Infectiosus secondaires", "Infrequence des selles", "Injection conjonctivale", "Insomnie", "Intolérance à la chaleur", "Irritabilité", "Jaunisse", "Keratitis", "Larmoiement", "Lenteur de mouvement", "Lignes ondulées", "Lymphadénopathie", "Mal de gorge", "Mal de tête", "Malabsorption", "Malaise", "Malaise général", "Maux de tête", "Maux de tête diffus", "Maux de tête matinaux", "Maux de tête sévère", "Maux de tête sévères", "Mélæna", "Mucus dans les selles", "Nausées", "Nervosité", "Nocturia", "Nodules", "Nycturie", "Œdème pulmonaire", "Œdèmes", "Oligurie ou polyurie", "Oppression thoracique", "Otalgie", "Pâleur", "Palpitations", "Papules", "Paralysie", "Paresthésies", "Peau sèche", "Pérachie", "Perte d'appétit", "Perte d'audition", "Perte d'autonomie", "Perte de conscience", "Perte de goût", "Perte de mémoire", "Perte de poids", "Perte de réflexes", "Perte de vision", "Perte de vision progressive", "Perte de voix", "Perte d'odorat", "Petites bosses ombiliquées", "Phonophobie", "Photophobie", "Photosensibilité", "Plaques rouges squameuses", "Plissement des yeux", "Prise de poids", "Prise de poids rapide", "Production d'expectorations", "Protéinurie", "Prurit", "Prurit sévère", "Pustules", "Raideur matinale", "Ralentissement intellectuel", "Rash", "Rash photosensible", "Rash rose", "Raucité", "Raynaud", "Récidives", "Reflux gastro-esophagien", "Régurgitation", "Respiration sifflante", "Restriction de mobilité", "Rigidité", "Ronflement", "Rot", "Rougeur", "Rougeur cutanée", "Rougeur oculaire", "Rougeur pharyngée", "Saignement", "Saignement des plaques", "Saignement digestif", "Saignements", "Saignements de nez", "Saignements prolongés", "Salpingite", "Scotome central", "Sécheresse", "Sécheresse buccale", "Sécheresse cutanée", "Sécheresse oculaire", "Selles dures", "Selles pâles", "Sensation d'accélération", "Sensation de ballonnement", "Sensation de blocage", "Sensation de pressure", "Sensation de satiété rapide", "Sensibilité à la lumière", "Sensibilité à la palpation", "Soif excessive", "Somnolence diurne", "Souvent asymptomatique", "Spasticité", "Splenomégalie", "Splénomégalie", "Stridor inspiratoire", "Sueurs", "Sueurs froides", "Sueurs nocturnes", "Syncope", "Taches blanches", "Taches de Koplik", "Taches sombres", "Tachycardie", "Thrombose", "Tophi", "Toux", "Toux aboyante", "Toux avec expectorations", "Toux persistante", "Toux sèche", "Tremblements", "Trouble de l'équilibre", "Trouble du sommeil", "Troubles cognitifs", "Troubles du sommeil", "Ulcérations", "Ulcères buccaux", "Ulcères des pieds", "Urétrite", "Urgence urinaire", "Urination fréquente", "Urine foncée", "Urines foncées", "Uveite", "Varices œsophagiennes", "Vergetures", "Verrue génitale", "Verrue plantaire douloureuse", "Verrues génitales", "Vertige", "Vertiges", "Vésicules", "Visage rouge", "Vision centrale floue", "Vision floue", "Vision floue à toutes distances", "Vision floue de loin", "Vision floue de près", "Vision jaunâtre", "Vision rapprochée floue", "Vision tunnel", "Vomissements", "Xanthomes", "Yeux rouges", "Yeux saillants"
+];
+
 // ─── Exam suggestion engine ───────────────────────────────────────────────────
 
+// Liste des examens de laboratoire supportés par le modèle ML (63 features - incluant 3 nouveaux examens TB)
+const EXAMENS_SUPPORTES = [
+  // Hématologie
+  'Hémoglobine',
+  'Hématocrite',
+  'Globules Rouges',
+  'Globules Blancs',
+  'Neutrophiles',
+  'Lymphocytes',
+  'Monocytes',
+  'Eosinophiles',
+  'Basophiles',
+  'Plaquettes',
+  'VGM',
+  'CCMH',
+  // Métabolisme Glucidique
+  'Glucose',
+  'Glucose à jeun',
+  'Glucose post-prandial',
+  'HbA1c',
+  // Lipides
+  'Cholestérol total',
+  'Cholestérol HDL',
+  'Cholestérol LDL',
+  'Triglycérides',
+  'Acide urique',
+  // Fonction Rénale
+  'Créatinine',
+  'Urée',
+  'TFG',
+  // Électrolytes
+  'Sodium',
+  'Potassium',
+  'Chlore',
+  'Calcium',
+  'Phosphore',
+  'Magnésium',
+  // Fonction Hépatique
+  'ALT/SGPT',
+  'AST/SGOT',
+  'Bilirubine totale',
+  'Bilirubine conjuguée',
+  'Bilirubine non-conjuguée',
+  'Phosphatase alcaline',
+  'GGT',
+  'Albumine',
+  'Protéine totale',
+  'Globulines',
+  'Ratio A/G',
+  // Marqueurs Cardiaques
+  'CK',
+  'Myoglobine',
+  'Troponine',
+  'BNP',
+  'ProBNP',
+  // Coagulation
+  'PT/INR',
+  'aPTT',
+  'TT',
+  'Fibrinogène',
+  // Marqueurs Inflammatoires
+  'CRP',
+  'ESR',
+  // Autres
+  'PSA',
+  // Microbiologie (Nouveaux examens pour Tuberculose)
+  'BAAR (résultat)',
+  'Culture Mycobactéries (résultat)',
+  'Test Xpert MTB/RIF (résultat)',
+];
+
 const EXAM_DEFAULTS: Record<string, { valeur_numerique?: number; unite_mesure?: string }> = {
-  'NFS (Numération Formule Sanguine)':    { valeur_numerique: 13.0,  unite_mesure: 'g/dL'   },
-  'CRP (Protéine C-réactive)':            { valeur_numerique: 5.0,   unite_mesure: 'mg/L'   },
-  'Frottis sanguin + GE':                 {                           unite_mesure: 'résultat' },
-  'TDR Paludisme':                        {                           unite_mesure: 'résultat' },
-  'Radiographie thoracique':              {                           unite_mesure: 'rapport'  },
-  'BAAR (crachat)':                       {                           unite_mesure: 'résultat' },
-  'Hémoculture':                          {                           unite_mesure: 'résultat' },
-  'Widal':                                { valeur_numerique: 80,    unite_mesure: 'titre'  },
-  'Bilan hépatique (ASAT/ALAT/GGT)':      { valeur_numerique: 35,    unite_mesure: 'UI/L'   },
-  'Bilirubine totale':                    { valeur_numerique: 10.0,  unite_mesure: 'µmol/L' },
-  'Glycémie à jeun':                      { valeur_numerique: 5.0,   unite_mesure: 'mmol/L' },
-  'HbA1c':                                { valeur_numerique: 5.5,   unite_mesure: '%'      },
-  'ECG 12 dérivations':                   {                           unite_mesure: 'rapport'  },
-  'Troponine I/T':                        { valeur_numerique: 0.01,  unite_mesure: 'ng/mL'  },
-  'Créatinine + Urée':                    { valeur_numerique: 80,    unite_mesure: 'µmol/L' },
-  'ECBU':                                 {                           unite_mesure: 'résultat' },
-  'Bilan martial (fer + ferritine)':      { valeur_numerique: 50,    unite_mesure: 'µg/L'   },
-  'Coproculture':                         {                           unite_mesure: 'résultat' },
+  'Hémoglobine':                      { valeur_numerique: 13.0,  unite_mesure: 'g/dL'   },
+  'CRP':                              { valeur_numerique: 5.0,   unite_mesure: 'mg/L'   },
+  'ALT/SGPT':                         { valeur_numerique: 35,    unite_mesure: 'U/L'   },
+  'AST/SGOT':                         { valeur_numerique: 35,    unite_mesure: 'U/L'   },
+  'Bilirubine totale':                { valeur_numerique: 10.0,  unite_mesure: 'mg/dL' },
+  'Glucose à jeun':                   { valeur_numerique: 5.0,   unite_mesure: 'mmol/L' },
+  'HbA1c':                            { valeur_numerique: 5.5,   unite_mesure: '%'      },
+  'Troponine':                        { valeur_numerique: 0.01,  unite_mesure: 'ng/mL'  },
+  'Créatinine':                       { valeur_numerique: 80,    unite_mesure: 'µmol/L' },
+  'Urée':                             { valeur_numerique: 30,    unite_mesure: 'mg/dL' },
+  'Fer':                              { valeur_numerique: 50,    unite_mesure: 'µg/L'   },
+  'Ferritine':                        { valeur_numerique: 100,   unite_mesure: 'ng/mL'   },
+  'ESR':                              { valeur_numerique: 10,    unite_mesure: 'mm/h' },
+  'Globules Blancs':                  { valeur_numerique: 7.0,   unite_mesure: 'K/µL' },
+  'Lymphocytes':                      { valeur_numerique: 30,    unite_mesure: '%' },
+  'Neutrophiles':                     { valeur_numerique: 60,    unite_mesure: '%' },
+  'Globules Rouges':                  { valeur_numerique: 4.5,   unite_mesure: 'M/µL' },
+  'Plaquettes':                       { valeur_numerique: 250,   unite_mesure: 'K/µL' },
+  'Albumine':                         { valeur_numerique: 4.0,   unite_mesure: 'g/dL' },
+  'CK':                               { valeur_numerique: 100,   unite_mesure: 'U/L' },
+  'Myoglobine':                       { valeur_numerique: 50,    unite_mesure: 'ng/mL' },
+  'BNP':                              { valeur_numerique: 100,   unite_mesure: 'pg/mL' },
+  'TFG':                              { valeur_numerique: 90,    unite_mesure: 'mL/min/1.73m²' },
+  'Potassium':                        { valeur_numerique: 4.0,   unite_mesure: 'mEq/L' },
+  'Hématocrite':                      { valeur_numerique: 40,    unite_mesure: '%' },
+  'VGM':                              { valeur_numerique: 90,    unite_mesure: 'fL' },
+  'Sodium':                           { valeur_numerique: 140,   unite_mesure: 'mEq/L' },
+  'Cholestérol total':                { valeur_numerique: 200,   unite_mesure: 'mg/dL' },
+  // Nouveaux examens microbiologiques pour Tuberculose
+  'BAAR (résultat)':                  { valeur_numerique: 0,     unite_mesure: 'résultat' }, // 0=NÉGATIF, 1=POSITIF
+  'Culture Mycobactéries (résultat)': { valeur_numerique: 0,     unite_mesure: 'résultat' }, // 0=NÉGATIF, 1=POSITIF
+  'Test Xpert MTB/RIF (résultat)':    { valeur_numerique: 0,     unite_mesure: 'résultat' }, // 0=NÉGATIF, 1=POSITIF
 };
 
 const UNITES_EXAMEN = [
   'g/dL', 'g/L', 'mg/L', 'mg/dL', 'µmol/L', 'mmol/L', 'UI/L', 'U/L', 
-  'ng/mL', 'µg/L', '%', 'mm', 'mm/h', 'titre', 'résultat', 'rapport', 
-  'positif/négatif', 'indices', 'copies/mL', 'Autre'
+  'ng/mL', 'µg/L', 'K/µL', 'M/µL', 'fL', '%', 'mm', 'mm/h', 'titre', 
+  'résultat', 'rapport', 'positif/négatif', 'indices', 'copies/mL', 
+  'pg/mL', 'sec', 'mEq/L', 'mL/min/1.73m²', 'resp/min', 'Autre'
 ];
 
 function suggestExams(predictions: Prediction[]): Examen[] {
@@ -94,37 +187,67 @@ function suggestExams(predictions: Prediction[]): Examen[] {
     }
   };
 
-  add({ type: 'BIOLOGIE', nom: 'NFS (Numération Formule Sanguine)', description: 'Bilan sanguin de base' });
-  add({ type: 'BIOLOGIE', nom: 'CRP (Protéine C-réactive)', description: 'Marqueur inflammatoire' });
+  add({ type: 'BIOLOGIE', nom: 'Hémoglobine', description: 'Bilan sanguin de base' });
+  add({ type: 'BIOLOGIE', nom: 'CRP', description: 'Marqueur inflammatoire' });
 
   predictions.slice(0, 3).forEach(({ maladie }) => {
     const m = maladie.toLowerCase();
     if (m.includes('malaria') || m.includes('paludisme'))
-      { add({ type: 'BIOLOGIE', nom: 'Frottis sanguin + GE', description: 'Recherche Plasmodium' });
-        add({ type: 'BIOLOGIE', nom: 'TDR Paludisme', description: 'Test rapide antigènes Plasmodium' }); }
-    if (m.includes('pneumon') || m.includes('pulmon') || m.includes('bronch') || m.includes('tuberc'))
-      { add({ type: 'IMAGERIE', nom: 'Radiographie thoracique', description: 'Condensation, épanchement, lésions' }); }
+      { // Paludisme : utiliser marqueurs inflammatoires et hématologie
+        add({ type: 'BIOLOGIE', nom: 'Globules Rouges', description: 'Anémie hémolytique' });
+        add({ type: 'BIOLOGIE', nom: 'Plaquettes', description: 'Thrombocytopénie' });
+        add({ type: 'BIOLOGIE', nom: 'Bilirubine totale', description: 'Hémolyse' }); }
     if (m.includes('tuberc') || m.includes(' tb'))
-      { add({ type: 'BIOLOGIE', nom: 'BAAR (crachat)', description: 'Recherche Bacilles de Koch' }); }
+      { // Tuberculose : marqueurs inflammatoires, hématologie et tests microbiologiques
+        add({ type: 'BIOLOGIE', nom: 'BAAR (résultat)', description: 'Test de référence pour TB' });
+        add({ type: 'BIOLOGIE', nom: 'ESR', description: 'Vitesse de sédimentation élevée' });
+        add({ type: 'BIOLOGIE', nom: 'Globules Blancs', description: 'Numération leucocytaire' });
+        add({ type: 'BIOLOGIE', nom: 'Lymphocytes', description: 'Lymphocytose relative' });
+        add({ type: 'BIOLOGIE', nom: 'Albumine', description: 'Dénutrition' });
+        add({ type: 'BIOLOGIE', nom: 'Culture Mycobactéries (résultat)', description: 'Confirmation TB' }); }
     if (m.includes('typhoid') || m.includes('typhoïde') || m.includes('salmonel'))
-      { add({ type: 'BIOLOGIE', nom: 'Hémoculture', description: 'Culture bactérienne du sang' });
-        add({ type: 'BIOLOGIE', nom: 'Widal', description: 'Sérologie anti-Salmonella' }); }
+      { // Typhoïde : marqueurs hépatiques et inflammatoires
+        add({ type: 'BIOLOGIE', nom: 'ALT/SGPT', description: 'Atteinte hépatique' });
+        add({ type: 'BIOLOGIE', nom: 'AST/SGOT', description: 'Atteinte hépatique' });
+        add({ type: 'BIOLOGIE', nom: 'Globules Blancs', description: 'Leucopénie' }); }
     if (m.includes('hepat'))
-      { add({ type: 'BIOLOGIE', nom: 'Bilan hépatique (ASAT/ALAT/GGT)', description: 'Fonction hépatique' });
-        add({ type: 'BIOLOGIE', nom: 'Bilirubine totale', description: 'Évaluation ictère' }); }
+      { add({ type: 'BIOLOGIE', nom: 'ALT/SGPT', description: 'Transaminase hépatique' });
+        add({ type: 'BIOLOGIE', nom: 'AST/SGOT', description: 'Transaminase hépatique' });
+        add({ type: 'BIOLOGIE', nom: 'Bilirubine totale', description: 'Évaluation ictère' });
+        add({ type: 'BIOLOGIE', nom: 'Albumine', description: 'Fonction de synthèse' }); }
     if (m.includes('diabet') || m.includes('glucose') || m.includes('glyc'))
-      { add({ type: 'BIOLOGIE', nom: 'Glycémie à jeun', description: 'Glucose sanguin' });
-        add({ type: 'BIOLOGIE', nom: 'HbA1c', description: 'Hémoglobine glyquée' }); }
+      { add({ type: 'BIOLOGIE', nom: 'Glucose à jeun', description: 'Glucose sanguin' });
+        add({ type: 'BIOLOGIE', nom: 'HbA1c', description: 'Hémoglobine glyquée' });
+        add({ type: 'BIOLOGIE', nom: 'Créatinine', description: 'Fonction rénale' });
+        add({ type: 'BIOLOGIE', nom: 'Cholestérol total', description: 'Bilan lipidique' }); }
     if (m.includes('cardia') || m.includes('heart') || m.includes('coeur') || m.includes('infarct'))
-      { add({ type: 'ELECTROCARDIOGRAMME', nom: 'ECG 12 dérivations', description: 'Rythme et conduction' });
-        add({ type: 'BIOLOGIE', nom: 'Troponine I/T', description: 'Nécrose myocardique' }); }
+      { // Cardiaque : marqueurs cardiaques
+        add({ type: 'BIOLOGIE', nom: 'Troponine', description: 'Nécrose myocardique' });
+        add({ type: 'BIOLOGIE', nom: 'CK', description: 'Créatine kinase' });
+        add({ type: 'BIOLOGIE', nom: 'Myoglobine', description: 'Marqueur précoce' });
+        add({ type: 'BIOLOGIE', nom: 'BNP', description: 'Insuffisance cardiaque' }); }
     if (m.includes('renal') || m.includes('rein') || m.includes('nephro') || m.includes('kidney'))
-      { add({ type: 'BIOLOGIE', nom: 'Créatinine + Urée', description: 'Fonction rénale' });
-        add({ type: 'BIOLOGIE', nom: 'ECBU', description: 'Examen cytobactériologique des urines' }); }
+      { add({ type: 'BIOLOGIE', nom: 'Créatinine', description: 'Fonction rénale' });
+        add({ type: 'BIOLOGIE', nom: 'Urée', description: 'Fonction rénale' });
+        add({ type: 'BIOLOGIE', nom: 'TFG', description: 'Filtration glomérulaire' });
+        add({ type: 'BIOLOGIE', nom: 'Potassium', description: 'Équilibre électrolytique' }); }
     if (m.includes('anemi') || m.includes('anémie'))
-      { add({ type: 'BIOLOGIE', nom: 'Bilan martial (fer + ferritine)', description: 'Carence en fer' }); }
+      { add({ type: 'BIOLOGIE', nom: 'Hémoglobine', description: 'Taux d\'hémoglobine' });
+        add({ type: 'BIOLOGIE', nom: 'Hématocrite', description: 'Volume globulaire' });
+        add({ type: 'BIOLOGIE', nom: 'VGM', description: 'Volume globulaire moyen' });
+        add({ type: 'BIOLOGIE', nom: 'Fer', description: 'Carence en fer' });
+        add({ type: 'BIOLOGIE', nom: 'Ferritine', description: 'Réserves en fer' }); }
     if (m.includes('cholera') || m.includes('diarrhee') || m.includes('diarrhée') || m.includes('gastro'))
-      { add({ type: 'BIOLOGIE', nom: 'Coproculture', description: 'Recherche agent pathogène fécal' }); }
+      { // Gastro : électrolytes et fonction rénale
+        add({ type: 'BIOLOGIE', nom: 'Sodium', description: 'Déshydratation' });
+        add({ type: 'BIOLOGIE', nom: 'Potassium', description: 'Hypokaliémie' });
+        add({ type: 'BIOLOGIE', nom: 'Créatinine', description: 'Insuffisance rénale aiguë' });
+        add({ type: 'BIOLOGIE', nom: 'Urée', description: 'Déshydratation' }); }
+    if (m.includes('pneumon') || m.includes('pulmon') || m.includes('bronch'))
+      { // Pneumonie/Bronchite : marqueurs inflammatoires
+        add({ type: 'BIOLOGIE', nom: 'CRP', description: 'Inflammation' });
+        add({ type: 'BIOLOGIE', nom: 'Globules Blancs', description: 'Infection' });
+        add({ type: 'BIOLOGIE', nom: 'Neutrophiles', description: 'Infection bactérienne' }); }
   });
 
   return list.slice(0, 6);
@@ -417,7 +540,23 @@ export default function ConsultationWorkflow() {
   // ── Examens helpers ────────────────────────────────────────────────────────
   const addExamen = () => setExamens([...examens, { type: 'BIOLOGIE', nom: '', resultats: '' }]);
   const removeExamen = (i: number) => setExamens(examens.filter((_, idx) => idx !== i));
-  const editExamen = (i: number, f: keyof Examen, v: any) => { const u = [...examens]; u[i] = { ...u[i], [f]: v }; setExamens(u); };
+  const editExamen = (i: number, f: keyof Examen, v: any) => { 
+    const u = [...examens]; 
+    u[i] = { ...u[i], [f]: v };
+    
+    // Auto-remplir l'unité de mesure et la valeur par défaut quand un examen est sélectionné
+    if (f === 'nom' && v && EXAM_DEFAULTS[v]) {
+      const defaults = EXAM_DEFAULTS[v];
+      if (defaults.unite_mesure) {
+        u[i].unite_mesure = defaults.unite_mesure;
+      }
+      if (defaults.valeur_numerique && !u[i].valeur_numerique) {
+        u[i].valeur_numerique = defaults.valeur_numerique;
+      }
+    }
+    
+    setExamens(u); 
+  };
 
   // ── Ordonnance helpers ─────────────────────────────────────────────────────
   const addMed = () => setOrdonnance([...ordonnance, { nom: '', dosage: '', frequence: '1×/jour', duree_jours: 7 }]);
@@ -624,7 +763,20 @@ export default function ConsultationWorkflow() {
                   <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '12px' }}>
                     <div className="sp-form-group">
                       <label className="sp-form-label">Symptôme</label>
-                      <input type="text" className="sp-form-input" value={s.nom} onChange={e => editSymptome(i, 'nom', e.target.value)} placeholder="Fièvre, Toux, Céphalées..." />
+                      <input 
+                        type="text" 
+                        className="sp-form-input" 
+                        value={s.nom} 
+                        onChange={e => editSymptome(i, 'nom', e.target.value)} 
+                        placeholder="Fièvre, Toux, Céphalées..." 
+                        list="symptomes-datalist"
+                        autoComplete="off"
+                      />
+                      <datalist id="symptomes-datalist">
+                        {SYMPTOMES_SUPPORTES.map((symptome, idx) => (
+                          <option key={idx} value={symptome} />
+                        ))}
+                      </datalist>
                     </div>
                     <div className="sp-form-group">
                       <label className="sp-form-label">Sévérité</label>
@@ -658,14 +810,14 @@ export default function ConsultationWorkflow() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 {[
-                  { label: 'Tension systolique (mmHg)', key: 'tension_systolique', icon: Heart, step: 1 },
-                  { label: 'Tension diastolique (mmHg)', key: 'tension_diastolique', icon: Heart, step: 1 },
-                  { label: 'Fréquence cardiaque (bpm)', key: 'frequence_cardiaque', icon: Activity, step: 1 },
-                  { label: 'Fréquence respiratoire (rpm)', key: 'frequence_respiratoire', icon: Wind, step: 1 },
+                  { label: 'Tension systolique (mmHg)', key: 'tension_systolique', icon: Heart, step: 0.1 },
+                  { label: 'Tension diastolique (mmHg)', key: 'tension_diastolique', icon: Heart, step: 0.1 },
+                  { label: 'Fréquence cardiaque (bpm)', key: 'frequence_cardiaque', icon: Activity, step: 0.1 },
+                  { label: 'Fréquence respiratoire (rpm)', key: 'frequence_respiratoire', icon: Wind, step: 0.1 },
                   { label: 'Température (°C)', key: 'temperature', icon: Thermometer, step: 0.1 },
-                  { label: 'Saturation O₂ (%)', key: 'saturation_o2', icon: Droplet, step: 1 },
+                  { label: 'Saturation O₂ (%)', key: 'saturation_o2', icon: Droplet, step: 0.1 },
                   { label: 'Poids (kg) — optionnel', key: 'poids', icon: Weight, step: 0.1 },
-                  { label: 'Taille (cm) — optionnel', key: 'taille', icon: Ruler, step: 1 },
+                  { label: 'Taille (cm) — optionnel', key: 'taille', icon: Ruler, step: 0.1 },
                 ].map(f => (
                   <div key={f.key} className="sp-form-group">
                     <label className="sp-form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -673,7 +825,7 @@ export default function ConsultationWorkflow() {
                     </label>
                     <input type="number" step={f.step} className="sp-form-input"
                       value={(vitaux as any)[f.key] || ''}
-                      onChange={e => setVitaux({ ...vitaux, [f.key]: f.step < 1 ? parseFloat(e.target.value) : e.target.value ? parseInt(e.target.value) : undefined })} />
+                      onChange={e => setVitaux({ ...vitaux, [f.key]: parseFloat(e.target.value) || undefined })} />
                   </div>
                 ))}
               </div>
@@ -780,7 +932,91 @@ export default function ConsultationWorkflow() {
                     </div>
                     <div className="sp-form-group">
                       <label className="sp-form-label">Nom de l'examen</label>
-                      <input type="text" className="sp-form-input" value={ex.nom} onChange={e => editExamen(i, 'nom', e.target.value)} placeholder="NFS, CRP, Radio thorax..." />
+                      <select 
+                        className="sp-form-select" 
+                        value={ex.nom} 
+                        onChange={e => editExamen(i, 'nom', e.target.value)}
+                      >
+                        <option value="">-- Sélectionner un examen --</option>
+                        <optgroup label="🩸 Hématologie">
+                          <option value="Hémoglobine">Hémoglobine (g/dL)</option>
+                          <option value="Hématocrite">Hématocrite (%)</option>
+                          <option value="Globules Rouges">Globules Rouges (M/µL)</option>
+                          <option value="Globules Blancs">Globules Blancs (K/µL)</option>
+                          <option value="Neutrophiles">Neutrophiles (%)</option>
+                          <option value="Lymphocytes">Lymphocytes (%)</option>
+                          <option value="Monocytes">Monocytes (%)</option>
+                          <option value="Eosinophiles">Eosinophiles (%)</option>
+                          <option value="Basophiles">Basophiles (%)</option>
+                          <option value="Plaquettes">Plaquettes (K/µL)</option>
+                          <option value="VGM">VGM (fL)</option>
+                          <option value="CCMH">CCMH (g/dL)</option>
+                        </optgroup>
+                        <optgroup label="🍬 Métabolisme Glucidique">
+                          <option value="Glucose">Glucose (mg/dL)</option>
+                          <option value="Glucose à jeun">Glucose à jeun (mg/dL)</option>
+                          <option value="Glucose post-prandial">Glucose post-prandial (mg/dL)</option>
+                          <option value="HbA1c">HbA1c (%)</option>
+                        </optgroup>
+                        <optgroup label="💧 Lipides">
+                          <option value="Cholestérol total">Cholestérol total (mg/dL)</option>
+                          <option value="Cholestérol HDL">Cholestérol HDL (mg/dL)</option>
+                          <option value="Cholestérol LDL">Cholestérol LDL (mg/dL)</option>
+                          <option value="Triglycérides">Triglycérides (mg/dL)</option>
+                          <option value="Acide urique">Acide urique (mg/dL)</option>
+                        </optgroup>
+                        <optgroup label="🫘 Fonction Rénale">
+                          <option value="Créatinine">Créatinine (mg/dL)</option>
+                          <option value="Urée">Urée (mg/dL)</option>
+                          <option value="TFG">TFG (mL/min/1.73m²)</option>
+                        </optgroup>
+                        <optgroup label="⚡ Électrolytes">
+                          <option value="Sodium">Sodium (mEq/L)</option>
+                          <option value="Potassium">Potassium (mEq/L)</option>
+                          <option value="Chlore">Chlore (mEq/L)</option>
+                          <option value="Calcium">Calcium (mg/dL)</option>
+                          <option value="Phosphore">Phosphore (mg/dL)</option>
+                          <option value="Magnésium">Magnésium (mg/dL)</option>
+                        </optgroup>
+                        <optgroup label="🫀 Fonction Hépatique">
+                          <option value="ALT/SGPT">ALT/SGPT (U/L)</option>
+                          <option value="AST/SGOT">AST/SGOT (U/L)</option>
+                          <option value="Bilirubine totale">Bilirubine totale (mg/dL)</option>
+                          <option value="Bilirubine conjuguée">Bilirubine conjuguée (mg/dL)</option>
+                          <option value="Bilirubine non-conjuguée">Bilirubine non-conjuguée (mg/dL)</option>
+                          <option value="Phosphatase alcaline">Phosphatase alcaline (U/L)</option>
+                          <option value="GGT">GGT (U/L)</option>
+                          <option value="Albumine">Albumine (g/dL)</option>
+                          <option value="Protéine totale">Protéine totale (g/dL)</option>
+                          <option value="Globulines">Globulines (g/dL)</option>
+                          <option value="Ratio A/G">Ratio A/G</option>
+                        </optgroup>
+                        <optgroup label="❤️ Marqueurs Cardiaques">
+                          <option value="CK">CK (U/L)</option>
+                          <option value="Myoglobine">Myoglobine (ng/mL)</option>
+                          <option value="Troponine">Troponine (ng/mL)</option>
+                          <option value="BNP">BNP (pg/mL)</option>
+                          <option value="ProBNP">ProBNP (pg/mL)</option>
+                        </optgroup>
+                        <optgroup label="🩹 Coagulation">
+                          <option value="PT/INR">PT/INR</option>
+                          <option value="aPTT">aPTT (sec)</option>
+                          <option value="TT">TT (sec)</option>
+                          <option value="Fibrinogène">Fibrinogène (mg/dL)</option>
+                        </optgroup>
+                        <optgroup label="🔥 Marqueurs Inflammatoires">
+                          <option value="CRP">CRP (mg/L)</option>
+                          <option value="ESR">ESR (mm/h)</option>
+                        </optgroup>
+                        <optgroup label="🦠 Microbiologie">
+                          <option value="BAAR (résultat)">BAAR - Test Tuberculose (0=NÉGATIF, 1=POSITIF)</option>
+                          <option value="Culture Mycobactéries (résultat)">Culture Mycobactéries (0=NÉGATIF, 1=POSITIF)</option>
+                          <option value="Test Xpert MTB/RIF (résultat)">Test Xpert MTB/RIF (0=NÉGATIF, 1=POSITIF)</option>
+                        </optgroup>
+                        <optgroup label="🔬 Autres">
+                          <option value="PSA">PSA (ng/mL)</option>
+                        </optgroup>
+                      </select>
                     </div>
                   </div>
                   {ex.description && <p style={{ fontSize: '12px', color: '#6B7280', marginBottom: '12px', fontStyle: 'italic' }}>💡 {ex.description}</p>}

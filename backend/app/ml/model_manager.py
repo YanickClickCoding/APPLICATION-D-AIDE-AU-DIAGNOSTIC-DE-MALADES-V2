@@ -16,14 +16,25 @@ from .predictor import Predictor
 logger = logging.getLogger(__name__)
 
 # Chemins candidats pour trouver le dataset CSV
-_DATASET_FILENAME = "dataset_medical_robust_10000_cas.csv"
+# Utiliser le dataset enrichi avec les 3 nouveaux examens microbiologiques (BAAR, Culture, Xpert)
+_DATASET_FILENAME = "dataset_medical_robust_enhanced.csv"
+_DATASET_FILENAME_FALLBACK = "dataset_medical_robust_10000_cas.csv"  # Fallback si le nouveau n'existe pas
 _DATASET_CANDIDATES = [
+    # Nouveau dataset enrichi (403 features)
     os.path.join("..", "les ressources dataset", _DATASET_FILENAME),
     os.path.join("..", "..", "les ressources dataset", _DATASET_FILENAME),
     os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
         "les ressources dataset",
         _DATASET_FILENAME,
+    ),
+    # Fallback vers l'ancien dataset (400 features)
+    os.path.join("..", "les ressources dataset", _DATASET_FILENAME_FALLBACK),
+    os.path.join("..", "..", "les ressources dataset", _DATASET_FILENAME_FALLBACK),
+    os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
+        "les ressources dataset",
+        _DATASET_FILENAME_FALLBACK,
     ),
 ]
 
@@ -308,6 +319,8 @@ class ModelManager:
             valeur = exam.get("valeur_numerique")
             if valeur is None or nom == "":
                 continue
+            
+            matched = False
             # Essayer les formats de nommage du dataset
             for candidate in [
                 f"Lab_{nom} ({unite})" if unite else None,
@@ -315,7 +328,15 @@ class ModelManager:
             ]:
                 if candidate and candidate in self.trainer.feature_names:
                     exam_lookup[candidate] = float(valeur)
+                    matched = True
                     break
+            
+            # Log warning if exam was not matched to any model feature
+            if not matched:
+                logger.warning(
+                    f"⚠️ Examen '{nom}' (unité: '{unite}') ne correspond à aucune feature du modèle et sera ignoré. "
+                    f"Features lab disponibles: {[f for f in self.trainer.feature_names if f.startswith('Lab_')][:10]}..."
+                )
 
         for feat in self.trainer.feature_names:
             if feat.startswith("Lab_"):
@@ -535,6 +556,17 @@ class ModelManager:
             "classes": self.trainer.label_encoder.classes_.tolist() if self.trainer.label_encoder else [],
             "normalization_loaded": len(self.normalization_params) > 0,
         }
+
+    def get_supported_lab_features(self) -> List[str]:
+        """
+        Retourne la liste de toutes les features de laboratoire supportées par le modèle.
+        
+        Returns:
+            List[str]: Liste des noms de features commençant par "Lab_"
+        """
+        if not self.trainer.feature_names:
+            return []
+        return [f for f in self.trainer.feature_names if f.startswith("Lab_")]
 
     def retrain_with_new_data(self, new_data_path: str) -> Dict:
         """Réentraîne le modèle avec de nouvelles données"""
