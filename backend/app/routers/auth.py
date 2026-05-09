@@ -69,6 +69,26 @@ class UserResponse(BaseModel):
         from_attributes = True
 
 
+class RegisterRequest(BaseModel):
+    """Schéma de requête pour l'inscription"""
+    nom: str
+    prenoms: str
+    email: EmailStr
+    mot_de_passe: str
+    role: str = "medecin"  # Par défaut médecin
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "nom": "DUPONT",
+                "prenoms": "Jean",
+                "email": "jean.dupont@gasasad.com",
+                "mot_de_passe": "motdepasse123",
+                "role": "medecin"
+            }
+        }
+
+
 # ============================================================================
 # FONCTIONS UTILITAIRES
 # ============================================================================
@@ -200,6 +220,68 @@ async def get_current_admin(current_user: User = Depends(get_current_user)):
 # ============================================================================
 # ENDPOINTS
 # ============================================================================
+
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def register(
+    register_data: RegisterRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Inscription d'un nouvel utilisateur (médecin ou infirmier)
+    
+    - **nom**: Nom de famille (en majuscules)
+    - **prenoms**: Prénom(s)
+    - **email**: Adresse email unique
+    - **mot_de_passe**: Mot de passe (min 8 caractères)
+    - **role**: Role (medecin ou infirmier)
+    
+    Le compte est créé avec actif=False et doit être activé par un administrateur
+    """
+    logger.info(f"Tentative d'inscription: {register_data.email} ({register_data.role})")
+    
+    # Vérifier si l'email existe déjà
+    existing_user = db.query(User).filter(User.email == register_data.email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cette adresse email est déjà utilisée"
+        )
+    
+    # Valider le rôle
+    if register_data.role not in ["medecin", "infirmier"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Le rôle doit être 'medecin' ou 'infirmier'"
+        )
+    
+    # Valider le mot de passe
+    if len(register_data.mot_de_passe) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Le mot de passe doit faire au moins 8 caractères"
+        )
+    
+    # Hasher le mot de passe
+    hashed_password = get_password_hash(register_data.mot_de_passe)
+    
+    # Créer le nouvel utilisateur (inactif par défaut)
+    new_user = User(
+        nom=register_data.nom.upper(),
+        prenoms=register_data.prenoms,
+        email=register_data.email,
+        mot_de_passe=hashed_password,
+        role=register_data.role,
+        actif=False  # Compte inactif jusqu'à activation par admin
+    )
+    
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    logger.info(f"✅ Inscription réussie: {new_user.email} ({new_user.role}) - En attente d'activation")
+    
+    return new_user
+
 
 @router.post("/login", response_model=Token)
 async def login(
