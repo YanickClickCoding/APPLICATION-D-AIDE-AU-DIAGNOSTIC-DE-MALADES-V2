@@ -1,0 +1,199 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 2200" width="1200" height="2200">
+    <rect width="100%" height="100%" fill="#f8f9fa"/>
+    <text x="50%" y="50" font-family="Arial" font-size="28" font-weight="bold" text-anchor="middle" fill="#2c3e50">10 Cas de Test pour Diagnostic IA (Format Formulaire)</text>
+    <foreignObject x="20" y="80" width="1160" height="2100">
+        <div xmlns="http://www.w3.org/1999/xhtml" style="font-family: Arial, sans-serif; display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+
+            <div style="background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 20px; width: 48%; box-sizing: border-box; border-left: 5px solid #3498db; margin-bottom: 20px;">
+                <h3 style="color: #2c3e50; margin-top: 0; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; font-size: 18px;">Diagnostic attendu: Lymphome</h3>
+                <p style="font-size: 14px; color: #7f8c8d; margin-bottom: 15px;"><strong>Patient:</strong> M, 70 ans (Sévérité globale: Critique)</p>
+                <div style="display: flex; gap: 20px;">
+                    <div style="flex: 1;">
+                        <h4 style="color: #e74c3c; margin-bottom: 10px; font-size: 15px;">Symptômes à saisir (3)</h4>
+                        <div style="font-size: 13px; background: #fdf2e9; padding: 10px; border-radius: 4px; min-height: 120px; max-height: 180px; overflow-y: auto; line-height: 1.4;">
+                            <div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Adénopathie</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Sévère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>5 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Sueurs nocturnes</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Modérée</span> | Durée : <span style='color:#0f172a; font-weight:600;'>4 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Fièvre</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Modérée</span> | Durée : <span style='color:#0f172a; font-weight:600;'>3 j</span></span></div>
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #27ae60; margin-bottom: 10px; font-size: 15px;">Signes Vitaux à saisir</h4>
+                        <ul style="font-size: 13px; margin: 0; padding-left: 20px; background: #e8f8f5; padding: 10px 10px 10px 25px; border-radius: 4px; min-height: 120px; max-height: 180px; overflow-y: auto; line-height: 1.4;">
+                            <li style="margin-bottom: 5px;">Tension: 108.73/88.52 mmHg</li><li style="margin-bottom: 5px;">FC: 89.28 bpm</li><li style="margin-bottom: 5px;">FR: 16.79 rpm</li><li style="margin-bottom: 5px;">Temp: 36.66 °C</li><li style="margin-bottom: 5px;">SpO2: 95.78 %</li><li style="margin-bottom: 5px;">IMC: 18.88 kg/m²</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        
+            <div style="background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 20px; width: 48%; box-sizing: border-box; border-left: 5px solid #3498db; margin-bottom: 20px;">
+                <h3 style="color: #2c3e50; margin-top: 0; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; font-size: 18px;">Diagnostic attendu: Migraine</h3>
+                <p style="font-size: 14px; color: #7f8c8d; margin-bottom: 15px;"><strong>Patient:</strong> M, 96 ans (Sévérité globale: Légère)</p>
+                <div style="display: flex; gap: 20px;">
+                    <div style="flex: 1;">
+                        <h4 style="color: #e74c3c; margin-bottom: 10px; font-size: 15px;">Symptômes à saisir (5)</h4>
+                        <div style="font-size: 13px; background: #fdf2e9; padding: 10px; border-radius: 4px; min-height: 120px; max-height: 180px; overflow-y: auto; line-height: 1.4;">
+                            <div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Phonophobie</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>7 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Fatigue</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>6 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Vomissements</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>5 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Aura</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>7 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Nausées</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>6 j</span></span></div>
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #27ae60; margin-bottom: 10px; font-size: 15px;">Signes Vitaux à saisir</h4>
+                        <ul style="font-size: 13px; margin: 0; padding-left: 20px; background: #e8f8f5; padding: 10px 10px 10px 25px; border-radius: 4px; min-height: 120px; max-height: 180px; overflow-y: auto; line-height: 1.4;">
+                            <li style="margin-bottom: 5px;">Tension: 109.43/68.14 mmHg</li><li style="margin-bottom: 5px;">FC: 93.15 bpm</li><li style="margin-bottom: 5px;">FR: 21.14 rpm</li><li style="margin-bottom: 5px;">Temp: 37.61 °C</li><li style="margin-bottom: 5px;">SpO2: 97.71 %</li><li style="margin-bottom: 5px;">IMC: 19.42 kg/m²</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        
+            <div style="background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 20px; width: 48%; box-sizing: border-box; border-left: 5px solid #3498db; margin-bottom: 20px;">
+                <h3 style="color: #2c3e50; margin-top: 0; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; font-size: 18px;">Diagnostic attendu: Angine de poitrine</h3>
+                <p style="font-size: 14px; color: #7f8c8d; margin-bottom: 15px;"><strong>Patient:</strong> F, 56 ans (Sévérité globale: Modérée)</p>
+                <div style="display: flex; gap: 20px;">
+                    <div style="flex: 1;">
+                        <h4 style="color: #e74c3c; margin-bottom: 10px; font-size: 15px;">Symptômes à saisir (3)</h4>
+                        <div style="font-size: 13px; background: #fdf2e9; padding: 10px; border-radius: 4px; min-height: 120px; max-height: 180px; overflow-y: auto; line-height: 1.4;">
+                            <div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Douleur thoracique</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Modérée</span> | Durée : <span style='color:#0f172a; font-weight:600;'>74 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Fatigue</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>73 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Anxiété</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>72 j</span></span></div>
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #27ae60; margin-bottom: 10px; font-size: 15px;">Signes Vitaux à saisir</h4>
+                        <ul style="font-size: 13px; margin: 0; padding-left: 20px; background: #e8f8f5; padding: 10px 10px 10px 25px; border-radius: 4px; min-height: 120px; max-height: 180px; overflow-y: auto; line-height: 1.4;">
+                            <li style="margin-bottom: 5px;">Tension: 130.37/86.88 mmHg</li><li style="margin-bottom: 5px;">FC: 72.72 bpm</li><li style="margin-bottom: 5px;">FR: 9.15 rpm</li><li style="margin-bottom: 5px;">Temp: 36.73 °C</li><li style="margin-bottom: 5px;">SpO2: 97.14 %</li><li style="margin-bottom: 5px;">IMC: 23.82 kg/m²</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        
+            <div style="background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 20px; width: 48%; box-sizing: border-box; border-left: 5px solid #3498db; margin-bottom: 20px;">
+                <h3 style="color: #2c3e50; margin-top: 0; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; font-size: 18px;">Diagnostic attendu: Myocardite</h3>
+                <p style="font-size: 14px; color: #7f8c8d; margin-bottom: 15px;"><strong>Patient:</strong> M, 81 ans (Sévérité globale: Modérée)</p>
+                <div style="display: flex; gap: 20px;">
+                    <div style="flex: 1;">
+                        <h4 style="color: #e74c3c; margin-bottom: 10px; font-size: 15px;">Symptômes à saisir (9)</h4>
+                        <div style="font-size: 13px; background: #fdf2e9; padding: 10px; border-radius: 4px; min-height: 120px; max-height: 180px; overflow-y: auto; line-height: 1.4;">
+                            <div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Essoufflement</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Modérée</span> | Durée : <span style='color:#0f172a; font-weight:600;'>45 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Syncope</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>44 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Fatigue</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>43 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Palpitations</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>45 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Œdème pulmonaire</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>44 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Douleur thoracique</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>43 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Mal de gorge</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>45 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Besoin fréquent d'uriner</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>44 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Choc</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>43 j</span></span></div>
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #27ae60; margin-bottom: 10px; font-size: 15px;">Signes Vitaux à saisir</h4>
+                        <ul style="font-size: 13px; margin: 0; padding-left: 20px; background: #e8f8f5; padding: 10px 10px 10px 25px; border-radius: 4px; min-height: 120px; max-height: 180px; overflow-y: auto; line-height: 1.4;">
+                            <li style="margin-bottom: 5px;">Tension: 107.05/63.4 mmHg</li><li style="margin-bottom: 5px;">FC: 96.99 bpm</li><li style="margin-bottom: 5px;">FR: 19.02 rpm</li><li style="margin-bottom: 5px;">Temp: 37.6 °C</li><li style="margin-bottom: 5px;">SpO2: 98.3 %</li><li style="margin-bottom: 5px;">IMC: 23.81 kg/m²</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        
+            <div style="background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 20px; width: 48%; box-sizing: border-box; border-left: 5px solid #3498db; margin-bottom: 20px;">
+                <h3 style="color: #2c3e50; margin-top: 0; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; font-size: 18px;">Diagnostic attendu: Syphilis</h3>
+                <p style="font-size: 14px; color: #7f8c8d; margin-bottom: 15px;"><strong>Patient:</strong> F, 8 ans (Sévérité globale: Sévère)</p>
+                <div style="display: flex; gap: 20px;">
+                    <div style="flex: 1;">
+                        <h4 style="color: #e74c3c; margin-bottom: 10px; font-size: 15px;">Symptômes à saisir (6)</h4>
+                        <div style="font-size: 13px; background: #fdf2e9; padding: 10px; border-radius: 4px; min-height: 120px; max-height: 180px; overflow-y: auto; line-height: 1.4;">
+                            <div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Lymphadénopathie</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Sévère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>83 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Complications neuro</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Modérée</span> | Durée : <span style='color:#0f172a; font-weight:600;'>82 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Rash</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Modérée</span> | Durée : <span style='color:#0f172a; font-weight:600;'>81 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Chancre</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Modérée</span> | Durée : <span style='color:#0f172a; font-weight:600;'>83 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Malaise</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Modérée</span> | Durée : <span style='color:#0f172a; font-weight:600;'>82 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Fièvre</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Modérée</span> | Durée : <span style='color:#0f172a; font-weight:600;'>81 j</span></span></div>
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #27ae60; margin-bottom: 10px; font-size: 15px;">Signes Vitaux à saisir</h4>
+                        <ul style="font-size: 13px; margin: 0; padding-left: 20px; background: #e8f8f5; padding: 10px 10px 10px 25px; border-radius: 4px; min-height: 120px; max-height: 180px; overflow-y: auto; line-height: 1.4;">
+                            <li style="margin-bottom: 5px;">Tension: 88.81/88.62 mmHg</li><li style="margin-bottom: 5px;">FC: 58.64 bpm</li><li style="margin-bottom: 5px;">FR: 14.96 rpm</li><li style="margin-bottom: 5px;">Temp: 36.52 °C</li><li style="margin-bottom: 5px;">SpO2: 99.64 %</li><li style="margin-bottom: 5px;">IMC: 21.28 kg/m²</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        
+            <div style="background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 20px; width: 48%; box-sizing: border-box; border-left: 5px solid #3498db; margin-bottom: 20px;">
+                <h3 style="color: #2c3e50; margin-top: 0; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; font-size: 18px;">Diagnostic attendu: Cataracte</h3>
+                <p style="font-size: 14px; color: #7f8c8d; margin-bottom: 15px;"><strong>Patient:</strong> F, 17 ans (Sévérité globale: Modérée)</p>
+                <div style="display: flex; gap: 20px;">
+                    <div style="flex: 1;">
+                        <h4 style="color: #e74c3c; margin-bottom: 10px; font-size: 15px;">Symptômes à saisir (3)</h4>
+                        <div style="font-size: 13px; background: #fdf2e9; padding: 10px; border-radius: 4px; min-height: 120px; max-height: 180px; overflow-y: auto; line-height: 1.4;">
+                            <div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Vision jaunâtre</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Modérée</span> | Durée : <span style='color:#0f172a; font-weight:600;'>16 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Vision floue</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>15 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Difficulté nocturne</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>14 j</span></span></div>
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #27ae60; margin-bottom: 10px; font-size: 15px;">Signes Vitaux à saisir</h4>
+                        <ul style="font-size: 13px; margin: 0; padding-left: 20px; background: #e8f8f5; padding: 10px 10px 10px 25px; border-radius: 4px; min-height: 120px; max-height: 180px; overflow-y: auto; line-height: 1.4;">
+                            <li style="margin-bottom: 5px;">Tension: 92.58/54.38 mmHg</li><li style="margin-bottom: 5px;">FC: 81.63 bpm</li><li style="margin-bottom: 5px;">FR: 10.84 rpm</li><li style="margin-bottom: 5px;">Temp: 37.23 °C</li><li style="margin-bottom: 5px;">SpO2: 99.88 %</li><li style="margin-bottom: 5px;">IMC: 21.86 kg/m²</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        
+            <div style="background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 20px; width: 48%; box-sizing: border-box; border-left: 5px solid #3498db; margin-bottom: 20px;">
+                <h3 style="color: #2c3e50; margin-top: 0; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; font-size: 18px;">Diagnostic attendu: Tuberculose</h3>
+                <p style="font-size: 14px; color: #7f8c8d; margin-bottom: 15px;"><strong>Patient:</strong> M, 53 ans (Sévérité globale: Modérée)</p>
+                <div style="display: flex; gap: 20px;">
+                    <div style="flex: 1;">
+                        <h4 style="color: #e74c3c; margin-bottom: 10px; font-size: 15px;">Symptômes à saisir (4)</h4>
+                        <div style="font-size: 13px; background: #fdf2e9; padding: 10px; border-radius: 4px; min-height: 120px; max-height: 180px; overflow-y: auto; line-height: 1.4;">
+                            <div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Perte de poids</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Modérée</span> | Durée : <span style='color:#0f172a; font-weight:600;'>60 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Hémoptysie</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>59 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Toux persistante</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>58 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Fatigue</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>60 j</span></span></div>
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #27ae60; margin-bottom: 10px; font-size: 15px;">Signes Vitaux à saisir</h4>
+                        <ul style="font-size: 13px; margin: 0; padding-left: 20px; background: #e8f8f5; padding: 10px 10px 10px 25px; border-radius: 4px; min-height: 120px; max-height: 180px; overflow-y: auto; line-height: 1.4;">
+                            <li style="margin-bottom: 5px;">Tension: 109.41/97.72 mmHg</li><li style="margin-bottom: 5px;">FC: 51.33 bpm</li><li style="margin-bottom: 5px;">FR: 10.55 rpm</li><li style="margin-bottom: 5px;">Temp: 37.44 °C</li><li style="margin-bottom: 5px;">SpO2: 96.93 %</li><li style="margin-bottom: 5px;">IMC: 24.75 kg/m²</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        
+            <div style="background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 20px; width: 48%; box-sizing: border-box; border-left: 5px solid #3498db; margin-bottom: 20px;">
+                <h3 style="color: #2c3e50; margin-top: 0; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; font-size: 18px;">Diagnostic attendu: Trouble de coagulation</h3>
+                <p style="font-size: 14px; color: #7f8c8d; margin-bottom: 15px;"><strong>Patient:</strong> F, 49 ans (Sévérité globale: Sévère)</p>
+                <div style="display: flex; gap: 20px;">
+                    <div style="flex: 1;">
+                        <h4 style="color: #e74c3c; margin-bottom: 10px; font-size: 15px;">Symptômes à saisir (4)</h4>
+                        <div style="font-size: 13px; background: #fdf2e9; padding: 10px; border-radius: 4px; min-height: 120px; max-height: 180px; overflow-y: auto; line-height: 1.4;">
+                            <div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Hémorragie digestive</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Sévère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>40 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Épistaxis</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Modérée</span> | Durée : <span style='color:#0f172a; font-weight:600;'>39 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Bleus faciles</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Modérée</span> | Durée : <span style='color:#0f172a; font-weight:600;'>38 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Saignements prolongés</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Modérée</span> | Durée : <span style='color:#0f172a; font-weight:600;'>40 j</span></span></div>
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #27ae60; margin-bottom: 10px; font-size: 15px;">Signes Vitaux à saisir</h4>
+                        <ul style="font-size: 13px; margin: 0; padding-left: 20px; background: #e8f8f5; padding: 10px 10px 10px 25px; border-radius: 4px; min-height: 120px; max-height: 180px; overflow-y: auto; line-height: 1.4;">
+                            <li style="margin-bottom: 5px;">Tension: 129.58/99.48 mmHg</li><li style="margin-bottom: 5px;">FC: 63.65 bpm</li><li style="margin-bottom: 5px;">FR: 15.96 rpm</li><li style="margin-bottom: 5px;">Temp: 36.56 °C</li><li style="margin-bottom: 5px;">SpO2: 97.75 %</li><li style="margin-bottom: 5px;">IMC: 21.37 kg/m²</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        
+            <div style="background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 20px; width: 48%; box-sizing: border-box; border-left: 5px solid #3498db; margin-bottom: 20px;">
+                <h3 style="color: #2c3e50; margin-top: 0; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; font-size: 18px;">Diagnostic attendu: Goutte</h3>
+                <p style="font-size: 14px; color: #7f8c8d; margin-bottom: 15px;"><strong>Patient:</strong> M, 56 ans (Sévérité globale: Modérée)</p>
+                <div style="display: flex; gap: 20px;">
+                    <div style="flex: 1;">
+                        <h4 style="color: #e74c3c; margin-bottom: 10px; font-size: 15px;">Symptômes à saisir (5)</h4>
+                        <div style="font-size: 13px; background: #fdf2e9; padding: 10px; border-radius: 4px; min-height: 120px; max-height: 180px; overflow-y: auto; line-height: 1.4;">
+                            <div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Fièvre</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Modérée</span> | Durée : <span style='color:#0f172a; font-weight:600;'>9 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Gonflement</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>8 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Chaleur</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>7 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Rougeur</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>9 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Tophi</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>8 j</span></span></div>
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #27ae60; margin-bottom: 10px; font-size: 15px;">Signes Vitaux à saisir</h4>
+                        <ul style="font-size: 13px; margin: 0; padding-left: 20px; background: #e8f8f5; padding: 10px 10px 10px 25px; border-radius: 4px; min-height: 120px; max-height: 180px; overflow-y: auto; line-height: 1.4;">
+                            <li style="margin-bottom: 5px;">Tension: 137.7/78.19 mmHg</li><li style="margin-bottom: 5px;">FC: 69.15 bpm</li><li style="margin-bottom: 5px;">FR: 10.95 rpm</li><li style="margin-bottom: 5px;">Temp: 37.12 °C</li><li style="margin-bottom: 5px;">SpO2: 96.79 %</li><li style="margin-bottom: 5px;">IMC: 19.24 kg/m²</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        
+            <div style="background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 20px; width: 48%; box-sizing: border-box; border-left: 5px solid #3498db; margin-bottom: 20px;">
+                <h3 style="color: #2c3e50; margin-top: 0; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; font-size: 18px;">Diagnostic attendu: Lupus érythémateux systémique</h3>
+                <p style="font-size: 14px; color: #7f8c8d; margin-bottom: 15px;"><strong>Patient:</strong> F, 58 ans (Sévérité globale: Légère)</p>
+                <div style="display: flex; gap: 20px;">
+                    <div style="flex: 1;">
+                        <h4 style="color: #e74c3c; margin-bottom: 10px; font-size: 15px;">Symptômes à saisir (4)</h4>
+                        <div style="font-size: 13px; background: #fdf2e9; padding: 10px; border-radius: 4px; min-height: 120px; max-height: 180px; overflow-y: auto; line-height: 1.4;">
+                            <div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Ulcères buccaux</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>60 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Fatigue</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>59 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Douleurs articulaires</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>58 j</span></span></div><div style='border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px;'><strong style='color:#334155;'>Fièvre</strong><br/><span style='color:#64748b; font-size:12px;'>Sévérité : <span style='color:#0f172a; font-weight:600;'>Légère</span> | Durée : <span style='color:#0f172a; font-weight:600;'>60 j</span></span></div>
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="color: #27ae60; margin-bottom: 10px; font-size: 15px;">Signes Vitaux à saisir</h4>
+                        <ul style="font-size: 13px; margin: 0; padding-left: 20px; background: #e8f8f5; padding: 10px 10px 10px 25px; border-radius: 4px; min-height: 120px; max-height: 180px; overflow-y: auto; line-height: 1.4;">
+                            <li style="margin-bottom: 5px;">Tension: 143.38/68.36 mmHg</li><li style="margin-bottom: 5px;">FC: 102.83 bpm</li><li style="margin-bottom: 5px;">FR: 12.71 rpm</li><li style="margin-bottom: 5px;">Temp: 36.62 °C</li><li style="margin-bottom: 5px;">SpO2: 100.92 %</li><li style="margin-bottom: 5px;">IMC: 19.84 kg/m²</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        
+        </div>
+    </foreignObject>
+</svg>

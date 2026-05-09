@@ -68,6 +68,12 @@ const EXAM_DEFAULTS: Record<string, { valeur_numerique?: number; unite_mesure?: 
   'Coproculture':                         {                           unite_mesure: 'résultat' },
 };
 
+const UNITES_EXAMEN = [
+  'g/dL', 'g/L', 'mg/L', 'mg/dL', 'µmol/L', 'mmol/L', 'UI/L', 'U/L', 
+  'ng/mL', 'µg/L', '%', 'mm', 'mm/h', 'titre', 'résultat', 'rapport', 
+  'positif/négatif', 'indices', 'copies/mL', 'Autre'
+];
+
 function suggestExams(predictions: Prediction[]): Examen[] {
   const today = new Date().toISOString().split('T')[0];
   const added = new Set<string>();
@@ -288,7 +294,7 @@ export default function ConsultationWorkflow() {
           setAnalysePreliminaire(d.analyse_preliminaire);
           setExamens(suggestExams(d.analyse_preliminaire.top_predictions || []));
         }
-        setStep(5);
+        setStep(4);
       })
       .catch(() => showToast('Impossible de charger la consultation', 'error'));
   }, [reprendreId]);
@@ -328,7 +334,8 @@ export default function ConsultationWorkflow() {
       const suggestions = suggestExams(result.top_predictions);
       setExamens(suggestions);
       showToast('Analyse préliminaire effectuée — examens suggérés ci-dessous', 'success');
-      setStep(5);
+      // On reste sur l'étape 4 pour visualiser les résultats avant de passer aux examens
+      // setStep(5);
     } catch (e: any) { showToast(e.message || 'Erreur IA', 'error'); }
     finally { setLoading(false); }
   };
@@ -705,10 +712,10 @@ export default function ConsultationWorkflow() {
               {analysePreliminaire ? (
                 <div>
                   <AICard analyse={analysePreliminaire} label="Hypothèses diagnostiques (basé sur symptômes + signes vitaux)" />
-                  <div style={{ padding: '14px 18px', background: '#ECFDF5', borderRadius: '8px', border: '1px solid #6EE7B7', display: 'flex', gap: '10px' }}>
+                  <div style={{ padding: '14px 18px', background: '#ECFDF5', borderRadius: '8px', border: '1px solid #6EE7B7', display: 'flex', gap: '10px', marginBottom: '20px' }}>
                     <Lightbulb size={18} style={{ color: '#059669', flexShrink: 0, marginTop: '2px' }} />
                     <div style={{ fontSize: '13px', color: '#065F46' }}>
-                      <strong>Examens suggérés :</strong> {examens.length} examen(s) ont été pré-remplis à l'étape suivante selon les hypothèses de l'IA. Le médecin peut les modifier.
+                      <strong>Examens suggérés :</strong> {examens.length} examen(s) ont été pré-remplis selon les hypothèses de l'IA. Vous pouvez les visualiser et les compléter à l'étape suivante.
                     </div>
                   </div>
                 </div>
@@ -784,7 +791,16 @@ export default function ConsultationWorkflow() {
                     </div>
                     <div className="sp-form-group">
                       <label className="sp-form-label">Unité</label>
-                      <input type="text" className="sp-form-input" value={ex.unite_mesure || ''} onChange={e => editExamen(i, 'unite_mesure', e.target.value)} placeholder="g/L, mmol/L..." />
+                      <select 
+                        className="sp-form-select" 
+                        value={ex.unite_mesure || ''} 
+                        onChange={e => editExamen(i, 'unite_mesure', e.target.value)}
+                      >
+                        <option value="">-- Unité --</option>
+                        {UNITES_EXAMEN.map(u => (
+                          <option key={u} value={u}>{u}</option>
+                        ))}
+                      </select>
                     </div>
                     <div className="sp-form-group">
                       <label className="sp-form-label">Date examen</label>
@@ -924,8 +940,49 @@ export default function ConsultationWorkflow() {
                     <div className="sp-form-group">
                       <label className="sp-form-label">Fréquence</label>
                       <select className="sp-form-select" value={med.frequence} onChange={e => editMed(i, 'frequence', e.target.value)}>
-                        <option>1×/jour</option><option>2×/jour</option><option>3×/jour</option>
-                        <option>4×/jour</option><option>1×/semaine</option><option>Au besoin</option>
+                        <optgroup label="Fréquence quotidienne">
+                          <option>1×/jour</option>
+                          <option>2×/jour</option>
+                          <option>3×/jour</option>
+                          <option>4×/jour</option>
+                        </optgroup>
+                        <optgroup label="Fréquence hebdomadaire">
+                          <option>1×/2 jours</option>
+                          <option>1×/3 jours</option>
+                          <option>1×/semaine</option>
+                          <option>2×/semaine</option>
+                          <option>3×/semaine</option>
+                        </optgroup>
+                        <optgroup label="Fréquence mensuelle">
+                          <option>1×/2 semaines</option>
+                          <option>1×/3 semaines</option>
+                          <option>1×/21 jours</option>
+                          <option>1×/mois</option>
+                        </optgroup>
+                        <optgroup label="Horaires spécifiques">
+                          <option>Toutes les 4 heures</option>
+                          <option>Toutes les 6 heures</option>
+                          <option>Toutes les 8 heures</option>
+                          <option>Toutes les 12 heures</option>
+                        </optgroup>
+                        <optgroup label="Moments de la journée">
+                          <option>Le matin</option>
+                          <option>Le soir</option>
+                          <option>Matin et soir</option>
+                          <option>Matin, midi et soir</option>
+                          <option>Au coucher</option>
+                        </optgroup>
+                        <optgroup label="Relation avec les repas">
+                          <option>Avant les repas</option>
+                          <option>Pendant les repas</option>
+                          <option>Après les repas</option>
+                        </optgroup>
+                        <optgroup label="Autres">
+                          <option>Si besoin (PRN)</option>
+                          <option>En continu (perfusion)</option>
+                          <option>En une seule prise</option>
+                          <option>Au besoin</option>
+                        </optgroup>
                       </select>
                     </div>
                     <div className="sp-form-group">
