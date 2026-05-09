@@ -584,7 +584,7 @@ export default function ConsultationWorkflow() {
                 <div className="sp-form-group">
                   <label className="sp-form-label">Sexe <span style={{ color: '#EF4444' }}>*</span></label>
                   <select className="sp-form-select" value={patient.sexe} onChange={e => setPatient({ ...patient, sexe: e.target.value as 'M' | 'F' })}>
-                    <option value="M">Masculin</option><option value="F">Féminin</option>
+                    <option value="M">♂ Masculin</option><option value="F">♀ Féminin</option>
                   </select>
                 </div>
                 <div className="sp-form-group">

@@ -148,7 +148,7 @@ const MesPatients = () => {
                       {patient.prenoms} {patient.nom}
                     </div>
                     <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
-                      #{patient.patient_id.toString().padStart(4, '0')} · {patient.sexe === 'M' ? 'Masculin' : 'Féminin'}
+                      #{patient.patient_id.toString().padStart(4, '0')} · {patient.sexe === 'M' ? '♂ Masculin' : '♀ Féminin'}
                     </div>
                   </div>
                   {patient.groupe_sanguin && (

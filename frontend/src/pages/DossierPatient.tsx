@@ -229,7 +229,7 @@ const DossierPatient = () => {
                   <span>Sexe</span>
                 </div>
                 <div style={{ fontSize: '14px', fontWeight: 600, color: '#1F2937' }}>
-                  {patient.sexe === 'M' ? 'Masculin' : 'Féminin'}
+                  {patient.sexe === 'M' ? '♂ Masculin' : '♀ Féminin'}
                 </div>
               </div>
 
@@ -473,7 +473,7 @@ const DossierPatient = () => {
                 <td style={{ padding: '8px 0', fontWeight: 'bold' }}>Date de Naissance:</td>
                 <td style={{ padding: '8px 0' }}>{new Date(patient.date_naissance).toLocaleDateString('fr-FR')} ({calculateAge(patient.date_naissance)} ans)</td>
                 <td style={{ padding: '8px 0', fontWeight: 'bold' }}>Sexe:</td>
-                <td style={{ padding: '8px 0' }}>{patient.sexe === 'M' ? 'Masculin' : 'Féminin'}</td>
+                <td style={{ padding: '8px 0' }}>{patient.sexe === 'M' ? '♂ Masculin' : '♀ Féminin'}</td>
               </tr>
               <tr>
                 <td style={{ padding: '8px 0', fontWeight: 'bold' }}>Téléphone:</td>
