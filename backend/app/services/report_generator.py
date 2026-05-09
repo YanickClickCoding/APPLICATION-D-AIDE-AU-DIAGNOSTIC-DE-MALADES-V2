@@ -103,7 +103,7 @@ class ReportGenerator:
             )
             
             # En-tête
-            story.append(Paragraph("SANTÉ PLUS - Clinique Privée", title_style))
+            story.append(Paragraph("GASA SAD - Système d'Aide au Diagnostic", title_style))
             story.append(Paragraph("Rapport Médical Patient", styles['Heading2']))
             story.append(Spacer(1, 0.3*inch))
             
@@ -229,7 +229,7 @@ class ReportGenerator:
             styles = getSampleStyleSheet()
             
             # En-tête
-            story.append(Paragraph("SANTÉ PLUS - Rapport Mensuel", styles['Title']))
+            story.append(Paragraph("GASA SAD - Rapport Mensuel", styles['Title']))
             story.append(Paragraph(
                 f"Période: {start_date.strftime('%B %Y')}",
                 styles['Heading2']

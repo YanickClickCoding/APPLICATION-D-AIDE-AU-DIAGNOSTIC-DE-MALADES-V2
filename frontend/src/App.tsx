@@ -52,8 +52,8 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
               </svg>
           </div>
           <div>
-              <div className="sp-logo-name">SANTÉ PLUS</div>
-              <div className="sp-logo-sub">Clinique Privée · Cotonou</div>
+              <div className="sp-logo-name">GASA SAD</div>
+              <div className="sp-logo-sub">Système d'Aide au Diagnostic</div>
           </div>
       </div>
 

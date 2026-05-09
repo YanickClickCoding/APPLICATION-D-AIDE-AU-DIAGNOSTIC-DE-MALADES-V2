@@ -1,5 +1,5 @@
-# Cas d'Utilisation — Santé Plus IA
-## Application d'Aide au Diagnostic de Maladies
+# Cas d'Utilisation — GASA SAD
+## Système d'Aide au Diagnostic
 
 ---
 
@@ -174,7 +174,7 @@ UC-52 (Entraîner modèle) <<include>>     UC-50 (État modèle IA)
 
 ### Titre : Consultation d'un patient febrifile avec diagnostic du paludisme
 
-**Contexte** : Clinique Privée Santé Plus, Cotonou — Jeudi 7 mai 2026 à 08h30
+**Contexte** : Clinique Privée GASA SAD, Cotonou — Jeudi 7 mai 2026 à 08h30
 
 **Acteurs impliqués** : Marie-Claire Afi DOSSOU (Infirmier), Dr. Émile HOUENOU (Médecin)
 
@@ -450,4 +450,4 @@ ACTEUR : SYSTÈME IA (acteur interne)
 
 ---
 
-*Document généré le 07/05/2026 — Santé Plus IA, Clinique Privée Cotonou*
+*Document généré le 07/05/2026 — GASA SAD, Système d'Aide au Diagnostic*

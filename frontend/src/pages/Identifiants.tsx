@@ -105,7 +105,7 @@ const Identifiants = () => {
       <div className="sp-page-header sp-fade-in">
         <div>
           <h1 className="sp-page-title">Identifiants de Connexion</h1>
-          <p className="sp-page-subtitle">Comptes de test pour le système Santé Plus IA</p>
+          <p className="sp-page-subtitle">Comptes de test pour le système GASA SAD</p>
         </div>
       </div>
 

@@ -225,7 +225,7 @@ const Dashboard = () => {
       <div className="sp-page-header sp-fade-in">
           <div>
               <h1 className="sp-page-title">Tableau de bord</h1>
-              <p className="sp-page-subtitle">Vue d'ensemble de la clinique SANTÉ PLUS · Système IA {modelInfo?.loaded ? '✓' : '✗'}</p>
+              <p className="sp-page-subtitle">Vue d'ensemble du système GASA SAD · Système IA {modelInfo?.loaded ? '✓' : '✗'}</p>
           </div>
           <div style={{display:'flex',gap:'10px',alignItems:'center'}}>
               <button 

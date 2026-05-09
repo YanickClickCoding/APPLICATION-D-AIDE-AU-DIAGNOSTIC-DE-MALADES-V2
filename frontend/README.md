@@ -1,4 +1,4 @@
-# Frontend - Santé Plus IA
+# Frontend - GASA SAD
 
 Application React + TypeScript pour le système d'aide au diagnostic médical.
 

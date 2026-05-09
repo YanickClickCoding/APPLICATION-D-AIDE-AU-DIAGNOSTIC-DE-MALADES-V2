@@ -54,10 +54,10 @@ cd APPLICATION-D-AIDE-AU-DIAGNOSTIC-DE-MALAGES
 mysql -u root -p
 
 # Créer la base de données
-CREATE DATABASE sante_plus_ia;
+CREATE DATABASE gasa_sad;
 
 # Importer le schéma
-source sante_plus_ia.sql
+source gasa_sad.sql
 
 # Insérer les données de test
 source backend/seed_data.sql
@@ -136,17 +136,17 @@ Le frontend sera accessible sur **http://localhost:5173**
 ## 👤 Comptes de Test
 
 ### Admin
-- **Email** : `admin@sante.com`
+- **Email** : `admin@gasasad.com`
 - **Mot de passe** : `admin123`
 - **Accès** : Toutes les fonctionnalités
 
 ### Médecin
-- **Email** : `marie.dubois@sante.com`
+- **Email** : `marie.dubois@gasasad.com`
 - **Mot de passe** : `medecin123`
 - **Accès** : Consultations, diagnostics
 
 ### Infirmier
-- **Email** : `pierre.martin@sante.com`
+- **Email** : `pierre.martin@gasasad.com`
 - **Mot de passe** : `infirmier123`
 - **Accès** : Consultations
 
@@ -237,7 +237,7 @@ results = model_manager.retrain_with_new_data('path/to/new/data.csv')
 ├── les ressources dataset/    # Dataset médical
 │   └── dataset_medical_robust_10000_cas.csv
 │
-└── sante_plus_ia.sql         # Schéma de la base de données
+└── gasa_sad.sql         # Schéma de la base de données
 ```
 
 ## 🔧 Configuration
@@ -252,7 +252,7 @@ DEBUG=True
 ENVIRONMENT=development
 
 # Database
-DATABASE_URL=mysql+pymysql://root:@localhost:3306/sante_plus_ia
+DATABASE_URL=mysql+pymysql://root:@localhost:3306/gasa_sad
 
 # ML Models
 MODEL_PATH=./ml_models/

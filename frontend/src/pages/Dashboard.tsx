@@ -137,7 +137,7 @@ const Dashboard = () => {
       <div className="sp-page-header sp-fade-in">
           <div>
               <h1 className="sp-page-title">Tableau de bord</h1>
-              <p className="sp-page-subtitle">Vue d'ensemble de la clinique SANTÉ PLUS</p>
+              <p className="sp-page-subtitle">Vue d'ensemble du système GASA SAD</p>
           </div>
           <div style={{display:'flex',gap:'10px',alignItems:'center'}}>
               <Link to="/consultations" className="sp-btn sp-btn-primary">

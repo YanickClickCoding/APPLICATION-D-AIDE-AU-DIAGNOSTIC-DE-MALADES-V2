@@ -68,8 +68,8 @@ const Login = () => {
             <circle cx="18" cy="18" r="7" stroke="white" strokeWidth="2" fill="none"/>
           </svg>
         </div>
-        <div className="sp-auth-logo-name">SANTÉ PLUS</div>
-        <div className="sp-auth-logo-sub">Clinique Privée · Cotonou, Bénin</div>
+        <div className="sp-auth-logo-name">GASA SAD</div>
+        <div className="sp-auth-logo-sub">Système d'Aide au Diagnostic</div>
       </div>
 
       <div className="sp-auth-card sp-fade-in">
@@ -163,7 +163,7 @@ const Login = () => {
       </div>
 
       <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '11.5px', color: 'rgba(255,255,255,0.3)' }}>
-        © {new Date().getFullYear()} SANTÉ PLUS · Système de gestion des consultations
+        © {new Date().getFullYear()} GASA SAD · Système d'Aide au Diagnostic
       </div>
     </div>
   );

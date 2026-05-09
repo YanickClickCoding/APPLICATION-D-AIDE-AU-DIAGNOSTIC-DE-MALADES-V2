@@ -65,8 +65,8 @@ const Register = () => {
             <circle cx="18" cy="18" r="7" stroke="white" strokeWidth="2.5" fill="none"/>
           </svg>
         </div>
-        <div className="sp-auth-logo-name">SANTÉ PLUS</div>
-        <div className="sp-auth-logo-sub">Clinique Privée · Cotonou, Bénin</div>
+        <div className="sp-auth-logo-name">GASA SAD</div>
+        <div className="sp-auth-logo-sub">Système d'Aide au Diagnostic</div>
       </div>
 
       <div className="sp-auth-card sp-fade-in">
@@ -184,7 +184,7 @@ const Register = () => {
       </div>
 
       <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '11.5px', color: 'rgba(255,255,255,0.4)' }}>
-        © {new Date().getFullYear()} SANTÉ PLUS · Tous droits réservés
+        © {new Date().getFullYear()} GASA SAD · Tous droits réservés
       </div>
     </div>
   );

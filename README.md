@@ -1,3 +1,29 @@
+# GASA SAD - Système d'Aide au Diagnostic
+
+Application web de diagnostic médical assisté par intelligence artificielle.
+
+## Description
+
+GASA SAD (GASA Système d'Aide au Diagnostic) est une application complète permettant aux professionnels de santé d'effectuer des diagnostics médicaux assistés par IA. Le système peut identifier 153 maladies différentes basées sur les symptômes et examens médicaux des patients.
+
+## Technologies
+
+### Frontend
+- React + TypeScript + Vite
+- Chart.js pour les visualisations
+- Lucide React pour les icônes
+
+### Backend
+- FastAPI (Python)
+- Machine Learning avec scikit-learn
+- PostgreSQL pour la base de données
+
+## Installation
+
+Voir les README dans les dossiers `frontend/` et `backend/` pour les instructions d'installation détaillées.
+
+---
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

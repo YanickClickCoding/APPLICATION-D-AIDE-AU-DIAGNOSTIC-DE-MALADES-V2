@@ -454,8 +454,8 @@ const DossierPatient = () => {
       {/* ── Section Impression (Cachée à l'écran) ──────────────────── */}
       <div className="print-only medical-folder" style={{ display: 'none' }}>
         <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: '20px', marginBottom: '30px' }}>
-          <h1 style={{ fontSize: '28px', textTransform: 'uppercase', marginBottom: '5px' }}>SANTÉ PLUS IA</h1>
-          <p style={{ fontSize: '14px', margin: 0 }}>Application d'Aide au Diagnostic Médical</p>
+          <h1 style={{ fontSize: '28px', textTransform: 'uppercase', marginBottom: '5px' }}>GASA SAD</h1>
+          <p style={{ fontSize: '14px', margin: 0 }}>Système d'Aide au Diagnostic</p>
           <p style={{ fontSize: '12px', color: '#666' }}>Rapport généré le {new Date().toLocaleString('fr-FR')}</p>
         </div>
 

@@ -1,6 +1,6 @@
-# Backend - Medical Diagnostic AI System
+# Backend - GASA SAD
 
-Système de diagnostic médical assisté par IA utilisant FastAPI et Random Forest.
+Système d'Aide au Diagnostic assisté par IA utilisant FastAPI et Random Forest.
 
 ## 🏗️ Architecture
 
