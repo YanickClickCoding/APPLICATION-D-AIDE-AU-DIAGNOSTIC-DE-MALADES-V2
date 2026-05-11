@@ -196,7 +196,7 @@ export const patientsAPI = {
 
   // Supprimer un patient
   delete: (id: number) =>
-    fetchAPI<{ message: string }>(`/api/patients/${id}`, {
+    fetchAPI<{ success: boolean; message: string }>(`/api/patients/${id}`, {
       method: 'DELETE',
     }),
 };

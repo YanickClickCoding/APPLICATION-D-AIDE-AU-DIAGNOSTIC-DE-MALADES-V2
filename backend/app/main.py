@@ -70,7 +70,8 @@ app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     description="Système de diagnostic médical assisté par IA utilisant Random Forest",
-    lifespan=lifespan
+    lifespan=lifespan,
+    redirect_slashes=False  # Désactiver la redirection automatique du trailing slash
 )
 
 # Configuration CORS

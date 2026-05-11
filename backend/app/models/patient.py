@@ -31,11 +31,11 @@ class Patient(Base):
     created_at = Column(DateTime, server_default=func.now())
     
     # Relationships
-    consultations = relationship("Consultation", back_populates="patient")  # Relation vers Consultations
-    dossier_medical = relationship("DossierMedical", back_populates="patient", uselist=False)
-    ordonnances = relationship("Ordonnance", back_populates="patient")
-    suivis = relationship("Suivi", back_populates="patient")
-    prediction_history = relationship("PredictionHistory", back_populates="patient")
+    consultations = relationship("Consultation", back_populates="patient", cascade="all, delete-orphan")  # Suppression en cascade
+    dossier_medical = relationship("DossierMedical", back_populates="patient", uselist=False, cascade="all, delete-orphan")
+    ordonnances = relationship("Ordonnance", back_populates="patient", cascade="all, delete-orphan")
+    suivis = relationship("Suivi", back_populates="patient", cascade="all, delete-orphan")
+    prediction_history = relationship("PredictionHistory", back_populates="patient", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Patient(id={self.patient_id}, nom='{self.nom}', prenoms='{self.prenoms}')>"

@@ -13,7 +13,7 @@ from ..schemas.patient_schema import PatientCreate, PatientResponse, PatientUpda
 router = APIRouter(prefix="/patients", tags=["Patients"])
 
 
-@router.post("/", response_model=PatientResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=PatientResponse, status_code=status.HTTP_201_CREATED)
 def create_patient(patient: PatientCreate, db: Session = Depends(get_db)):
     """
     US-001: Enregistrement d'un nouveau patient
@@ -38,7 +38,7 @@ def create_patient(patient: PatientCreate, db: Session = Depends(get_db)):
     return db_patient
 
 
-@router.get("/", response_model=List[PatientResponse])
+@router.get("", response_model=List[PatientResponse])
 def list_patients(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """
     Liste tous les patients
@@ -88,10 +88,10 @@ def update_patient(
     return patient
 
 
-@router.delete("/{patient_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{patient_id}")
 def delete_patient(patient_id: int, db: Session = Depends(get_db)):
     """
-    Supprime un patient
+    Supprime un patient et toutes ses données associées (consultations, dossier médical, etc.)
     """
     patient = db.query(Patient).filter(Patient.patient_id == patient_id).first()
     if not patient:
@@ -100,7 +100,14 @@ def delete_patient(patient_id: int, db: Session = Depends(get_db)):
             detail="Patient non trouvé"
         )
     
+    # Récupérer le nom pour le message de confirmation
+    nom_complet = f"{patient.prenoms} {patient.nom}"
+    
+    # Supprimer le patient (les consultations et autres données seront supprimées en cascade)
     db.delete(patient)
     db.commit()
     
-    return None
+    return {
+        "success": True,
+        "message": f"Patient {nom_complet} et toutes ses données associées ont été supprimés"
+    }
