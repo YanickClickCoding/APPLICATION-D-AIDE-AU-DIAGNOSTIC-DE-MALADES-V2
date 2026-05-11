@@ -231,20 +231,34 @@ const MesPatients = () => {
 
                     {/* Header patient */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
-                      <div style={{
-                        width: '52px', height: '52px', borderRadius: '14px',
-                        background: patient.sexe === 'M'
-                          ? 'linear-gradient(135deg, #3B82F6, #1D4ED8)'
-                          : 'linear-gradient(135deg, #EC4899, #BE185D)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: '#fff', fontSize: '18px', fontWeight: 700, flexShrink: 0
-                      }}>
+                      <Link
+                        to={`/dossier-patient/${patient.patient_id}`}
+                        style={{
+                          width: '52px', height: '52px', borderRadius: '14px',
+                          background: patient.sexe === 'M'
+                            ? 'linear-gradient(135deg, #3B82F6, #1D4ED8)'
+                            : 'linear-gradient(135deg, #EC4899, #BE185D)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: '#fff', fontSize: '18px', fontWeight: 700, flexShrink: 0,
+                          textDecoration: 'none', cursor: 'pointer',
+                          transition: 'transform 0.2s, box-shadow 0.2s'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
+                        title="Voir le dossier patient"
+                      >
                         {getInitials(patient.nom, patient.prenoms)}
-                      </div>
+                      </Link>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, color: '#1F2937', fontSize: '15px' }}>
+                        <Link
+                          to={`/dossier-patient/${patient.patient_id}`}
+                          style={{ fontWeight: 700, color: '#1F2937', fontSize: '15px', textDecoration: 'none', display: 'block', cursor: 'pointer' }}
+                          onMouseEnter={e => { e.currentTarget.style.color = '#4F46E5'; e.currentTarget.style.textDecoration = 'underline'; }}
+                          onMouseLeave={e => { e.currentTarget.style.color = '#1F2937'; e.currentTarget.style.textDecoration = 'none'; }}
+                          title="Voir le dossier patient"
+                        >
                           {patient.prenoms} {patient.nom}
-                        </div>
+                        </Link>
                         <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
                           #{patient.patient_id.toString().padStart(4, '0')} · {patient.sexe === 'M' ? '♂ Masculin' : '♀ Féminin'}
                         </div>
@@ -320,15 +334,31 @@ const MesPatients = () => {
                       <tr key={patient.patient_id} className="sp-table-row-hover">
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{ 
-                              width: '32px', height: '32px', borderRadius: '8px', fontSize: '12px', fontWeight: 700, color: '#fff', 
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              background: patient.sexe === 'M' ? '#3B82F6' : '#EC4899'
-                            }}>
+                            <Link
+                              to={`/dossier-patient/${patient.patient_id}`}
+                              style={{ 
+                                width: '32px', height: '32px', borderRadius: '8px', fontSize: '12px', fontWeight: 700, color: '#fff', 
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                background: patient.sexe === 'M' ? '#3B82F6' : '#EC4899',
+                                textDecoration: 'none', cursor: 'pointer',
+                                transition: 'transform 0.2s, box-shadow 0.2s'
+                              }}
+                              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
+                              title="Voir le dossier patient"
+                            >
                               {getInitials(patient.nom, patient.prenoms)}
-                            </div>
+                            </Link>
                             <div>
-                              <div style={{ fontWeight: 600, color: '#1F2937' }}>{patient.prenoms} {patient.nom}</div>
+                              <Link
+                                to={`/dossier-patient/${patient.patient_id}`}
+                                style={{ fontWeight: 600, color: '#1F2937', textDecoration: 'none', display: 'block', cursor: 'pointer' }}
+                                onMouseEnter={e => { e.currentTarget.style.color = '#4F46E5'; e.currentTarget.style.textDecoration = 'underline'; }}
+                                onMouseLeave={e => { e.currentTarget.style.color = '#1F2937'; e.currentTarget.style.textDecoration = 'none'; }}
+                                title="Voir le dossier patient"
+                              >
+                                {patient.prenoms} {patient.nom}
+                              </Link>
                               <div style={{ fontSize: '11px', color: '#9CA3AF' }}>#{patient.patient_id.toString().padStart(4, '0')}</div>
                             </div>
                           </div>
