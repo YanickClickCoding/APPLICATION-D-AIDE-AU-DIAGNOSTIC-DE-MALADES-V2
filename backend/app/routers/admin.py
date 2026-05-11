@@ -90,6 +90,7 @@ class MedecinCreate(BaseModel):
     nom: str = Field(..., min_length=1, max_length=100)
     prenoms: str = Field(..., min_length=1, max_length=150)
     specialite: str = Field(..., min_length=1, max_length=150)
+    role: Optional[str] = Field(None, max_length=100)
     telephone: str = Field(..., min_length=1, max_length=20)
     disponible: bool = True
 
@@ -97,6 +98,7 @@ class MedecinUpdate(BaseModel):
     nom: Optional[str] = None
     prenoms: Optional[str] = None
     specialite: Optional[str] = None
+    role: Optional[str] = None
     telephone: Optional[str] = None
     disponible: Optional[bool] = None
 
@@ -341,7 +343,8 @@ def create_medecin(
 ):
     m = Medecin(
         nom=data.nom, prenoms=data.prenoms,
-        specialite=data.specialite, telephone=data.telephone,
+        specialite=data.specialite, role=data.role,
+        telephone=data.telephone,
         disponible=data.disponible,
     )
     db.add(m)

@@ -271,6 +271,7 @@ def create_consultation_workflow(data: dict, db: Session = Depends(get_db)):
                 unite_mesure=ex.get('unite_mesure') or None,
                 statut='REALISE',
                 date_examen=datetime.strptime(de, '%Y-%m-%d').date() if de else None,
+                is_suggested=ex.get('isSuggested', False),  # Marquer si suggéré par l'IA
             ))
 
         # ── 6. Dossier médical (integer PK, integer FK patient_id) ──────────
@@ -750,6 +751,7 @@ def complete_consultation_medecin(consultation_id: int, data: dict, db: Session 
                 unite_mesure=ex.get('unite_mesure') or None,
                 statut='REALISE',
                 date_examen=datetime.strptime(de, '%Y-%m-%d').date() if de else None,
+                is_suggested=ex.get('isSuggested', False),  # Marquer si suggéré par l'IA
             ))
 
         dossier = db.query(DossierMedical).filter(DossierMedical.patient_id == c.patient_id).first()
@@ -913,6 +915,7 @@ def get_consultation_details_complets(consultation_id: int, db: Session = Depend
             "valeur_numerique": e.valeur_numerique,
             "unite_mesure": e.unite_mesure,
             "date_examen": e.date_examen.isoformat() if e.date_examen else None,
+            "is_suggested": e.is_suggested if hasattr(e, 'is_suggested') else False,
         }
         for e in examens
     ]
@@ -925,7 +928,14 @@ def get_consultation_details_complets(consultation_id: int, db: Session = Depend
     
     if diagnostic:
         diagnostic_final = diagnostic.nom_maladie
-        validation_type = diagnostic.statut.lower() if diagnostic.statut else 'confirme'
+        # Map database status to frontend format (without accents)
+        status_map = {
+            'CONFIRMÉ': 'confirme',
+            'REJETÉ': 'rejete',
+            'PROVISOIRE': 'provisoire',
+            'ARCHIVÉ': 'archive'
+        }
+        validation_type = status_map.get(diagnostic.statut, 'confirme')
         notes_validation = diagnostic.description
 
     # Récupérer l'ordonnance via le diagnostic et le traitement

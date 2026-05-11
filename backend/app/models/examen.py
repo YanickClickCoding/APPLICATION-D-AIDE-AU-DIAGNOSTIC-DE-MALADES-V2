@@ -1,5 +1,5 @@
 """Examen model"""
-from sqlalchemy import Column, Integer, String, Text, Date, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Date, Float, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import ENUM
 from ..database import Base
@@ -16,5 +16,6 @@ class Examen(Base):
     unite_mesure = Column(String(20))
     statut = Column(ENUM('DEMANDE', 'EN_COURS', 'REALISE', 'ANALYSE'), default='DEMANDE')
     date_examen = Column(Date)
+    is_suggested = Column(Boolean, default=False)  # Indique si l'examen a été suggéré par l'IA
     
     consultation = relationship("Consultation", back_populates="examens")

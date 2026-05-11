@@ -33,6 +33,7 @@ interface Examen {
   valeur_numerique?: number;
   unite_mesure?: string;
   date_examen?: string;
+  is_suggested?: boolean;  // Indique si l'examen a été suggéré par l'IA
 }
 
 interface Prediction {
@@ -362,9 +363,47 @@ const ConsultationDetails = () => {
                     border: '1px solid #E5E7EB'
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
-                      <div>
-                        <div style={{ fontWeight: 600, color: '#1F2937', fontSize: '15px', marginBottom: '4px' }}>
-                          {examen.nom}
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: 600, color: '#1F2937', fontSize: '15px' }}>
+                            {examen.nom}
+                          </span>
+                          {examen.is_suggested && (
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '2px 8px',
+                              background: 'linear-gradient(135deg, #10B981, #059669)',
+                              color: '#fff',
+                              borderRadius: '6px',
+                              fontSize: '10px',
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              <Brain size={10} />
+                              Suggestion IA
+                            </span>
+                          )}
+                          {!examen.is_suggested && examen.description && (
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '2px 8px',
+                              background: '#6366F1',
+                              color: '#fff',
+                              borderRadius: '6px',
+                              fontSize: '10px',
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              <User size={10} />
+                              Médecin
+                            </span>
+                          )}
                         </div>
                         <span style={{
                           padding: '2px 8px',

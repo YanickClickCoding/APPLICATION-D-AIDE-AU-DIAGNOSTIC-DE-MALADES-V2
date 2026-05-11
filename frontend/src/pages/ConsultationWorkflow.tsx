@@ -912,11 +912,30 @@ export default function ConsultationWorkflow() {
               )}
 
               {examens.map((ex, i) => (
-                <div key={i} style={{ padding: '18px', background: ex.isSuggested ? '#F0FDF4' : '#F9FAFB', borderRadius: '12px', marginBottom: '12px', border: `1px solid ${ex.isSuggested ? '#86EFAC' : '#E5E7EB'}` }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div key={i} style={{ padding: '18px', background: ex.isSuggested ? '#F0FDF4' : '#F9FAFB', borderRadius: '12px', marginBottom: '12px', border: `1px solid ${ex.isSuggested ? '#86EFAC' : '#E5E7EB'}`, position: 'relative' }}>
+                  {ex.isSuggested && (
+                    <div style={{ 
+                      position: 'absolute', 
+                      top: '-10px', 
+                      left: '16px', 
+                      background: 'linear-gradient(135deg, #10B981, #059669)', 
+                      color: '#fff', 
+                      padding: '4px 12px', 
+                      borderRadius: '12px', 
+                      fontSize: '11px', 
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                    }}>
+                      <Brain size={12} />
+                      SUGGESTION IA
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', marginTop: ex.isSuggested ? '8px' : '0' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontWeight: 600, color: '#374151' }}>Examen {i + 1}</span>
-                      {ex.isSuggested && <span style={{ fontSize: '10px', background: '#DCFCE7', color: '#166534', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>Suggéré par IA</span>}
                     </div>
                     <button type="button" onClick={() => removeExamen(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444' }}><X size={18} /></button>
                   </div>
