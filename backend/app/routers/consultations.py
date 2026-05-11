@@ -817,7 +817,9 @@ def get_consultation_details_complets(consultation_id: int, db: Session = Depend
         AnalyseIA as AnalyseIAModel,
         Examen,
         Medicament,
-        Medecin
+        Medecin,
+        Traitement,
+        Ordonnance
     )
     from datetime import datetime
 
@@ -925,18 +927,30 @@ def get_consultation_details_complets(consultation_id: int, db: Session = Depend
         validation_type = diagnostic.statut.lower() if diagnostic.statut else 'confirme'
         notes_validation = diagnostic.description
 
-    # Récupérer l'ordonnance
-    medicaments = db.query(Medicament).filter(Medicament.consultation_id == consultation_id).all()
-    ordonnance_data = [
-        {
-            "nom": m.nom,
-            "dosage": m.dosage,
-            "frequence": m.frequence,
-            "duree_jours": m.duree_jours,
-            "instructions": m.instructions,
-        }
-        for m in medicaments
-    ]
+    # Récupérer l'ordonnance via le diagnostic et le traitement
+    from ..models import Traitement, Ordonnance
+    
+    ordonnance_data = []
+    diagnostic = db.query(Diagnostic).filter(Diagnostic.consultation_id == consultation_id).first()
+    if diagnostic:
+        # Récupérer le traitement lié au diagnostic
+        traitement = db.query(Traitement).filter(Traitement.diagnostic_id == diagnostic.diagnostic_id).first()
+        if traitement:
+            # Récupérer l'ordonnance liée au traitement
+            ordonnance = db.query(Ordonnance).filter(Ordonnance.traitement_id == traitement.traitement_id).first()
+            if ordonnance:
+                # Récupérer les médicaments de l'ordonnance
+                medicaments = db.query(Medicament).filter(Medicament.ordonnance_id == ordonnance.ordonnance_id).all()
+                ordonnance_data = [
+                    {
+                        "nom": m.nom_commercial or m.denomination_commune or '',
+                        "dosage": m.dosage or '',
+                        "frequence": m.frequence or '',
+                        "duree_jours": m.duree_jours or 0,
+                        "instructions": f"{m.forme or ''} - {m.voie_administration or ''}".strip(' -'),
+                    }
+                    for m in medicaments
+                ]
 
     # Récupérer les informations de suivi
     suivi_data = None
