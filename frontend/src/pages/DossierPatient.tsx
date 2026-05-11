@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, Activity, FileText, Pill, AlertCircle, User, Phone, Mail, MapPin, Cake, Edit, Brain, CheckCircle, XCircle, Droplet, Printer, Download, Clipboard } from 'lucide-react';
+import { ArrowLeft, Calendar, Activity, FileText, Pill, AlertCircle, User, Phone, Mail, MapPin, Cake, Edit, Brain, CheckCircle, XCircle, Droplet, Printer, Download, Clipboard, Eye } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { patientsAPI, consultationsAPI } from '../services/api';
 
@@ -437,6 +437,18 @@ const DossierPatient = () => {
                               Validé le {new Date(consultation.diagnostic.date_validation).toLocaleDateString('fr-FR')}
                             </div>
                           )}
+
+                          {/* Bouton Voir Détails */}
+                          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(199, 210, 254, 0.5)' }}>
+                            <Link
+                              to={`/consultation/${consultation.consultation_id}/details`}
+                              className="sp-btn sp-btn-outline sp-btn-sm"
+                              style={{ width: '100%', justifyContent: 'center', fontSize: '12px' }}
+                            >
+                              <Eye size={14} />
+                              Voir tous les détails
+                            </Link>
+                          </div>
                         </div>
                       ) : (
                         <div style={{ marginTop: '10px', padding: '10px 14px', background: '#F9FAFB', borderRadius: '8px', border: '1px dashed #D1D5DB' }}>

@@ -10,6 +10,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/DashboardNew';
 import Consultations from './pages/Consultations';
 import ConsultationWorkflow from './pages/ConsultationWorkflow';
+import ConsultationDetails from './pages/ConsultationDetails';
 import PersonnelMedical from './pages/PersonnelMedical';
 import Utilisateurs from './pages/Utilisateurs';
 import Register from './pages/Register';
@@ -325,6 +326,7 @@ function AppContent() {
       <Route path="/" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
       <Route path="/consultations" element={<PrivateRoute><Layout><Consultations /></Layout></PrivateRoute>} />
       <Route path="/consultation/nouvelle" element={<PrivateRoute medicalOnly><Layout><ConsultationWorkflow /></Layout></PrivateRoute>} />
+      <Route path="/consultation/:consultationId/details" element={<PrivateRoute noInfirmier><Layout><ConsultationDetails /></Layout></PrivateRoute>} />
       <Route path="/dossier-patient/:patientId" element={<PrivateRoute noInfirmier><Layout><DossierPatient /></Layout></PrivateRoute>} />
       <Route path="/mes-patients" element={<PrivateRoute noInfirmier><Layout><MesPatients /></Layout></PrivateRoute>} />
       <Route path="/diagnostics" element={<PrivateRoute noInfirmier><Layout><DiagnosticsIA /></Layout></PrivateRoute>} />

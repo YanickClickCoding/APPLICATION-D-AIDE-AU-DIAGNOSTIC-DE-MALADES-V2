@@ -805,3 +805,168 @@ def complete_consultation_medecin(consultation_id: int, data: dict, db: Session 
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
+
+
+@router.get("/{consultation_id}/details-complets")
+def get_consultation_details_complets(consultation_id: int, db: Session = Depends(get_db)):
+    """
+    Retourne tous les détails d'une consultation pour affichage complet.
+    Inclut: symptômes, signes vitaux, analyses IA, examens, diagnostic, ordonnance, suivi.
+    """
+    from ..models import (
+        AnalyseIA as AnalyseIAModel,
+        Examen,
+        Medicament,
+        Medecin
+    )
+    from datetime import datetime
+
+    # Récupérer la consultation
+    c = db.query(Consultation).filter(Consultation.consultation_id == consultation_id).first()
+    if not c:
+        raise HTTPException(status_code=404, detail="Consultation non trouvée")
+
+    # Récupérer le patient
+    patient = db.query(Patient).filter(Patient.patient_id == c.patient_id).first()
+
+    # Récupérer le médecin
+    medecin_nom = None
+    if c.medecin_id:
+        medecin = db.query(Medecin).filter(Medecin.medecin_id == c.medecin_id).first()
+        if medecin:
+            medecin_nom = f"{medecin.prenoms} {medecin.nom}"
+
+    # Récupérer les symptômes
+    symptomes = db.query(Symptome).filter(Symptome.consultation_id == consultation_id).all()
+    rev_sev = {'LEGER': 'Légère', 'MODERE': 'Modérée', 'SEVERE': 'Sévère'}
+    symptomes_data = [
+        {
+            "nom": s.nom,
+            "severite": rev_sev.get(s.severite, 'Modérée'),
+            "duree_jours": s.duree_jours or 1,
+            "description": s.description or '',
+        }
+        for s in symptomes
+    ]
+
+    # Récupérer les signes vitaux
+    vitaux = db.query(SignesVitaux).filter(SignesVitaux.consultation_id == consultation_id).first()
+    signes_vitaux_data = None
+    if vitaux:
+        signes_vitaux_data = {
+            "tension_systolique": vitaux.tension_systolique,
+            "tension_diastolique": vitaux.tension_diastolique,
+            "frequence_cardiaque": vitaux.frequence_cardiaque,
+            "frequence_respiratoire": vitaux.frequence_respiratoire,
+            "temperature": vitaux.temperature,
+            "saturation_o2": vitaux.saturation_oxygene,
+            "poids": vitaux.poids,
+            "taille": vitaux.taille,
+        }
+
+    # Récupérer les analyses IA (préliminaire et finale)
+    analyses = (
+        db.query(AnalyseIAModel)
+        .filter(AnalyseIAModel.consultation_id == consultation_id)
+        .order_by(AnalyseIAModel.analyse_id.asc())
+        .all()
+    )
+    
+    analyse_preliminaire = None
+    analyse_finale = None
+    
+    if len(analyses) > 0:
+        # Première analyse = préliminaire
+        a = analyses[0]
+        analyse_preliminaire = {
+            "maladie_predite": (a.diagnostics_suggeres or [{}])[0].get('maladie', '') if a.diagnostics_suggeres else '',
+            "confiance": a.probabilite or 0,
+            "top_predictions": [
+                {"maladie": d.get('maladie', ''), "probabilite": d.get('confiance', 0)}
+                for d in (a.diagnostics_suggeres or [])
+            ],
+        }
+    
+    if len(analyses) > 1:
+        # Deuxième analyse = finale
+        a = analyses[1]
+        analyse_finale = {
+            "maladie_predite": (a.diagnostics_suggeres or [{}])[0].get('maladie', '') if a.diagnostics_suggeres else '',
+            "confiance": a.probabilite or 0,
+            "top_predictions": [
+                {"maladie": d.get('maladie', ''), "probabilite": d.get('confiance', 0)}
+                for d in (a.diagnostics_suggeres or [])
+            ],
+        }
+
+    # Récupérer les examens
+    examens = db.query(Examen).filter(Examen.consultation_id == consultation_id).all()
+    examens_data = [
+        {
+            "type": e.type,
+            "nom": e.nom,
+            "description": e.description,
+            "resultats": e.resultats,
+            "valeur_numerique": e.valeur_numerique,
+            "unite_mesure": e.unite_mesure,
+            "date_examen": e.date_examen.isoformat() if e.date_examen else None,
+        }
+        for e in examens
+    ]
+
+    # Récupérer le diagnostic final
+    diagnostic = db.query(Diagnostic).filter(Diagnostic.consultation_id == consultation_id).first()
+    diagnostic_final = None
+    validation_type = None
+    notes_validation = None
+    
+    if diagnostic:
+        diagnostic_final = diagnostic.nom_maladie
+        validation_type = diagnostic.statut.lower() if diagnostic.statut else 'confirme'
+        notes_validation = diagnostic.description
+
+    # Récupérer l'ordonnance
+    medicaments = db.query(Medicament).filter(Medicament.consultation_id == consultation_id).all()
+    ordonnance_data = [
+        {
+            "nom": m.nom,
+            "dosage": m.dosage,
+            "frequence": m.frequence,
+            "duree_jours": m.duree_jours,
+            "instructions": m.instructions,
+        }
+        for m in medicaments
+    ]
+
+    # Récupérer les informations de suivi
+    suivi_data = None
+    if c.date_prochain_rdv or c.instructions_patient or c.notes_medecin:
+        suivi_data = {
+            "date_prochain_rdv": c.date_prochain_rdv.isoformat() if c.date_prochain_rdv else None,
+            "instructions_patient": c.instructions_patient,
+            "notes_medecin": c.notes_medecin,
+        }
+
+    return {
+        "consultation_id": c.consultation_id,
+        "date_heure": c.date_heure.isoformat() if c.date_heure else None,
+        "motif": c.motif or '',
+        "statut": c.statut or 'en cours',
+        "patient": {
+            "nom": patient.nom if patient else '',
+            "prenoms": patient.prenoms if patient else '',
+            "date_naissance": patient.date_naissance.isoformat() if patient and patient.date_naissance else '',
+            "sexe": patient.sexe if patient else 'M',
+        },
+        "medecin_nom": medecin_nom,
+        "symptomes": symptomes_data,
+        "signes_vitaux": signes_vitaux_data,
+        "analyse_preliminaire": analyse_preliminaire,
+        "examens": examens_data,
+        "analyse_finale": analyse_finale,
+        "diagnostic_final": diagnostic_final,
+        "validation_type": validation_type,
+        "notes_validation": notes_validation,
+        "ordonnance": ordonnance_data,
+        "suivi": suivi_data,
+    }
