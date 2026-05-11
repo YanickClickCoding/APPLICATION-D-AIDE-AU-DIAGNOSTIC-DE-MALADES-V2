@@ -819,7 +819,8 @@ def get_consultation_details_complets(consultation_id: int, db: Session = Depend
         Medicament,
         Medecin,
         Traitement,
-        Ordonnance
+        Ordonnance,
+        Suivi
     )
     from datetime import datetime
 
@@ -953,12 +954,15 @@ def get_consultation_details_complets(consultation_id: int, db: Session = Depend
                 ]
 
     # Récupérer les informations de suivi
+    from ..models import Suivi
+    
     suivi_data = None
-    if c.date_prochain_rdv or c.instructions_patient or c.notes_medecin:
+    suivi = db.query(Suivi).filter(Suivi.consultation_id == consultation_id).first()
+    if suivi:
         suivi_data = {
-            "date_prochain_rdv": c.date_prochain_rdv.isoformat() if c.date_prochain_rdv else None,
-            "instructions_patient": c.instructions_patient,
-            "notes_medecin": c.notes_medecin,
+            "date_prochain_rdv": suivi.prochaine_consultation.isoformat() if suivi.prochaine_consultation else None,
+            "instructions_patient": f"État général: {suivi.etat_general or 'N/A'}, Amélioration: {suivi.amelioration or 'N/A'}",
+            "notes_medecin": f"Adhérence au traitement: {suivi.adherence_traitement or 0}%, Statut: {suivi.statut or 'N/A'}",
         }
 
     return {
