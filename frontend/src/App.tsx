@@ -3,7 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './components/Toast';
 import { initDB } from './db';
-import { Users, Calendar, LogOut, UserCheck, Clock, Settings, Brain, User, Bell } from 'lucide-react';
+import { Users, Calendar, LogOut, UserCheck, Clock, Settings, Brain, User, Bell, UserPlus } from 'lucide-react';
+import { adminAPI } from './services/api';
 
 // Pages
 import Login from './pages/Login';
@@ -159,18 +160,24 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
 interface PendingConsult { consultation_id: number; nom_patient: string; motif: string; date_heure: string; }
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, user, token } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [pendingList, setPendingList] = React.useState<PendingConsult[]>([]);
+  const [pendingAccountsCount, setPendingAccountsCount] = React.useState(0);
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
+  const [adminDropdownOpen, setAdminDropdownOpen] = React.useState(false);
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const bellRef = React.useRef<HTMLDivElement>(null);
+  const adminBellRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
+      }
+      if (adminBellRef.current && !adminBellRef.current.contains(e.target as Node)) {
+        setAdminDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -190,6 +197,17 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     const id = setInterval(fetchPending, 30_000);
     return () => clearInterval(id);
   }, [user]);
+
+  React.useEffect(() => {
+    if (!isAdmin || !token) return;
+    const fetchPendingAccounts = () =>
+      adminAPI.getPendingUsers(token)
+        .then(users => setPendingAccountsCount(users.length))
+        .catch(() => {});
+    fetchPendingAccounts();
+    const id = setInterval(fetchPendingAccounts, 60_000);
+    return () => clearInterval(id);
+  }, [isAdmin, token]);
 
 
   const getPageTitle = () => {
@@ -292,6 +310,52 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                                   </div>
                                 </div>
                               ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {isAdmin && (
+                    <div ref={adminBellRef} style={{ position: 'relative' }}>
+                      <button
+                        onClick={() => setAdminDropdownOpen(o => !o)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', display: 'flex', alignItems: 'center', color: pendingAccountsCount > 0 ? '#F59E0B' : '#9CA3AF', padding: '4px' }}
+                        title={pendingAccountsCount > 0 ? `${pendingAccountsCount} compte(s) en attente d'activation` : 'Aucun compte en attente'}
+                      >
+                        <UserPlus size={20} />
+                        {pendingAccountsCount > 0 && (
+                          <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#EF4444', color: '#fff', borderRadius: '50%', fontSize: '10px', fontWeight: 700, width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {pendingAccountsCount}
+                          </span>
+                        )}
+                      </button>
+
+                      {adminDropdownOpen && (
+                        <div style={{ position: 'absolute', top: 'calc(100% + 10px)', right: 0, width: '300px', background: '#fff', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', border: '1px solid #E5E7EB', zIndex: 1000, overflow: 'hidden' }}>
+                          <div style={{ padding: '14px 16px', borderBottom: '1px solid #F3F4F6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontWeight: 700, fontSize: '14px', color: '#1F2937' }}>Comptes en attente</span>
+                            {pendingAccountsCount > 0 && (
+                              <span style={{ background: '#FEF3C7', color: '#D97706', borderRadius: '12px', fontSize: '11px', fontWeight: 700, padding: '2px 8px' }}>{pendingAccountsCount} en attente</span>
+                            )}
+                          </div>
+                          {pendingAccountsCount === 0 ? (
+                            <div style={{ padding: '24px 16px', textAlign: 'center', color: '#9CA3AF', fontSize: '13px' }}>
+                              <UserPlus size={28} style={{ margin: '0 auto 8px', display: 'block', opacity: 0.3 }} />
+                              Aucun compte en attente d'activation
+                            </div>
+                          ) : (
+                            <div style={{ padding: '16px' }}>
+                              <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 12px' }}>
+                                {pendingAccountsCount} compte(s) attendent votre activation.
+                              </p>
+                              <button
+                                onClick={() => { setAdminDropdownOpen(false); navigate('/utilisateurs'); }}
+                                className="sp-btn sp-btn-primary"
+                                style={{ width: '100%', justifyContent: 'center', fontSize: '13px' }}
+                              >
+                                <UserPlus size={15} /> Gérer les comptes
+                              </button>
                             </div>
                           )}
                         </div>

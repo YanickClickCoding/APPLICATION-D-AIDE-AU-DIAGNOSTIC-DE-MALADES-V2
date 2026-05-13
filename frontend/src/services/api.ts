@@ -1,9 +1,9 @@
 /**
  * Service API pour communiquer avec le backend FastAPI
- * Base URL: http://localhost:8000
+ * Base URL: configurée via variable d'environnement ou localhost par défaut
  */
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 // Types pour les réponses API
 export interface Patient {
@@ -436,7 +436,23 @@ export interface UserInfo {
   last_login?: string;
 }
 
+export interface RegisterRequest {
+  nom: string;
+  prenoms: string;
+  email: string;
+  mot_de_passe: string;
+  role: string;
+  specialite?: string;
+}
+
 export const authAPI = {
+  // Inscription
+  register: (data: RegisterRequest) =>
+    fetchAPI<UserInfo>('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   // Connexion
   login: (credentials: LoginRequest) => {
     console.log('🌐 API: Envoi requête login à /api/auth/login');
@@ -610,12 +626,16 @@ export const adminAPI = {
   // CRUD Utilisateurs
   getUsers: (token: string) =>
     fetchAPIAuth<AdminUser[]>(token, '/api/admin/users'),
+  getPendingUsers: (token: string) =>
+    fetchAPIAuth<AdminUser[]>(token, '/api/admin/users/pending'),
   createUser: (token: string, data: AdminUserCreate) =>
     fetchAPIAuth<AdminUser>(token, '/api/admin/users', { method: 'POST', body: JSON.stringify(data) }),
   updateUser: (token: string, id: number, data: AdminUserUpdate) =>
     fetchAPIAuth<AdminUser>(token, `/api/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteUser: (token: string, id: number) =>
     fetchAPIAuth<{ message: string }>(token, `/api/admin/users/${id}`, { method: 'DELETE' }),
+  activateUser: (token: string, id: number) =>
+    fetchAPIAuth<AdminUser>(token, `/api/admin/users/${id}/activate`, { method: 'POST' }),
 
   // CRUD Médecins
   getMedecins: (token: string) =>

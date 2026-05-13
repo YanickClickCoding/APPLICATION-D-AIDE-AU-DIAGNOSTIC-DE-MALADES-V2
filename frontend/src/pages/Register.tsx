@@ -1,7 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Mail, Lock, Eye, EyeOff, UserPlus, AlertCircle, Briefcase } from 'lucide-react';
-import { API_BASE_URL } from '../config';
+import { User, Mail, Lock, Eye, EyeOff, UserPlus, AlertCircle, Briefcase, Stethoscope } from 'lucide-react';
+import { authAPI } from '../services/api';
+
+const SPECIALITES = [
+  "Médecine Générale", "Cardiologie", "Pédiatrie", "Gynécologie-Obstétrique",
+  "Chirurgie Générale", "Neurologie", "Ophtalmologie", "Dermatologie",
+  "Radiologie", "Anesthésiologie", "Rhumatologie", "Urologie", "ORL",
+  "Psychiatrie", "Pneumologie", "Endocrinologie", "Infectiologie",
+  "Gastro-entérologie", "Hématologie", "Oncologie", "Néphrologie",
+  "Médecine Interne", "Médecine d'Urgence", "Gériatrie", "Stomatologie",
+  "Chirurgie Orthopédique", "Chirurgie Cardiaque", "Chirurgie Vasculaire",
+  "Chirurgie Pédiatrique", "Chirurgie Plastique", "Neurochirurgie",
+  "Allergologie", "Médecine du Travail", "Médecine Physique et Réadaptation",
+  "Médecine Nucléaire", "Génétique Médicale", "Anatomopathologie",
+  "Biologie Médicale", "Santé Publique", "Réanimation", "Addictologie",
+];
 
 const Register = () => {
   const navigate = useNavigate();
@@ -11,7 +25,8 @@ const Register = () => {
     email: '',
     mot_de_passe: '',
     confirm_passe: '',
-    role: 'medecin'
+    role: 'medecin',
+    specialite: '',
   });
   const [showPw1, setShowPw1] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
@@ -40,33 +55,22 @@ const Register = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          nom: formData.nom,
-          prenoms: formData.prenoms,
-          email: formData.email,
-          mot_de_passe: formData.mot_de_passe,
-          role: formData.role
-        }),
+      await authAPI.register({
+        nom: formData.nom,
+        prenoms: formData.prenoms,
+        email: formData.email,
+        mot_de_passe: formData.mot_de_passe,
+        role: formData.role,
+        ...(formData.role === 'medecin' && formData.specialite ? { specialite: formData.specialite } : {}),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || 'Erreur lors de la création du compte');
-      }
-
-      navigate('/login', { 
-        state: { 
-          success: 'Compte créé avec succès ! Votre compte est en attente d\'activation par un administrateur.' 
-        } 
+      navigate('/login', {
+        state: {
+          success: 'Compte créé avec succès ! Votre compte est en attente d\'activation par un administrateur.'
+        }
       });
     } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue lors de la création du compte.');
+      setError(err.detail || err.message || 'Une erreur est survenue lors de la création du compte.');
     } finally {
       setIsLoading(false);
     }
@@ -148,10 +152,10 @@ const Register = () => {
             <label className="sp-form-label">Rôle <span className="required">*</span></label>
             <div className="sp-input-icon-wrap">
               <Briefcase className="sp-input-icon" />
-              <select 
-                className="sp-form-input" 
+              <select
+                className="sp-form-input"
                 value={formData.role}
-                onChange={e => setFormData({...formData, role: e.target.value})}
+                onChange={e => setFormData({...formData, role: e.target.value, specialite: ''})}
                 required
                 disabled={isLoading}
                 style={{ paddingLeft: '40px' }}
@@ -164,6 +168,28 @@ const Register = () => {
               Votre compte sera activé par un administrateur
             </small>
           </div>
+
+          {formData.role === 'medecin' && (
+            <div className="sp-form-group" style={{ marginBottom: '14px' }}>
+              <label className="sp-form-label">Spécialité <span className="required">*</span></label>
+              <div className="sp-input-icon-wrap">
+                <Stethoscope className="sp-input-icon" />
+                <select
+                  className="sp-form-input"
+                  value={formData.specialite}
+                  onChange={e => setFormData({...formData, specialite: e.target.value})}
+                  required
+                  disabled={isLoading}
+                  style={{ paddingLeft: '40px' }}
+                >
+                  <option value="" disabled>Sélectionnez votre spécialité</option>
+                  {SPECIALITES.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '22px' }}>
             <div className="sp-form-group">

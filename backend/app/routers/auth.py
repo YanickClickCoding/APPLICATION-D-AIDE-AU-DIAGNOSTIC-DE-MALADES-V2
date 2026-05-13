@@ -75,8 +75,9 @@ class RegisterRequest(BaseModel):
     prenoms: str
     email: EmailStr
     mot_de_passe: str
-    role: str = "medecin"  # Par défaut médecin
-    
+    role: str = "medecin"
+    specialite: Optional[str] = None
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -84,7 +85,8 @@ class RegisterRequest(BaseModel):
                 "prenoms": "Jean",
                 "email": "jean.dupont@gasasad.com",
                 "mot_de_passe": "motdepasse123",
-                "role": "medecin"
+                "role": "medecin",
+                "specialite": "Cardiologie"
             }
         }
 
@@ -273,13 +275,43 @@ async def register(
         role=register_data.role,
         actif=False  # Compte inactif jusqu'à activation par admin
     )
-    
+
     db.add(new_user)
+    db.flush()
+
+    # Pré-créer le profil médical (indisponible jusqu'à activation)
+    if register_data.role == "medecin":
+        from ..models.medecin import Medecin
+        existing = db.query(Medecin).filter(
+            Medecin.nom == new_user.nom, Medecin.prenoms == new_user.prenoms
+        ).first()
+        if not existing:
+            db.add(Medecin(
+                nom=new_user.nom,
+                prenoms=new_user.prenoms,
+                specialite=register_data.specialite or "Médecine Générale",
+                telephone="N/A",
+                disponible=False,
+            ))
+    elif register_data.role == "infirmier":
+        from ..models.infirmier import Infirmier
+        existing = db.query(Infirmier).filter(
+            Infirmier.nom == new_user.nom, Infirmier.prenoms == new_user.prenoms
+        ).first()
+        if not existing:
+            db.add(Infirmier(
+                nom=new_user.nom,
+                prenoms=new_user.prenoms,
+                telephone="N/A",
+                email=new_user.email,
+                disponible=False,
+            ))
+
     db.commit()
     db.refresh(new_user)
-    
+
     logger.info(f"✅ Inscription réussie: {new_user.email} ({new_user.role}) - En attente d'activation")
-    
+
     return new_user
 
 

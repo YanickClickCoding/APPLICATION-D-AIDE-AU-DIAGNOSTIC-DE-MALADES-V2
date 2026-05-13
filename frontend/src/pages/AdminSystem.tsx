@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Server, Brain, Database, Trash2, RefreshCw, Play, CheckCircle,
   XCircle, FileText, Cpu, Clock, ChevronDown,
-  ChevronUp, Terminal, Package, Zap, Sliders,
+  ChevronUp, Terminal, Package, Zap, Sliders, AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { adminAPI, type IAConfig } from '../services/api';
@@ -228,6 +228,35 @@ export default function AdminSystem() {
         <div style={{ position: 'fixed', top: 24, right: 24, zIndex: 9999, padding: '12px 20px', borderRadius: 10, color: 'white', background: toast.ok ? '#059669' : '#DC2626', boxShadow: '0 4px 20px rgba(0,0,0,.15)', display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600 }}>
           {toast.ok ? <CheckCircle size={16} /> : <XCircle size={16} />}
           {toast.msg}
+        </div>
+      )}
+
+      {/* Bannière modèle non entraîné */}
+      {status && !status.model.loaded && (
+        <div style={{
+          marginBottom: 24, padding: '16px 20px', borderRadius: 12,
+          background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)',
+          border: '2px solid #F59E0B',
+          display: 'flex', alignItems: 'flex-start', gap: 14,
+        }}>
+          <AlertTriangle size={24} style={{ color: '#B45309', flexShrink: 0, marginTop: 2 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: '#92400E', marginBottom: 4 }}>
+              Aucun modèle d'IA entraîné
+            </div>
+            <div style={{ fontSize: 13, color: '#78350F', lineHeight: 1.5, marginBottom: 10 }}>
+              Le système ne peut pas effectuer de diagnostics automatiques. Entraînez le modèle
+              ci-dessous à partir du dataset inclus dans le projet (<code style={{ background: 'rgba(0,0,0,0.08)', padding: '1px 5px', borderRadius: 3 }}>les ressources dataset/</code>).
+            </div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <div style={{ fontSize: 12, color: '#78350F', background: 'rgba(0,0,0,0.07)', padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}>
+                {status.dataset.found ? `✅ Dataset prêt (${status.dataset.size_mb} Mo)` : '❌ Dataset introuvable'}
+              </div>
+              <div style={{ fontSize: 12, color: '#78350F', background: 'rgba(0,0,0,0.07)', padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}>
+                👇 Cliquez sur "Entraîner le modèle" dans la section ML ci-dessous
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

@@ -694,9 +694,10 @@ const Consultations = () => {
                     <label className="sp-form-label">Nom du patient <span style={{ color: '#EF4444' }}>*</span></label>
                     <div className="sp-input-icon-wrap">
                       <User size={18} className="sp-input-icon" />
-                      <input type="text" className="sp-form-input" style={{ paddingLeft: '40px' }} required
+                      <input type="text" className="sp-form-input" style={{ paddingLeft: '40px', ...(formData.id && user?.role === 'infirmier' ? { backgroundColor: '#f3f4f6', cursor: 'not-allowed', color: '#6b7280' } : {}) }} required
                         placeholder="Nom complet du patient"
                         value={formData.nom_patient || ''}
+                        readOnly={!!(formData.id && user?.role === 'infirmier')}
                         onChange={e => setFormData({ ...formData, nom_patient: e.target.value })} />
                     </div>
                   </div>

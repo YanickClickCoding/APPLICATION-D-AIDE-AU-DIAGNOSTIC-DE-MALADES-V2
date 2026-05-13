@@ -4,6 +4,7 @@ import { adminAPI, type AdminUser, type AdminUserCreate } from '../services/api'
 import {
   Users, Search, Trash2, Shield, User, Grid, List,
   Mail, Calendar, Lock, X, Plus, Edit2, ToggleLeft, ToggleRight,
+  UserPlus, CheckCircle, Clock,
 } from 'lucide-react';
 
 const EMPTY_CREATE: AdminUserCreate = { nom: '', prenoms: '', email: '', password: '', role: 'medecin', specialite: '', telephone: '' };
@@ -25,12 +26,15 @@ const SPECIALITES = [
 const Utilisateurs = () => {
   const { user: currentUser, token, isLoading: authLoading } = useAuth();
   const [utilisateurs, setUtilisateurs] = useState<AdminUser[]>([]);
+  const [pendingUsers, setPendingUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [view, setView] = useState<'grid' | 'table'>(
     () => (localStorage.getItem('sp_usr_view') as 'grid' | 'table') || 'grid'
   );
+  const [activatingId, setActivatingId] = useState<number | null>(null);
+  const [rejectingId, setRejectingId] = useState<number | null>(null);
 
   // Modals
   const [deleteModal, setDeleteModal] = useState<{ id: number; name: string } | null>(null);
@@ -50,8 +54,12 @@ const Utilisateurs = () => {
     if (!token) return;
     try {
       setLoading(true);
-      const users = await adminAPI.getUsers(token);
+      const [users, pending] = await Promise.all([
+        adminAPI.getUsers(token),
+        adminAPI.getPendingUsers(token),
+      ]);
       setUtilisateurs(users);
+      setPendingUsers(pending);
       setError(null);
     } catch (e: any) {
       setError(e.detail || 'Erreur lors du chargement des utilisateurs');
@@ -61,6 +69,34 @@ const Utilisateurs = () => {
   }, [token]);
 
   useEffect(() => { if (!authLoading) loadUsers(); }, [loadUsers, authLoading]);
+
+  const handleActivate = async (u: AdminUser) => {
+    if (!token) return;
+    setActivatingId(u.utilisateur_id);
+    try {
+      await adminAPI.activateUser(token, u.utilisateur_id);
+      setPendingUsers(prev => prev.filter(x => x.utilisateur_id !== u.utilisateur_id));
+      setUtilisateurs(prev => [...prev, { ...u, actif: true }]);
+    } catch (e: any) {
+      alert(e.detail || 'Erreur lors de l\'activation');
+    } finally {
+      setActivatingId(null);
+    }
+  };
+
+  const handleReject = async (u: AdminUser) => {
+    if (!token) return;
+    if (!confirm(`Rejeter et supprimer le compte de ${u.prenoms} ${u.nom} ?`)) return;
+    setRejectingId(u.utilisateur_id);
+    try {
+      await adminAPI.deleteUser(token, u.utilisateur_id);
+      setPendingUsers(prev => prev.filter(x => x.utilisateur_id !== u.utilisateur_id));
+    } catch (e: any) {
+      alert(e.detail || 'Erreur lors du rejet');
+    } finally {
+      setRejectingId(null);
+    }
+  };
 
   const handleViewChange = (v: 'grid' | 'table') => {
     setView(v);
@@ -75,6 +111,8 @@ const Utilisateurs = () => {
       (u.email || '').toLowerCase().includes(term)
     );
   });
+
+
 
   const handleDelete = async () => {
     if (!deleteModal || !token) return;
@@ -145,7 +183,7 @@ const Utilisateurs = () => {
       <div className="sp-page-header sp-fade-in">
         <div>
           <h1 className="sp-page-title">Utilisateurs</h1>
-          <p className="sp-page-subtitle">{filtered.length} compte(s) enregistré(s)</p>
+          <p className="sp-page-subtitle">{filtered.length} compte(s) actif(s)</p>
         </div>
         <button className="sp-btn sp-btn-primary" onClick={() => setCreateModal(true)}>
           <Plus size={18} /> Nouvel utilisateur
@@ -158,10 +196,82 @@ const Utilisateurs = () => {
         </div>
       )}
 
+      {/* ── Section Comptes en attente d'activation ─────────────────────── */}
+      {pendingUsers.length > 0 && (
+        <div className="sp-card sp-fade-in" style={{ marginBottom: 24, border: '2px solid #F59E0B' }}>
+          <div className="sp-card-header" style={{ background: '#FFFBEB', borderBottom: '1px solid #FDE68A' }}>
+            <div className="sp-card-title" style={{ color: '#D97706' }}>
+              <Clock size={20} />
+              Comptes en attente d'activation ({pendingUsers.length})
+            </div>
+            <span style={{ fontSize: 12, color: '#92400E', background: '#FEF3C7', padding: '4px 10px', borderRadius: 20, fontWeight: 600 }}>
+              Action requise
+            </span>
+          </div>
+          <div style={{ padding: '16px 20px' }}>
+            <p style={{ fontSize: 13, color: '#78350F', marginBottom: 16 }}>
+              Ces utilisateurs ont créé leur compte et attendent votre validation pour pouvoir se connecter.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {pendingUsers.map(u => {
+                const roleLabel = u.role === 'medecin' ? 'Médecin' : 'Infirmier';
+                const roleColor = u.role === 'medecin' ? '#4F46E5' : '#10B981';
+                const roleBg = u.role === 'medecin' ? '#EEF2FF' : '#D1FAE5';
+                return (
+                  <div key={u.utilisateur_id} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 16px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #F59E0B, #D97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
+                      {(u.prenoms[0] + u.nom[0]).toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: '#1F2937' }}>{u.prenoms} {u.nom}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3 }}>
+                        <Mail size={12} style={{ color: '#9CA3AF' }} />
+                        <span style={{ fontSize: 12, color: '#6B7280' }}>{u.email}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: roleColor, background: roleBg, padding: '2px 8px', borderRadius: 12 }}>{roleLabel}</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>
+                        Inscrit le {new Date(u.created_at).toLocaleDateString('fr-FR')}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                      <button
+                        onClick={() => handleActivate(u)}
+                        disabled={activatingId === u.utilisateur_id}
+                        className="sp-btn sp-btn-primary"
+                        style={{ fontSize: 13, padding: '8px 16px', background: '#10B981' }}
+                      >
+                        <CheckCircle size={15} />
+                        {activatingId === u.utilisateur_id ? 'Activation...' : 'Activer'}
+                      </button>
+                      <button
+                        onClick={() => handleReject(u)}
+                        disabled={rejectingId === u.utilisateur_id}
+                        className="sp-btn sp-btn-ghost"
+                        style={{ fontSize: 13, padding: '8px 16px', color: '#DC2626' }}
+                      >
+                        <Trash2 size={15} />
+                        {rejectingId === u.utilisateur_id ? '...' : 'Rejeter'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingUsers.length === 0 && !loading && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 8, marginBottom: 20 }}>
+          <CheckCircle size={18} style={{ color: '#16A34A' }} />
+          <span style={{ fontSize: 13, color: '#15803D', fontWeight: 500 }}>Aucun compte en attente d'activation</span>
+        </div>
+      )}
+
       <div className="sp-card sp-fade-in">
         <div className="sp-card-header">
           <div className="sp-card-title">
-            <Users size={20} /> Gestion des comptes
+            <Users size={20} /> Comptes actifs
           </div>
           <div className="sp-toolbar">
             <div className="sp-search-box">

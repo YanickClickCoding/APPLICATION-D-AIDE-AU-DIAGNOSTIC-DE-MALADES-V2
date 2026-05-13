@@ -35,6 +35,7 @@ ENV/
 ml_models/*.joblib
 ml_models/*.pkl
 ml_models/*.h5
+ml_models/*.json
 
 # Keep the directory but not the models
 !ml_models/.gitkeep

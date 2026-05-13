@@ -218,7 +218,16 @@ def list_users(
     db: Session = Depends(get_db),
     admin: User = Depends(get_current_admin),
 ):
-    users = db.query(User).offset(skip).limit(limit).all()
+    users = db.query(User).filter(User.actif == True).offset(skip).limit(limit).all()
+    return [_user_to_dict(u) for u in users]
+
+
+@router.get("/users/pending")
+def list_pending_users(
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    users = db.query(User).filter(User.actif == False, User.role != "admin").all()
     return [_user_to_dict(u) for u in users]
 
 
@@ -309,6 +318,55 @@ def delete_user(
     db.delete(user)
     db.commit()
     return {"message": f"Utilisateur {user.prenoms} {user.nom} supprimé"}
+
+
+@router.post("/users/{user_id}/activate")
+def activate_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    user = db.query(User).filter(User.utilisateur_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur introuvable")
+    if user.actif:
+        raise HTTPException(status_code=400, detail="Ce compte est déjà actif")
+
+    user.actif = True
+
+    if user.role == "medecin":
+        existing = db.query(Medecin).filter(
+            Medecin.nom == user.nom, Medecin.prenoms == user.prenoms
+        ).first()
+        if existing:
+            existing.disponible = True
+        else:
+            db.add(Medecin(
+                nom=user.nom,
+                prenoms=user.prenoms,
+                specialite="Médecine Générale",
+                telephone="N/A",
+                disponible=True,
+            ))
+    elif user.role == "infirmier":
+        existing = db.query(Infirmier).filter(
+            Infirmier.nom == user.nom, Infirmier.prenoms == user.prenoms
+        ).first()
+        if existing:
+            existing.disponible = True
+        else:
+            db.add(Infirmier(
+                nom=user.nom,
+                prenoms=user.prenoms,
+                telephone="N/A",
+                email=user.email,
+                disponible=True,
+            ))
+
+    db.commit()
+    db.refresh(user)
+    logger.info(f"✅ Compte activé par admin: {user.email} ({user.role})")
+    return _user_to_dict(user)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

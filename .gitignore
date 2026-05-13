@@ -36,8 +36,5 @@ dist-ssr
 *.bkp
 *.drawio
 
-# Datasets et ressources volumineuses
-les ressources dataset/
-
 # Scripts temporaires
 server/ai_engine.py
