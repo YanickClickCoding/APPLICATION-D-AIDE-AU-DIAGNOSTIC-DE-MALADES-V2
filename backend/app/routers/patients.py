@@ -1,16 +1,77 @@
 """
 Patients API Router (US-001, US-004)
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from typing import List
 from uuid import UUID
 
 from ..database import get_db
-from ..models import Patient
+from ..models import (
+    Patient, Consultation, Symptome, SignesVitaux,
+    AnalyseIA, Diagnostic, Examen, Traitement, Ordonnance, Medicament, Suivi
+)
+from ..models.prediction_history import PredictionHistory
+from ..models.prescription import Prescription
+from ..models.feedback import DoctorFeedback
 from ..schemas.patient_schema import PatientCreate, PatientResponse, PatientUpdate
 
 router = APIRouter(prefix="/patients", tags=["Patients"])
+
+
+@router.get("/search")
+def search_patients(q: str = Query(..., min_length=1), db: Session = Depends(get_db)):
+    """
+    Recherche de patients par nom ou prénoms.
+    Retourne les patients avec leur dernière consultation (si elle existe et est EN ATTENTE).
+    """
+    # Utiliser distinct() pour éviter les doublons et group by patient_id
+    patients = db.query(Patient).filter(
+        or_(
+            Patient.nom.ilike(f"%{q}%"),
+            Patient.prenoms.ilike(f"%{q}%"),
+        )
+    ).distinct().limit(10).all()
+
+    results = []
+    seen_patient_ids = set()  # Pour éviter les doublons
+    
+    for p in patients:
+        # Éviter les doublons
+        if p.patient_id in seen_patient_ids:
+            continue
+        seen_patient_ids.add(p.patient_id)
+        
+        # Chercher la dernière consultation en attente pour ce patient
+        pending = (
+            db.query(Consultation)
+            .filter(
+                Consultation.patient_id == p.patient_id,
+                Consultation.statut == "en attente",
+            )
+            .order_by(Consultation.date_heure.desc())
+            .first()
+        )
+        # Sinon, la dernière consultation quel que soit le statut
+        latest = pending or (
+            db.query(Consultation)
+            .filter(Consultation.patient_id == p.patient_id)
+            .order_by(Consultation.date_heure.desc())
+            .first()
+        )
+        results.append({
+            "patient_id": p.patient_id,
+            "nom": p.nom,
+            "prenoms": p.prenoms,
+            "sexe": p.sexe,
+            "date_naissance": str(p.date_naissance) if p.date_naissance else None,
+            "derniere_consultation_id": latest.consultation_id if latest else None,
+            "derniere_consultation_statut": latest.statut if latest else None,
+            "derniere_consultation_date": str(latest.date_heure) if latest else None,
+            "consultation_en_attente_id": pending.consultation_id if pending else None,
+        })
+    return results
 
 
 @router.post("", response_model=PatientResponse, status_code=status.HTTP_201_CREATED)
@@ -91,22 +152,81 @@ def update_patient(
 @router.delete("/{patient_id}")
 def delete_patient(patient_id: int, db: Session = Depends(get_db)):
     """
-    Supprime un patient et toutes ses données associées (consultations, dossier médical, etc.)
+    Supprime un patient et toutes ses données liées (cascade manuelle — MyISAM).
+    Ordre : medicaments → ordonnances → traitements → diagnostics → analyses_ia
+            → examens → signes_vitaux → symptomes → suivis → doctor_feedback
+            → prediction_history → prescriptions → consultation_infirmiers
+            → consultations → dossiers_medicaux → patient
     """
     patient = db.query(Patient).filter(Patient.patient_id == patient_id).first()
     if not patient:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Patient non trouvé"
-        )
-    
-    # Récupérer le nom pour le message de confirmation
+        raise HTTPException(status_code=404, detail="Patient non trouvé")
+
     nom_complet = f"{patient.prenoms} {patient.nom}"
-    
-    # Supprimer le patient (les consultations et autres données seront supprimées en cascade)
+
+    # 1. Récupérer tous les IDs des consultations du patient
+    cids = [c.consultation_id for c in
+            db.query(Consultation.consultation_id)
+            .filter(Consultation.patient_id == patient_id).all()]
+
+    if cids:
+        # 2. Remonter la chaîne diagnostic → traitement → ordonnance → médicament
+        diag_ids = [d.diagnostic_id for d in
+                    db.query(Diagnostic.diagnostic_id)
+                    .filter(Diagnostic.consultation_id.in_(cids)).all()]
+
+        if diag_ids:
+            trait_ids = [t.traitement_id for t in
+                         db.query(Traitement.traitement_id)
+                         .filter(Traitement.diagnostic_id.in_(diag_ids)).all()]
+
+            if trait_ids:
+                ord_ids = [o.ordonnance_id for o in
+                           db.query(Ordonnance.ordonnance_id)
+                           .filter(Ordonnance.traitement_id.in_(trait_ids)).all()]
+
+                if ord_ids:
+                    db.query(Medicament).filter(
+                        Medicament.ordonnance_id.in_(ord_ids)
+                    ).delete(synchronize_session=False)
+
+                db.query(Ordonnance).filter(
+                    Ordonnance.traitement_id.in_(trait_ids)
+                ).delete(synchronize_session=False)
+
+            db.query(Traitement).filter(
+                Traitement.diagnostic_id.in_(diag_ids)
+            ).delete(synchronize_session=False)
+
+        # 3. Supprimer les tables directement liées aux consultations
+        db.query(Diagnostic).filter(Diagnostic.consultation_id.in_(cids)).delete(synchronize_session=False)
+        db.query(AnalyseIA).filter(AnalyseIA.consultation_id.in_(cids)).delete(synchronize_session=False)
+        db.query(Examen).filter(Examen.consultation_id.in_(cids)).delete(synchronize_session=False)
+        db.query(SignesVitaux).filter(SignesVitaux.consultation_id.in_(cids)).delete(synchronize_session=False)
+        db.query(Symptome).filter(Symptome.consultation_id.in_(cids)).delete(synchronize_session=False)
+        db.query(DoctorFeedback).filter(DoctorFeedback.consultation_id.in_(cids)).delete(synchronize_session=False)
+        db.query(PredictionHistory).filter(PredictionHistory.consultation_id.in_(cids)).delete(synchronize_session=False)
+        db.query(Prescription).filter(Prescription.consultation_id.in_(cids)).delete(synchronize_session=False)
+        db.query(Suivi).filter(Suivi.consultation_id.in_(cids)).delete(synchronize_session=False)
+
+    # 4. Supprimer les données liées directement au patient (hors consultations)
+    db.query(Suivi).filter(Suivi.patient_id == patient_id).delete(synchronize_session=False)
+    db.query(PredictionHistory).filter(PredictionHistory.patient_id == patient_id).delete(synchronize_session=False)
+    db.query(Prescription).filter(Prescription.patient_id == patient_id).delete(synchronize_session=False)
+    # Ordonnances liées directement au patient (hors chaîne traitement)
+    db.query(Ordonnance).filter(Ordonnance.patient_id == patient_id).delete(synchronize_session=False)
+
+    # 5. Supprimer les consultations et le dossier médical
+    if cids:
+        db.query(Consultation).filter(Consultation.patient_id == patient_id).delete(synchronize_session=False)
+
+    from ..models import DossierMedical
+    db.query(DossierMedical).filter(DossierMedical.patient_id == patient_id).delete(synchronize_session=False)
+
+    # 6. Supprimer le patient
     db.delete(patient)
     db.commit()
-    
+
     return {
         "success": True,
         "message": f"Patient {nom_complet} et toutes ses données associées ont été supprimés"

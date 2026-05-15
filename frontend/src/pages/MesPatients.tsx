@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, User, Phone, Mail, Calendar, Activity, AlertCircle, FileText, PlusCircle, Edit2, Trash2, Grid, List, X, Save, Droplet } from 'lucide-react';
+import { Search, User, Phone, Mail, Calendar, Activity, AlertCircle, FileText, PlusCircle, Edit2, Trash2, Grid, List, X, Save, Droplet, Clipboard } from 'lucide-react';
 import { patientsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
@@ -300,7 +300,7 @@ const MesPatients = () => {
                         className="sp-btn sp-btn-primary"
                         style={{ flex: 1, justifyContent: 'center', fontSize: '13px', padding: '8px' }}
                       >
-                        <FileText size={14} /> Dossier
+                        <Clipboard size={14} /> Dossier
                       </Link>
                       <Link
                         to="/consultation/nouvelle"
@@ -380,7 +380,7 @@ const MesPatients = () => {
                         <td>
                           <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
                             <Link to={`/dossier-patient/${patient.patient_id}`} className="sp-btn sp-btn-ghost sp-btn-sm" title="Voir dossier">
-                              <FileText size={14} />
+                              <Clipboard size={14} />
                             </Link>
                             {isAdmin && (
                               <>

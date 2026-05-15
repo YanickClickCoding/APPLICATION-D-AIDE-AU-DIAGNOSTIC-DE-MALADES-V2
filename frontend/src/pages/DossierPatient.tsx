@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, Activity, FileText, Pill, AlertCircle, User, Phone, Mail, MapPin, Cake, Edit, Brain, CheckCircle, XCircle, Droplet, Printer, Download, Clipboard, Eye } from 'lucide-react';
+import { ArrowLeft, Calendar, Activity, FileText, Pill, AlertCircle, User, Phone, Mail, MapPin, Cake, Edit, Brain, CheckCircle, XCircle, Droplet, Printer, Download, Clipboard, Eye, ClipboardCheck, Save, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { patientsAPI, consultationsAPI } from '../services/api';
 
@@ -43,13 +43,10 @@ const DossierPatient = () => {
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Vérifier les permissions : seulement admin et médecin
-  useEffect(() => {
-    if (user?.role === 'infirmier') {
-      navigate('/consultations', { replace: true });
-    }
-  }, [user, navigate]);
+  const [hoveredConsultId, setHoveredConsultId] = useState<number | null>(null);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editData, setEditData] = useState({ date_naissance: '', sexe: 'M' as 'M' | 'F', telephone: '', groupe_sanguin: '' });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,7 +60,9 @@ const DossierPatient = () => {
 
         // Récupérer l'historique des consultations
         const consultationsData = await consultationsAPI.getByPatient(parseInt(patientId), token);
-        setConsultations(consultationsData);
+        setConsultations([...consultationsData].sort((a, b) =>
+          new Date(b.date_heure).getTime() - new Date(a.date_heure).getTime()
+        ));
         
         setError(null);
       } catch (err: any) {
@@ -99,7 +98,10 @@ const DossierPatient = () => {
     );
   }
 
+  const isIncomplete = !patient.date_naissance || patient.date_naissance.startsWith('1900-01-01');
+
   const calculateAge = (birthDate: string) => {
+    if (!birthDate || birthDate.startsWith('1900-01-01')) return null;
     const today = new Date();
     const birth = new Date(birthDate);
     let age = today.getFullYear() - birth.getFullYear();
@@ -108,6 +110,31 @@ const DossierPatient = () => {
       age--;
     }
     return age;
+  };
+
+  const handleCompleteForm = async () => {
+    if (!editData.date_naissance) return;
+    setSaving(true);
+    try {
+      await patientsAPI.update(patient.patient_id, {
+        date_naissance: editData.date_naissance as any,
+        sexe: editData.sexe,
+        telephone: editData.telephone || undefined,
+        groupe_sanguin: editData.groupe_sanguin || undefined,
+      });
+      setPatient({
+        ...patient,
+        date_naissance: editData.date_naissance,
+        sexe: editData.sexe,
+        telephone: editData.telephone,
+        groupe_sanguin: editData.groupe_sanguin,
+      });
+      setShowEditForm(false);
+    } catch {
+      // silently ignored — the user will see the form still open
+    } finally {
+      setSaving(false);
+    }
   };
 
   const getInitials = (nom: string, prenoms: string) => {
@@ -160,6 +187,12 @@ const DossierPatient = () => {
           </Link>
           {(user?.role === 'admin' || user?.role === 'medecin') && (
             <>
+              <Link 
+                to={`/consultation/nouvelle?patientId=${patientId}`} 
+                className="sp-btn sp-btn-primary no-print"
+              >
+                <Plus size={18} /> Nouvelle consultation
+              </Link>
               <button className="sp-btn sp-btn-outline no-print" onClick={handlePrint}>
                 <Printer size={18} /> Imprimer
               </button>
@@ -211,6 +244,61 @@ const DossierPatient = () => {
               </p>
             </div>
 
+            {/* Bandeau dossier incomplet */}
+            {isIncomplete && (
+              <div style={{ marginBottom: '20px', padding: '12px 16px', background: '#FFF7ED', borderRadius: '10px', border: '1px solid #FED7AA' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <AlertCircle size={16} style={{ color: '#EA580C', flexShrink: 0 }} />
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#9A3412' }}>Dossier à compléter</span>
+                </div>
+                <p style={{ fontSize: '12px', color: '#C2410C', margin: '0 0 10px' }}>
+                  Ce dossier a été créé en urgence par le médecin. Veuillez compléter les informations du patient.
+                </p>
+                {!showEditForm ? (
+                  <button
+                    onClick={() => { setEditData({ date_naissance: '', sexe: patient.sexe as 'M' | 'F', telephone: patient.telephone || '', groupe_sanguin: patient.groupe_sanguin || '' }); setShowEditForm(true); }}
+                    className="sp-btn sp-btn-outline"
+                    style={{ fontSize: '12px', padding: '6px 14px', color: '#EA580C', borderColor: '#EA580C' }}
+                  >
+                    <ClipboardCheck size={13} /> Compléter le dossier
+                  </button>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '4px' }}>Date de naissance *</label>
+                        <input type="date" className="sp-form-input" style={{ fontSize: '13px' }} max={new Date().toISOString().split('T')[0]} value={editData.date_naissance} onChange={e => setEditData({ ...editData, date_naissance: e.target.value })} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '4px' }}>Sexe *</label>
+                        <select className="sp-form-select" style={{ fontSize: '13px' }} value={editData.sexe} onChange={e => setEditData({ ...editData, sexe: e.target.value as 'M' | 'F' })}>
+                          <option value="M">♂ Masculin</option>
+                          <option value="F">♀ Féminin</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '4px' }}>Téléphone</label>
+                        <input type="tel" className="sp-form-input" style={{ fontSize: '13px' }} value={editData.telephone} onChange={e => setEditData({ ...editData, telephone: e.target.value })} placeholder="Ex: +229 90000000" />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '4px' }}>Groupe sanguin</label>
+                        <select className="sp-form-select" style={{ fontSize: '13px' }} value={editData.groupe_sanguin} onChange={e => setEditData({ ...editData, groupe_sanguin: e.target.value })}>
+                          <option value="">—</option>
+                          {['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(g => <option key={g} value={g}>{g}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={handleCompleteForm} disabled={saving || !editData.date_naissance} className="sp-btn sp-btn-primary" style={{ fontSize: '12px', padding: '6px 14px' }}>
+                        {saving ? 'Enregistrement...' : <><Save size={13} /> Enregistrer</>}
+                      </button>
+                      <button onClick={() => setShowEditForm(false)} className="sp-btn sp-btn-outline" style={{ fontSize: '12px', padding: '6px 14px' }}>Annuler</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Détails */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
@@ -218,9 +306,13 @@ const DossierPatient = () => {
                   <Cake size={14} />
                   <span>Date de naissance</span>
                 </div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: '#1F2937' }}>
-                  {new Date(patient.date_naissance).toLocaleDateString('fr-FR')} ({calculateAge(patient.date_naissance)} ans)
-                </div>
+                {isIncomplete ? (
+                  <div style={{ fontSize: '13px', color: '#EA580C', fontStyle: 'italic' }}>Non renseignée</div>
+                ) : (
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#1F2937' }}>
+                    {new Date(patient.date_naissance).toLocaleDateString('fr-FR')} ({calculateAge(patient.date_naissance)} ans)
+                  </div>
+                )}
               </div>
 
               <div>
@@ -335,13 +427,31 @@ const DossierPatient = () => {
                   return (
                     <div
                       key={consultation.consultation_id}
+                      onMouseEnter={() => setHoveredConsultId(consultation.consultation_id)}
+                      onMouseLeave={() => setHoveredConsultId(null)}
                       style={{
+                        position: 'relative',
                         padding: '20px',
                         borderBottom: index < consultations.length - 1 ? '1px solid #E5E7EB' : 'none',
                         borderLeft: `4px solid ${colors.border}`,
-                        background: index % 2 === 0 ? '#FAFAFA' : '#fff'
+                        background: index % 2 === 0 ? '#FAFAFA' : '#fff',
+                        transition: 'background 0.15s'
                       }}
                     >
+                      {/* Badge "Dossier à compléter" au survol */}
+                      {isIncomplete && hoveredConsultId === consultation.consultation_id && (
+                        <div style={{
+                          position: 'absolute', top: '10px', right: '110px',
+                          display: 'flex', alignItems: 'center', gap: '5px',
+                          padding: '4px 12px', borderRadius: '20px',
+                          background: '#FFF7ED', border: '1px solid #FED7AA',
+                          color: '#EA580C', fontSize: '11px', fontWeight: 700,
+                          boxShadow: '0 2px 8px rgba(234,88,12,0.15)',
+                          zIndex: 10, pointerEvents: 'none'
+                        }}>
+                          <AlertCircle size={11} /> Dossier à compléter
+                        </div>
+                      )}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
                         <div>
                           <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '4px' }}>
@@ -451,8 +561,17 @@ const DossierPatient = () => {
                           </div>
                         </div>
                       ) : (
-                        <div style={{ marginTop: '10px', padding: '10px 14px', background: '#F9FAFB', borderRadius: '8px', border: '1px dashed #D1D5DB' }}>
+                        <div style={{ marginTop: '10px', padding: '12px 14px', background: '#F9FAFB', borderRadius: '8px', border: '1px dashed #D1D5DB', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
                           <span style={{ fontSize: '12px', color: '#9CA3AF', fontStyle: 'italic' }}>Aucun diagnostic enregistré pour cette consultation</span>
+                          {(consultation.statut === 'en attente' || consultation.statut === 'en cours') && (user?.role === 'medecin' || user?.role === 'admin') && (
+                            <button
+                              onClick={() => navigate(`/consultation/nouvelle?reprendre=${consultation.consultation_id}`)}
+                              className="sp-btn sp-btn-primary"
+                              style={{ fontSize: '12px', padding: '6px 16px', whiteSpace: 'nowrap', flexShrink: 0 }}
+                            >
+                              <Brain size={13} /> Continuer le diagnostic
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>

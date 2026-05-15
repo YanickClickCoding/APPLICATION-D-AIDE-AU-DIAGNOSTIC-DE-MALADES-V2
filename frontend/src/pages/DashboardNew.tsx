@@ -257,10 +257,68 @@ const Dashboard = () => {
           <StatCard label="Diagnostics IA" value={statsData.diagnosticsIA} icon={Brain} accent="#6366F1" bgIcon="#eef2ff" colorIcon="#6366F1" />
           <StatCard label="IA Approuvés" value={statsData.diagnosticsApprouves} icon={CheckCircle} accent="var(--sp-success)" bgIcon="#d1fae5" colorIcon="var(--sp-success)" />
           <StatCard label="IA Rejetés" value={statsData.diagnosticsRejetes} icon={UserX} accent="var(--sp-danger)" bgIcon="#fee2e2" colorIcon="var(--sp-danger)" />
-          <StatCard label="Taux d'approbation" value={statsData.tauxApprobation} icon={TrendingUp} accent="#F59E0B" bgIcon="#fef3c7" colorIcon="#D97706" />
+          <StatCard label="Taux d'approbation" value={Math.round(statsData.tauxApprobation)} icon={TrendingUp} accent="#F59E0B" bgIcon="#fef3c7" colorIcon="#D97706" />
       </div>
 
-      <div className="sp-dashboard-main-grid sp-fade-in">
+      {/* Première ligne : Système IA et Vue d'ensemble */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }} className="sp-fade-in">
+          {/* Statut du système IA */}
+          <div className="sp-card">
+              <div className="sp-card-header">
+                  <div className="sp-card-title">
+                      <Brain size={20} />
+                      Système IA
+                  </div>
+                  <span className={`sp-badge ${modelInfo?.loaded ? 'available' : 'attente'}`} style={{fontSize: '10px'}}>
+                      {modelInfo?.loaded ? 'Actif' : 'Inactif'}
+                  </span>
+              </div>
+              <div style={{padding: '20px'}}>
+                  <div style={{marginBottom: '16px'}}>
+                      <div style={{fontSize: '12px', color: '#6B7280', marginBottom: '4px'}}>Modèle chargé</div>
+                      <div style={{fontSize: '16px', fontWeight: 600, color: modelInfo?.loaded ? '#10B981' : '#EF4444'}}>
+                          {modelInfo?.loaded ? 'Oui' : 'Non'}
+                      </div>
+                  </div>
+                  <div style={{marginBottom: '16px'}}>
+                      <div style={{fontSize: '12px', color: '#6B7280', marginBottom: '4px'}}>Précision du modèle</div>
+                      <div className="sp-number sp-number-sm" style={{color: '#4F46E5'}}>
+                          {stats.model_accuracy ? `${(stats.model_accuracy * 100).toFixed(1)}%` : '94.6%'}
+                      </div>
+                  </div>
+                  <div>
+                      <div style={{fontSize: '12px', color: '#6B7280', marginBottom: '4px'}}>Maladies détectables</div>
+                      <div className="sp-number sp-number-sm" style={{color: '#8B5CF6'}}>
+                          121
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          {/* Graphique des données */}
+          <div className="sp-card" style={{backgroundColor: '#242424', border: 'none'}}>
+              <div className="sp-card-header" style={{borderBottom: '1px solid #333'}}>
+                  <div className="sp-card-title" style={{color: '#fff'}}>
+                      <PieChart size={20} style={{color: '#60a5fa'}} />
+                      Vue d'ensemble
+                  </div>
+              </div>
+              <div style={{padding: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+                  <div style={{width: '100%', height: '320px', position: 'relative'}}>
+                      <Doughnut data={chartData} options={chartOptions} />
+                      <div style={{position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', pointerEvents: 'none'}}>
+                          <CenteredCounter value={statsData.totalConsultations} />
+                          <div style={{fontSize: '14px', color: '#64748B', fontFamily: "'DM Sans', sans-serif", marginTop: '4px'}}>
+                              Consultations
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+
+      {/* Deuxième ligne : Personnel Médical et Consultations récentes */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }} className="sp-fade-in">
           {/* Personnel disponible */}
           <div className="sp-card">
               <div className="sp-card-header">
@@ -345,61 +403,6 @@ const Dashboard = () => {
                   )}
               </div>
           </div>
-
-          {/* Statut du système IA */}
-          <div className="sp-card">
-              <div className="sp-card-header">
-                  <div className="sp-card-title">
-                      <Brain size={20} />
-                      Système IA
-                  </div>
-                  <span className={`sp-badge ${modelInfo?.loaded ? 'available' : 'attente'}`} style={{fontSize: '10px'}}>
-                      {modelInfo?.loaded ? 'Actif' : 'Inactif'}
-                  </span>
-              </div>
-              <div style={{padding: '20px'}}>
-                  <div style={{marginBottom: '16px'}}>
-                      <div style={{fontSize: '12px', color: '#6B7280', marginBottom: '4px'}}>Modèle chargé</div>
-                      <div style={{fontSize: '16px', fontWeight: 600, color: modelInfo?.loaded ? '#10B981' : '#EF4444'}}>
-                          {modelInfo?.loaded ? 'Oui' : 'Non'}
-                      </div>
-                  </div>
-                  <div style={{marginBottom: '16px'}}>
-                      <div style={{fontSize: '12px', color: '#6B7280', marginBottom: '4px'}}>Précision du modèle</div>
-                      <div className="sp-number sp-number-sm" style={{color: '#4F46E5'}}>
-                          {stats.model_accuracy ? `${(stats.model_accuracy * 100).toFixed(1)}%` : '94.6%'}
-                      </div>
-                  </div>
-                  <div>
-                      <div style={{fontSize: '12px', color: '#6B7280', marginBottom: '4px'}}>Maladies détectables</div>
-                      <div className="sp-number sp-number-sm" style={{color: '#8B5CF6'}}>
-                          121
-                      </div>
-                  </div>
-              </div>
-          </div>
-
-          {/* Graphique des données */}
-          <div className="sp-card" style={{backgroundColor: '#242424', border: 'none'}}>
-              <div className="sp-card-header" style={{borderBottom: '1px solid #333'}}>
-                  <div className="sp-card-title" style={{color: '#fff'}}>
-                      <PieChart size={20} style={{color: '#60a5fa'}} />
-                      Vue d'ensemble
-                  </div>
-              </div>
-              <div style={{padding: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-                  <div style={{width: '100%', height: '320px', position: 'relative'}}>
-                      <Doughnut data={chartData} options={chartOptions} />
-                      <div style={{position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', pointerEvents: 'none'}}>
-                          <CenteredCounter value={statsData.totalConsultations} />
-                          <div style={{fontSize: '14px', color: '#64748B', fontFamily: "'DM Sans', sans-serif", marginTop: '4px'}}>
-                              Consultations
-                          </div>
-                      </div>
-                  </div>
-              </div>
-          </div>
-
       </div>
     </>
   );

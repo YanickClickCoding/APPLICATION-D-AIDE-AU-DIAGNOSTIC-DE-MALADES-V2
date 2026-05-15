@@ -7,8 +7,13 @@ from typing import List
 from uuid import UUID
 
 from ..database import get_db
-from ..models import Consultation, Patient, Symptome, SignesVitaux
-from ..models.diagnostic import Diagnostic
+from ..models import (
+    Consultation, Patient, Symptome, SignesVitaux,
+    AnalyseIA, Diagnostic, Examen, Traitement, Ordonnance, Medicament, Suivi
+)
+from ..models.prediction_history import PredictionHistory
+from ..models.prescription import Prescription
+from ..models.feedback import DoctorFeedback
 from ..schemas.consultation_schema import ConsultationCreate, ConsultationResponse
 
 router = APIRouter(prefix="/consultations", tags=["Consultations"])
@@ -376,26 +381,41 @@ def init_consultation(data: dict, db: Session = Depends(get_db)):
     patient_data = data.get('patient', {})
     motif = data.get('motif', '')
     medecin_id = data.get('medecin_id') or None
+    patient_id = data.get('patient_id')  # ID du patient existant (si fourni)
 
-    patient_email = (patient_data.get('email') or '').strip()
     patient = None
-    if patient_email:
-        patient = db.query(Patient).filter(Patient.email == patient_email).first()
-    if not patient:
-        dn = patient_data.get('date_naissance')
-        patient = Patient(
-            nom=patient_data.get('nom', ''),
-            prenoms=patient_data.get('prenoms', ''),
-            date_naissance=datetime.strptime(dn, '%Y-%m-%d').date() if dn else None,
-            sexe=patient_data.get('sexe', 'M'),
-            telephone=patient_data.get('telephone') or None,
-            email=patient_email or None,
-            groupe_sanguin=patient_data.get('groupe_sanguin') or None,
-        )
-        db.add(patient)
-        db.flush()
+    
+    # Si patient_id est fourni, utiliser le patient existant
+    if patient_id:
+        patient = db.query(Patient).filter(Patient.patient_id == patient_id).first()
+        if not patient:
+            raise HTTPException(status_code=404, detail=f"Patient avec ID {patient_id} introuvable")
+    else:
+        # Sinon, chercher par email ou créer un nouveau patient
+        patient_email = (patient_data.get('email') or '').strip()
+        if patient_email:
+            patient = db.query(Patient).filter(Patient.email == patient_email).first()
+        
+        if not patient:
+            from datetime import date as date_type
+            dn = patient_data.get('date_naissance')
+            if dn:
+                parsed_dn = datetime.strptime(dn, '%Y-%m-%d').date()
+            else:
+                parsed_dn = date_type(1900, 1, 1)  # date inconnue — sera complétée par l'infirmier
+            patient = Patient(
+                nom=patient_data.get('nom', ''),
+                prenoms=patient_data.get('prenoms', ''),
+                date_naissance=parsed_dn,
+                sexe=patient_data.get('sexe', 'M'),
+                telephone=patient_data.get('telephone') or None,
+                email=patient_email or None,
+                groupe_sanguin=patient_data.get('groupe_sanguin') or None,
+            )
+            db.add(patient)
+            db.flush()
 
-    nom_patient = f"{patient_data.get('prenoms', '')} {patient_data.get('nom', '')}".strip()
+    nom_patient = f"{patient.prenoms} {patient.nom}".strip()
     db_consultation = Consultation(
         patient_id=patient.patient_id,
         nom_patient=nom_patient,
@@ -527,11 +547,44 @@ def update_consultation(consultation_id: int, data: dict, db: Session = Depends(
 @router.delete("/{consultation_id}")
 def delete_consultation(consultation_id: int, db: Session = Depends(get_db)):
     """
-    Supprime définitivement une consultation et ses données liées.
+    Supprime définitivement une consultation et toutes ses données liées (cascade manuelle — MyISAM).
+    Ordre : medicaments → ordonnances → traitements → diagnostics → analyses_ia
+            → examens → signes_vitaux → symptomes → suivis
+            → prediction_history → prescriptions → doctor_feedback → consultation
     """
     c = db.query(Consultation).filter(Consultation.consultation_id == consultation_id).first()
     if not c:
         raise HTTPException(status_code=404, detail="Consultation non trouvée")
+
+    # 1. Récupérer les IDs des diagnostics pour remonter la chaîne traitement→ordonnance→médicament
+    diag_ids = [d.diagnostic_id for d in db.query(Diagnostic.diagnostic_id).filter(
+        Diagnostic.consultation_id == consultation_id).all()]
+
+    if diag_ids:
+        trait_ids = [t.traitement_id for t in db.query(Traitement.traitement_id).filter(
+            Traitement.diagnostic_id.in_(diag_ids)).all()]
+
+        if trait_ids:
+            ord_ids = [o.ordonnance_id for o in db.query(Ordonnance.ordonnance_id).filter(
+                Ordonnance.traitement_id.in_(trait_ids)).all()]
+
+            if ord_ids:
+                db.query(Medicament).filter(Medicament.ordonnance_id.in_(ord_ids)).delete(synchronize_session=False)
+            db.query(Ordonnance).filter(Ordonnance.traitement_id.in_(trait_ids)).delete(synchronize_session=False)
+        db.query(Traitement).filter(Traitement.diagnostic_id.in_(diag_ids)).delete(synchronize_session=False)
+
+    # 2. Supprimer les tables directement liées à consultation_id
+    db.query(Diagnostic).filter(Diagnostic.consultation_id == consultation_id).delete(synchronize_session=False)
+    db.query(AnalyseIA).filter(AnalyseIA.consultation_id == consultation_id).delete(synchronize_session=False)
+    db.query(Examen).filter(Examen.consultation_id == consultation_id).delete(synchronize_session=False)
+    db.query(SignesVitaux).filter(SignesVitaux.consultation_id == consultation_id).delete(synchronize_session=False)
+    db.query(Symptome).filter(Symptome.consultation_id == consultation_id).delete(synchronize_session=False)
+    db.query(Suivi).filter(Suivi.consultation_id == consultation_id).delete(synchronize_session=False)
+    db.query(PredictionHistory).filter(PredictionHistory.consultation_id == consultation_id).delete(synchronize_session=False)
+    db.query(Prescription).filter(Prescription.consultation_id == consultation_id).delete(synchronize_session=False)
+    db.query(DoctorFeedback).filter(DoctorFeedback.consultation_id == consultation_id).delete(synchronize_session=False)
+
+    # 3. Supprimer la consultation elle-même
     db.delete(c)
     db.commit()
     return {"success": True}

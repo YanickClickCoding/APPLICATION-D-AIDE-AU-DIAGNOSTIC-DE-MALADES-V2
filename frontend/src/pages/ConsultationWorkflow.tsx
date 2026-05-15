@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { registerNavigationGuard, unregisterNavigationGuard } from '../utils/navigationGuard';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -7,7 +8,7 @@ import {
   ArrowRight, ArrowLeft, X, AlertCircle, Thermometer,
   Heart, Wind, Droplet, Weight, Ruler, FlaskConical,
   Pill, Calendar, Plus, Lightbulb, RefreshCw, ClipboardList,
-  UserCheck, Send, Search
+  UserCheck, Send, Search, UserX
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -43,6 +44,17 @@ interface MedicamentOrdonnance {
 }
 interface SuiviData {
   date_prochain_rdv: string; instructions_patient: string; notes_medecin: string;
+}
+interface PatientSearchResult {
+  patient_id: number;
+  nom: string;
+  prenoms: string;
+  sexe: string;
+  date_naissance?: string;
+  derniere_consultation_id?: number;
+  derniere_consultation_statut?: string;
+  derniere_consultation_date?: string;
+  consultation_en_attente_id?: number;
 }
 
 // ─── Symptom autocomplete list ────────────────────────────────────────────────
@@ -255,18 +267,17 @@ function suggestExams(predictions: Prediction[]): Examen[] {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-const TOTAL = 9;
+const TOTAL = 8;
 
 const steps = [
-  { num: 1, title: 'Patient',       icon: User,          role: 'Accueil' },
-  { num: 2, title: 'Symptômes',     icon: Activity,      role: 'Infirmier' },
-  { num: 3, title: 'Signes Vitaux', icon: Stethoscope,   role: 'Infirmier' },
-  { num: 4, title: 'Analyse IA',    icon: Brain,         role: 'IA',      special: true },
-  { num: 5, title: 'Examens',       icon: FlaskConical,  role: 'Médecin' },
-  { num: 6, title: 'Diagnostic IA', icon: Brain,         role: 'IA',      special: true },
-  { num: 7, title: 'Validation',    icon: CheckCircle,   role: 'Médecin' },
-  { num: 8, title: 'Ordonnance',    icon: Pill,          role: 'Médecin' },
-  { num: 9, title: 'Suivi',         icon: Calendar,      role: 'Médecin' },
+  { num: 1, title: 'Patient',            icon: User,          role: 'Accueil' },
+  { num: 2, title: 'Symptômes & Vitaux', icon: Activity,      role: 'Infirmier' },
+  { num: 3, title: 'Analyse IA',         icon: Brain,         role: 'IA',      special: true },
+  { num: 4, title: 'Examens',            icon: FlaskConical,  role: 'Médecin' },
+  { num: 5, title: 'Diagnostic IA',      icon: Brain,         role: 'IA',      special: true },
+  { num: 6, title: 'Validation',         icon: CheckCircle,   role: 'Médecin' },
+  { num: 7, title: 'Ordonnance',         icon: Pill,          role: 'Médecin' },
+  { num: 8, title: 'Suivi',             icon: Calendar,      role: 'Médecin' },
 ];
 
 const roleBadge = (role: string, special?: boolean) => (
@@ -298,15 +309,50 @@ export default function ConsultationWorkflow() {
   const [searchParams] = useSearchParams();
 
   const reprendreId = searchParams.get('reprendre');
+  const directPatientId = searchParams.get('patientId'); // Nouveau: patient depuis dossier
   const isInfirmier = user?.role === 'infirmier';
   const isAdmin = user?.role === 'admin';
-  const isReprendre = !!reprendreId && !isInfirmier && !isAdmin;
+  const isMedecin = user?.role === 'medecin';
 
-  const [step, setStep] = useState(1);
+  // doctorMode: 'reprendre' = patient trouvé avec consultation en attente
+  //             'nouveau'   = patient introuvable ou sans consultation en attente
+  type DoctorMode = 'reprendre' | 'nouveau';
+  const [doctorPhase, setDoctorPhase] = useState<'search' | 'workflow'>(
+    isMedecin && !reprendreId && !directPatientId ? 'search' : 'workflow'
+  );
+  const [doctorMode, setDoctorMode] = useState<DoctorMode | null>(
+    reprendreId ? 'reprendre' : directPatientId ? 'nouveau' : null
+  );
+
+  // Consultation active (peut venir de l'URL ou de la recherche)
+  const [activeConsultationId, setActiveConsultationId] = useState<number | null>(
+    reprendreId ? parseInt(reprendreId) : null
+  );
+
+  const isReprendre = doctorMode === 'reprendre';
+
+  // Flag pour éviter l'exécution multiple du useEffect de chargement patient
+  const patientLoadedRef = useRef(false);
+
+  // Recherche patient (médecin)
+  const [patientSearchQuery, setPatientSearchQuery] = useState('');
+  const [patientSearchResults, setPatientSearchResults] = useState<PatientSearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [selectLoading, setSelectLoading] = useState(false);
+
+
+  const [manualAge, setManualAge] = useState<number | null>(null);
+
+  // Quick-start : champs nom/prénoms éditables (découpe intelligente)
+  const [quickStartNom, setQuickStartNom] = useState('');
+  const [quickStartPrenoms, setQuickStartPrenoms] = useState('');
+
+  const [step, setStep] = useState(reprendreId ? 0 : 1);
   const [loading, setLoading] = useState(false);
   const [draftConsultationId, setDraftConsultationId] = useState<number | null>(null);
 
-  // État infirmier
+  // État infirmier/admin
   const [medecinId, setMedecinId] = useState<number | null>(null);
   const [medecinSearch, setMedecinSearch] = useState('');
   const [medecins, setMedecins] = useState<{ id: number; nom: string; prenoms: string; specialite?: string }[]>([]);
@@ -334,6 +380,10 @@ export default function ConsultationWorkflow() {
   const [ordonnance, setOrdonnance] = useState<MedicamentOrdonnance[]>([]);
   const [suivi, setSuivi] = useState<SuiviData>({ date_prochain_rdv: '', instructions_patient: '', notes_medecin: '' });
 
+  // Navigation guard
+  const [leaveModalOpen, setLeaveModalOpen] = useState(false);
+  const [pendingNavTo, setPendingNavTo] = useState<string | number | null>(null);
+
   const filteredMedecins = medecins.filter(m => {
     const term = medecinSearch.toLowerCase();
     return (m.nom.toLowerCase().includes(term) || m.prenoms.toLowerCase().includes(term) || (m.specialite || '').toLowerCase().includes(term));
@@ -341,10 +391,27 @@ export default function ConsultationWorkflow() {
 
   // ── helpers ────────────────────────────────────────────────────────────────
 
+  const splitNameSmart = (query: string): { nom: string; prenoms: string } => {
+    const parts = query.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return { nom: '', prenoms: '' };
+    // Convention : premier mot = nom de famille, le reste = prénoms
+    return { nom: parts[0].toUpperCase(), prenoms: parts.slice(1).join(' ') };
+  };
+
+  const isDirty = doctorPhase === 'workflow' && !infirmierSubmitted;
+
+  const safeNavigate = (to: string) => {
+    if (isDirty) { setPendingNavTo(to); setLeaveModalOpen(true); }
+    else navigate(to);
+  };
+
+  const isQuickStart = !patient.date_naissance || patient.date_naissance === '';
+
   const buildPayload = (withExams: boolean) => {
-    const age = patient.date_naissance
+    const computedAge = patient.date_naissance
       ? Math.floor((Date.now() - new Date(patient.date_naissance).getTime()) / (365.25 * 24 * 3600 * 1000))
-      : 40;
+      : null;
+    const age = manualAge ?? computedAge ?? 40;
     const sevMap: Record<string, string> = { 'Légère': 'LEGER', 'Modérée': 'MODERE', 'Sévère': 'SEVERE' };
     const sevOrd: Record<string, number> = { 'Légère': 1, 'Modérée': 2, 'Sévère': 3 };
     const maxSev = symptomes.length > 0
@@ -393,19 +460,85 @@ export default function ConsultationWorkflow() {
       .catch(() => {});
   }, [isInfirmier, isAdmin]);
 
-  // Médecin reprend une consultation existante
+  // Médecin : charger automatiquement le patient depuis le dossier (directPatientId)
   useEffect(() => {
-    if (!reprendreId || isInfirmier) return;
-    fetch(`http://localhost:8000/api/consultations/${reprendreId}/donnees-resume`)
+    if (!directPatientId || !isMedecin || patientLoadedRef.current) return;
+    
+    // Marquer comme chargé pour éviter les exécutions multiples
+    patientLoadedRef.current = true;
+    
+    const loadPatientAndCreateConsultation = async () => {
+      try {
+        setLoading(true);
+        // Charger les données du patient
+        const patientRes = await fetch(`http://localhost:8000/api/patients/${directPatientId}`);
+        if (!patientRes.ok) throw new Error('Patient non trouvé');
+        
+        const patientData = await patientRes.json();
+        
+        // Pré-remplir les données du patient
+        setPatient({
+          nom: patientData.nom,
+          prenoms: patientData.prenoms,
+          date_naissance: patientData.date_naissance || '',
+          sexe: (patientData.sexe as 'M' | 'F') || 'M',
+          telephone: patientData.telephone,
+          email: patientData.email,
+          groupe_sanguin: patientData.groupe_sanguin || ''
+        });
+        
+        // Créer une nouvelle consultation pour ce patient EXISTANT
+        const consultationRes = await fetch('http://localhost:8000/api/consultations/init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            patient_id: patientData.patient_id,  // IMPORTANT: Utiliser le patient existant
+            patient: {
+              nom: patientData.nom,
+              prenoms: patientData.prenoms,
+              date_naissance: patientData.date_naissance || '',
+              sexe: patientData.sexe || 'M'
+            },
+            motif: 'Consultation médicale',
+            medecin_id: user?.medecin_id
+          })
+        });
+        
+        if (!consultationRes.ok) throw new Error('Erreur création consultation');
+        
+        const consultationData = await consultationRes.json();
+        setActiveConsultationId(consultationData.consultation_id);
+        
+        // Aller directement à l'étape 2 (symptômes et signes vitaux)
+        setStep(2);
+        setDoctorPhase('workflow');
+        
+        showToast(`Nouvelle consultation créée pour ${patientData.prenoms} ${patientData.nom}`, 'success');
+      } catch (error) {
+        showToast('Erreur lors du chargement du patient', 'error');
+        navigate('/consultations');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadPatientAndCreateConsultation();
+  }, [directPatientId, isMedecin, user?.medecin_id]);
+
+  // Charger une consultation à reprendre (depuis URL ou depuis la recherche)
+  useEffect(() => {
+    if (!activeConsultationId) return;
+    // Ne pas charger si on vient de créer une consultation depuis directPatientId
+    if (directPatientId) return;
+    
+    fetch(`http://localhost:8000/api/consultations/${activeConsultationId}/donnees-resume`)
       .then(r => r.json())
       .then(d => {
-        // Vérification de sécurité : Seul le médecin affecté peut reprendre
-        if (user?.role === 'medecin' && user.medecin_id !== d.medecin_id) {
+        if (user?.role === 'medecin' && user.medecin_id && d.medecin_id && user.medecin_id !== d.medecin_id) {
           showToast("Désolé, vous n'êtes pas le médecin affecté à cette consultation.", 'error');
           navigate('/consultations');
           return;
         }
-        
         if (d.patient) setPatient(p => ({ ...p, ...d.patient }));
         if (d.motif) setMotif(d.motif);
         if (d.symptomes?.length) {
@@ -417,10 +550,153 @@ export default function ConsultationWorkflow() {
           setAnalysePreliminaire(d.analyse_preliminaire);
           setExamens(suggestExams(d.analyse_preliminaire.top_predictions || []));
         }
-        setStep(4);
+        if (isInfirmier || isAdmin) {
+          // Infirmier reprend son brouillon → symptômes/vitaux
+          setDraftConsultationId(activeConsultationId);
+          setStep(2);
+        } else {
+          // Médecin : reprend à l'étape la plus avancée enregistrée en base
+          setStep(d.analyse_preliminaire ? 4 : 3);
+        }
+        setDoctorPhase('workflow');
       })
       .catch(() => showToast('Impossible de charger la consultation', 'error'));
-  }, [reprendreId]);
+  }, [activeConsultationId]);
+
+  // ── Recherche patient (médecin) — auto-search avec debounce ──────────────
+  useEffect(() => {
+    const q = patientSearchQuery.trim();
+    if (!q) {
+      setPatientSearchResults([]);
+      setHasSearched(false);
+      setSearchLoading(false);
+      return;
+    }
+    setSearchLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`http://localhost:8000/api/patients/search?q=${encodeURIComponent(q)}`);
+        if (!res.ok) throw new Error();
+        const data: PatientSearchResult[] = await res.json();
+        
+        // Dédupliquer les résultats par patient_id (garder le premier de chaque patient)
+        const uniquePatients = data.reduce((acc: PatientSearchResult[], current) => {
+          const exists = acc.find(p => p.patient_id === current.patient_id);
+          if (!exists) {
+            acc.push(current);
+          }
+          return acc;
+        }, []);
+        
+        setPatientSearchResults(uniquePatients);
+        setHasSearched(true);
+      } catch {
+        setHasSearched(true);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 500);
+    return () => { clearTimeout(timer); setSearchLoading(false); };
+  }, [patientSearchQuery]);
+
+
+  // Découpe nom/prénoms automatique quand patient introuvable
+  useEffect(() => {
+    if (hasSearched && patientSearchResults.length === 0 && patientSearchQuery.trim()) {
+      const { nom, prenoms } = splitNameSmart(patientSearchQuery);
+      setQuickStartNom(nom);
+      setQuickStartPrenoms(prenoms);
+    }
+  }, [hasSearched, patientSearchResults.length, patientSearchQuery]);
+
+  // Garde de navigation — fermeture/actualisation navigateur + liens sidebar
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirty) { e.preventDefault(); e.returnValue = ''; }
+    };
+    window.addEventListener('beforeunload', handler);
+
+    if (isDirty) {
+      registerNavigationGuard((path) => {
+        setPendingNavTo(path);
+        setLeaveModalOpen(true);
+      });
+    } else {
+      unregisterNavigationGuard();
+    }
+
+    return () => {
+      window.removeEventListener('beforeunload', handler);
+      unregisterNavigationGuard();
+    };
+  }, [isDirty]);
+
+  // Médecin sélectionne un patient trouvé
+  const handleSelectPatient = async (result: PatientSearchResult) => {
+    setSelectLoading(true);
+    try {
+      if (result.consultation_en_attente_id) {
+        // Consultation préparée par infirmier → reprendre au step 4
+        setActiveConsultationId(result.consultation_en_attente_id);
+        setDraftConsultationId(result.consultation_en_attente_id);
+        setDoctorMode('reprendre');
+        // L'effect sur activeConsultationId va charger les données
+      } else {
+        // Patient connu mais pas de consultation en attente → nouveau dossier
+        setPatient({ nom: result.nom, prenoms: result.prenoms, date_naissance: result.date_naissance || '', sexe: (result.sexe as 'M' | 'F') || 'M', groupe_sanguin: '' });
+        const res = await fetch('http://localhost:8000/api/consultations/init', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            patient_id: result.patient_id,  // IMPORTANT: Envoyer le patient_id pour éviter les doublons
+            patient: { 
+              nom: result.nom, 
+              prenoms: result.prenoms, 
+              date_naissance: result.date_naissance || '', 
+              sexe: result.sexe || 'M' 
+            }, 
+            motif: 'Consultation médicale', 
+            medecin_id: user?.medecin_id 
+          }),
+        });
+        if (!res.ok) throw new Error('Erreur création consultation');
+        const data = await res.json();
+        setDraftConsultationId(data.consultation_id);
+        setDoctorMode('nouveau');
+        setStep(2);
+        setDoctorPhase('workflow');
+      }
+    } catch {
+      showToast('Erreur lors du chargement du dossier', 'error');
+    } finally {
+      setSelectLoading(false);
+    }
+  };
+
+  // Médecin démarre directement sans dossier trouvé — utilise les champs nom/prénoms saisis
+  const handleQuickStart = async () => {
+    const nom = quickStartNom.trim();
+    const prenoms = quickStartPrenoms.trim() || nom;
+    if (!nom) { showToast('Veuillez renseigner au moins le nom du patient', 'error'); return; }
+    setLoading(true);
+    try {
+      const res = await fetch('http://localhost:8000/api/consultations/init', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patient: { nom, prenoms, date_naissance: '', sexe: 'M' }, motif: 'Consultation médicale', medecin_id: user?.medecin_id }),
+      });
+      if (!res.ok) throw new Error('Erreur création consultation');
+      const data = await res.json();
+      setDraftConsultationId(data.consultation_id);
+      setPatient({ nom, prenoms, date_naissance: '', sexe: 'M', groupe_sanguin: '' });
+      setMotif('Consultation médicale');
+      setDoctorMode('nouveau');
+      setStep(2);
+      setDoctorPhase('workflow');
+    } catch {
+      showToast('Erreur lors de la création du dossier', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ── Step actions ───────────────────────────────────────────────────────────
 
@@ -428,6 +704,11 @@ export default function ConsultationWorkflow() {
   const handleNextStep = async () => {
     if (!patient.nom.trim() || !patient.prenoms.trim() || !patient.date_naissance || !motif.trim()) {
       showToast('Veuillez remplir les champs obligatoires (nom, prénoms, date de naissance, motif)', 'error');
+      return;
+    }
+    // Brouillon déjà créé (retour en arrière) → ne pas recréer un doublon
+    if (draftConsultationId) {
+      setStep(2);
       return;
     }
     setLoading(true);
@@ -457,8 +738,8 @@ export default function ConsultationWorkflow() {
       const suggestions = suggestExams(result.top_predictions);
       setExamens(suggestions);
       showToast('Analyse préliminaire effectuée — examens suggérés ci-dessous', 'success');
-      // On reste sur l'étape 4 pour visualiser les résultats avant de passer aux examens
-      // setStep(5);
+      // On reste sur l'étape 3 pour visualiser les résultats avant de passer aux examens
+      // setStep(4);
     } catch (e: any) { showToast(e.message || 'Erreur IA', 'error'); }
     finally { setLoading(false); }
   };
@@ -470,7 +751,7 @@ export default function ConsultationWorkflow() {
       setAnalyseFinale(result);
       setValidationDecision(null); setDiagnosticFinal(''); setDiagnosticCorrection('');
       showToast('Diagnostic IA final généré', 'success');
-      setStep(7);
+      setStep(6);
     } catch (e: any) { showToast(e.message || 'Erreur IA', 'error'); }
     finally { setLoading(false); }
   };
@@ -516,12 +797,12 @@ export default function ConsultationWorkflow() {
     finally { setLoading(false); }
   };
 
-  // Médecin finalise une consultation reprise (étapes 5-9)
+  // Médecin finalise une consultation reprise (étapes 4-9)
   const handleSubmitComplet = async () => {
     setLoading(true);
     try {
       const finalDiag = validationDecision === 'rejete' ? diagnosticCorrection : diagnosticFinal;
-      const res = await fetch(`http://localhost:8000/api/consultations/${reprendreId}/workflow-complet`, {
+      const res = await fetch(`http://localhost:8000/api/consultations/${activeConsultationId}/workflow-complet`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ examens, analyse_finale: analyseFinale, diagnostic_final: finalDiag, validation_type: validationDecision, notes_validation: notesValidation, ordonnance, suivi }),
       });
@@ -564,7 +845,16 @@ export default function ConsultationWorkflow() {
   const editMed = (i: number, f: keyof MedicamentOrdonnance, v: any) => { const u = [...ordonnance]; u[i] = { ...u[i], [f]: v }; setOrdonnance(u); };
 
   // ── Stepper ────────────────────────────────────────────────────────────────
-  const progress = ((step - 1) / (TOTAL - 1)) * 100;
+  const visibleSteps = useMemo(() => {
+    if (isInfirmier || isAdmin) return steps.slice(0, 2);             // Patient, Symptômes & Vitaux
+    if (doctorMode === 'reprendre') return steps.slice(2);            // Analyse IA → Suivi
+    if (doctorMode === 'nouveau') return steps.slice(1);              // Symptômes & Vitaux → Suivi
+    return steps;
+  }, [isInfirmier, isAdmin, doctorMode]);
+
+  const stepMin = visibleSteps[0]?.num ?? 1;
+  const stepMax = visibleSteps[visibleSteps.length - 1]?.num ?? TOTAL;
+  const progress = stepMax > stepMin ? ((step - stepMin) / (stepMax - stepMin)) * 100 : 100;
 
   const AICard = ({ analyse, label }: { analyse: AnalyseIA; label: string }) => (
     <div style={{ padding: '20px', background: 'linear-gradient(135deg,#EEF2FF,#F5F3FF)', borderRadius: '12px', border: '2px solid #C7D2FE', marginBottom: '20px' }}>
@@ -597,7 +887,163 @@ export default function ConsultationWorkflow() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  // Écran de confirmation infirmier après soumission
+  // ── Écran de recherche patient (médecin) ───────────────────────────────────
+  if (isMedecin && doctorPhase === 'search') {
+    return (
+      <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+        <div className="sp-page-header sp-fade-in">
+          <div>
+            <h1 className="sp-page-title">Nouvelle Consultation — Médecin</h1>
+            <p className="sp-page-subtitle">Recherchez le dossier du patient préparé par l'infirmier</p>
+          </div>
+        </div>
+
+        <div className="sp-card sp-fade-in">
+          <div style={{ padding: '32px' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#1F2937', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Search size={20} style={{ color: '#4F46E5' }} /> Recherche du dossier patient
+            </h2>
+            <p style={{ color: '#6B7280', fontSize: '14px', marginBottom: '24px' }}>
+              Saisissez le nom ou le prénom du patient. Si le dossier a été préparé par l'infirmier, vous pourrez reprendre directement à l'étape Analyse IA.
+            </p>
+
+            {/* Barre de recherche */}
+            <div style={{ position: 'relative', marginBottom: '24px' }}>
+              {searchLoading
+                ? <RefreshCw size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#4F46E5', animation: 'spin 1s linear infinite' }} />
+                : <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }} />
+              }
+              <input
+                type="text"
+                className="sp-form-input"
+                style={{ paddingLeft: '38px', width: '100%' }}
+                placeholder="Rechercher avec nom prénom"
+                value={patientSearchQuery}
+                onChange={e => setPatientSearchQuery(e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            {/* Résultats */}
+            {hasSearched && patientSearchResults.length > 0 && (
+              <div style={{ marginBottom: '24px' }}>
+                <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '10px' }}>
+                  {patientSearchResults.length} patient(s) trouvé(s)
+                </p>
+                {patientSearchResults.map(r => {
+                  // Calculer l'âge si date de naissance disponible
+                  let age = null;
+                  if (r.date_naissance && !r.date_naissance.startsWith('1900-01-01')) {
+                    const today = new Date();
+                    const birth = new Date(r.date_naissance);
+                    age = today.getFullYear() - birth.getFullYear();
+                    const monthDiff = today.getMonth() - birth.getMonth();
+                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+                      age--;
+                    }
+                  }
+                  
+                  return (
+                  <div key={r.patient_id} style={{ padding: '16px', background: r.consultation_en_attente_id ? '#F0FDF4' : '#F9FAFB', borderRadius: '10px', border: `1px solid ${r.consultation_en_attente_id ? '#86EFAC' : '#E5E7EB'}`, marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <div style={{ fontWeight: 700, color: '#1F2937', fontSize: '15px' }}>
+                          {r.prenoms} {r.nom}
+                        </div>
+                        <span style={{ fontSize: '11px', color: '#6B7280', background: '#E5E7EB', padding: '2px 8px', borderRadius: '6px', fontWeight: 600 }}>
+                          ID #{r.patient_id.toString().padStart(4, '0')}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                        {age !== null ? (
+                          <span>{age} ans ({r.date_naissance})</span>
+                        ) : (
+                          <span>Date de naissance non renseignée</span>
+                        )}
+                        <span>• {r.sexe === 'M' ? '♂ Masculin' : '♀ Féminin'}</span>
+                      </div>
+                      {r.consultation_en_attente_id ? (
+                        <div style={{ fontSize: '12px', color: '#059669', marginTop: '4px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <CheckCircle size={12} /> Dossier préparé par l'infirmier — Prêt pour l'analyse IA
+                        </div>
+                      ) : r.derniere_consultation_id ? (
+                        <div style={{ fontSize: '12px', color: '#D97706', marginTop: '4px' }}>
+                          Dernière consultation : {r.derniere_consultation_statut} · {r.derniere_consultation_date?.slice(0, 10)}
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '4px' }}>Aucune consultation antérieure</div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleSelectPatient(r)}
+                      disabled={selectLoading}
+                      className={`sp-btn ${r.consultation_en_attente_id ? 'sp-btn-success' : 'sp-btn-primary'}`}
+                      style={{ minWidth: '130px' }}
+                    >
+                      {selectLoading ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> : r.consultation_en_attente_id ? <><Brain size={14} /> Analyse IA</> : <><ArrowRight size={14} /> Nouvelle consult.</>}
+                    </button>
+                  </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Patient introuvable — mini-formulaire avec découpe intelligente */}
+            {hasSearched && patientSearchResults.length === 0 && (
+              <div style={{ padding: '20px', background: '#FFF7ED', borderRadius: '10px', border: '1px solid #FED7AA', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                  <UserX size={20} style={{ color: '#EA580C' }} />
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#9A3412', fontSize: '15px' }}>Patient introuvable</div>
+                    <div style={{ fontSize: '13px', color: '#C2410C' }}>
+                      Aucun dossier pour « {patientSearchQuery} ». Vérifiez et corrigez le nom/prénom ci-dessous, puis démarrez la consultation.
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                  <div className="sp-form-group" style={{ margin: 0 }}>
+                    <label className="sp-form-label" style={{ color: '#92400E', fontWeight: 700 }}>Nom de famille <span style={{ color: '#EF4444' }}>*</span></label>
+                    <input
+                      type="text"
+                      className="sp-form-input"
+                      value={quickStartNom}
+                      onChange={e => setQuickStartNom(e.target.value)}
+                      placeholder="DUPONT"
+                      style={{ textTransform: 'uppercase' }}
+                    />
+                  </div>
+                  <div className="sp-form-group" style={{ margin: 0 }}>
+                    <label className="sp-form-label" style={{ color: '#92400E', fontWeight: 700 }}>Prénoms</label>
+                    <input
+                      type="text"
+                      className="sp-form-input"
+                      value={quickStartPrenoms}
+                      onChange={e => setQuickStartPrenoms(e.target.value)}
+                      placeholder="Jean"
+                    />
+                  </div>
+                </div>
+                <button onClick={handleQuickStart} disabled={loading || !quickStartNom.trim()} className="sp-btn sp-btn-outline" style={{ color: '#EA580C', borderColor: '#EA580C', opacity: !quickStartNom.trim() ? 0.5 : 1 }}>
+                  {loading
+                    ? <><RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> Création...</>
+                    : <><Plus size={15} /> Démarrer la consultation</>}
+                </button>
+              </div>
+            )}
+
+            {/* Lien retour */}
+            <div style={{ borderTop: '1px solid #E5E7EB', paddingTop: '16px', textAlign: 'center' }}>
+              <button onClick={() => navigate('/consultations')} className="sp-btn sp-btn-outline" style={{ fontSize: '13px' }}>
+                <ArrowLeft size={14} /> Retour aux consultations
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Écran de confirmation infirmier après soumission ────────────────────────
   if (infirmierSubmitted) {
     return (
       <div style={{ maxWidth: '600px', margin: '60px auto' }}>
@@ -611,7 +1057,7 @@ export default function ConsultationWorkflow() {
               Les données ont été enregistrées et le médecin assigné a été notifié.
             </p>
             <p style={{ color: '#9CA3AF', marginBottom: '36px', fontSize: '13px' }}>
-              Le médecin pourra continuer à partir de l'étape {isAdmin || isInfirmier ? 'Examens' : 'Symptômes'} pour finaliser le diagnostic.
+              Le médecin pourra continuer directement à partir de l'Analyse IA pour finaliser le diagnostic.
             </p>
             <button onClick={() => navigate('/consultations')} className="sp-btn sp-btn-primary">
               Retour aux consultations
@@ -623,16 +1069,17 @@ export default function ConsultationWorkflow() {
   }
 
   return (
+    <>
     <div style={{ maxWidth: '900px', margin: '0 auto' }}>
       <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
 
       <div className="sp-page-header sp-fade-in">
         <div>
           <h1 className="sp-page-title">
-            {isReprendre ? `Continuer la consultation #${reprendreId}` : 'Nouvelle Consultation'}
+            {isReprendre ? `Continuer la consultation` : 'Nouvelle Consultation'}
           </h1>
           <p className="sp-page-subtitle">
-            {isAdmin || isInfirmier ? 'Saisie initiale · Étapes 1–3' : `Workflow assisté par IA · Étape ${step}/${TOTAL}`}
+            {(isAdmin || isInfirmier) ? 'Saisie initiale · Étapes 1–2' : isMedecin ? `Workflow médecin assisté par IA · Étape ${step - stepMin + 1}/${visibleSteps.length}` : `Workflow assisté par IA · Étape ${step}/${TOTAL}`}
           </p>
         </div>
       </div>
@@ -644,7 +1091,7 @@ export default function ConsultationWorkflow() {
             <div style={{ height: '100%', background: 'linear-gradient(90deg,#4F46E5,#7C3AED)', width: `${progress}%`, transition: 'width 0.4s ease' }} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
-            {steps.map(s => {
+            {visibleSteps.map(s => {
               const Icon = s.icon;
               const done = step > s.num;
               const active = step === s.num;
@@ -665,8 +1112,16 @@ export default function ConsultationWorkflow() {
       <div className="sp-card sp-fade-in">
         <div style={{ padding: '32px' }}>
 
+          {/* Chargement en cours (reprendre via URL, en attente de l'effect) */}
+          {step < stepMin && (
+            <div style={{ textAlign: 'center', padding: '60px 20px', color: '#6B7280' }}>
+              <RefreshCw size={32} style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+              <p>Chargement du dossier patient...</p>
+            </div>
+          )}
+
           {/* Étape 1 — Patient */}
-          {step === 1 && (
+          {step === 1 && step >= stepMin && (
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
                 <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1F2937' }}>Informations du Patient</h2>
@@ -751,9 +1206,14 @@ export default function ConsultationWorkflow() {
           {step === 2 && (
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1F2937' }}>Saisie des Symptômes</h2>
+                <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1F2937' }}>Symptômes & Signes Vitaux</h2>
                 {roleBadge('Infirmier')}
               </div>
+
+              {/* Symptômes */}
+              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#374151', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Activity size={15} style={{ color: '#4F46E5' }} /> Symptômes
+              </h3>
               {symptomes.map((s, i) => (
                 <div key={i} style={{ padding: '18px', background: '#F9FAFB', borderRadius: '12px', marginBottom: '12px', border: '1px solid #E5E7EB' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
@@ -763,12 +1223,12 @@ export default function ConsultationWorkflow() {
                   <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '12px' }}>
                     <div className="sp-form-group">
                       <label className="sp-form-label">Symptôme</label>
-                      <input 
-                        type="text" 
-                        className="sp-form-input" 
-                        value={s.nom} 
-                        onChange={e => editSymptome(i, 'nom', e.target.value)} 
-                        placeholder="Fièvre, Toux, Céphalées..." 
+                      <input
+                        type="text"
+                        className="sp-form-input"
+                        value={s.nom}
+                        onChange={e => editSymptome(i, 'nom', e.target.value)}
+                        placeholder="Fièvre, Toux, Céphalées..."
                         list="symptomes-datalist"
                         autoComplete="off"
                       />
@@ -795,19 +1255,14 @@ export default function ConsultationWorkflow() {
                   </div>
                 </div>
               ))}
-              <button type="button" onClick={addSymptome} className="sp-btn sp-btn-outline" style={{ width: '100%' }}>
+              <button type="button" onClick={addSymptome} className="sp-btn sp-btn-outline" style={{ width: '100%', marginBottom: '28px' }}>
                 <Plus size={16} /> Ajouter un symptôme
               </button>
-            </div>
-          )}
 
-          {/* Étape 3 — Signes Vitaux */}
-          {step === 3 && (
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1F2937' }}>Mesure des Signes Vitaux</h2>
-                {roleBadge('Infirmier')}
-              </div>
+              {/* Signes Vitaux */}
+              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#374151', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Stethoscope size={15} style={{ color: '#4F46E5' }} /> Signes Vitaux
+              </h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 {[
                   { label: 'Tension systolique (mmHg)', key: 'tension_systolique', icon: Heart, step: 0.1 },
@@ -840,8 +1295,8 @@ export default function ConsultationWorkflow() {
             </div>
           )}
 
-          {/* Étape 4 — Analyse IA Préliminaire */}
-          {step === 4 && (
+          {/* Étape 3 — Analyse IA Préliminaire */}
+          {step === 3 && (
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1F2937' }}>Analyse IA Préliminaire</h2>
@@ -850,6 +1305,34 @@ export default function ConsultationWorkflow() {
               <p style={{ color: '#6B7280', fontSize: '14px', marginBottom: '24px' }}>
                 L'IA analyse les symptômes et signes vitaux pour formuler des hypothèses diagnostiques et recommander les examens à réaliser.
               </p>
+
+              {/* Mini-formulaire âge/sexe pour consultation démarrée sans dossier complet */}
+              {isQuickStart && (
+                <div style={{ padding: '16px', background: '#FFF7ED', borderRadius: '10px', border: '1px solid #FED7AA', marginBottom: '20px', display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'flex-end' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', marginBottom: '4px' }}>
+                    <AlertCircle size={15} style={{ color: '#EA580C' }} />
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#9A3412' }}>Âge et sexe requis pour l'analyse IA</span>
+                    <span style={{ fontSize: '12px', color: '#C2410C' }}>— dossier patient non renseigné</span>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '4px' }}>Âge du patient *</label>
+                    <input
+                      type="number" min={0} max={120} className="sp-form-input"
+                      style={{ width: '110px', fontSize: '14px' }}
+                      placeholder="Ex : 35"
+                      value={manualAge ?? ''}
+                      onChange={e => setManualAge(e.target.value ? parseInt(e.target.value) : null)}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '4px' }}>Sexe *</label>
+                    <select className="sp-form-select" style={{ fontSize: '14px', width: '140px' }} value={patient.sexe} onChange={e => setPatient({ ...patient, sexe: e.target.value as 'M' | 'F' })}>
+                      <option value="M">♂ Masculin</option>
+                      <option value="F">♀ Féminin</option>
+                    </select>
+                  </div>
+                </div>
+              )}
 
               {/* Récap données saisies */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '24px' }}>
@@ -880,19 +1363,27 @@ export default function ConsultationWorkflow() {
                   <p style={{ color: '#6B7280', marginBottom: '24px', fontSize: '14px' }}>
                     L'IA va formuler des hypothèses diagnostiques et vous suggérer les examens les plus pertinents à réaliser.
                   </p>
-                  <button onClick={handleAnalysePreliminaire} disabled={loading || symptomes.filter(s => s.nom.trim()).length === 0} className="sp-btn sp-btn-primary" style={{ minWidth: '220px' }}>
+                  <button
+                    onClick={handleAnalysePreliminaire}
+                    disabled={loading || symptomes.filter(s => s.nom.trim()).length === 0 || (isQuickStart && !manualAge)}
+                    className="sp-btn sp-btn-primary"
+                    style={{ minWidth: '220px' }}
+                  >
                     {loading ? <><RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Analyse en cours...</> : <><Brain size={16} /> Lancer l'analyse préliminaire</>}
                   </button>
                   {symptomes.filter(s => s.nom.trim()).length === 0 && (
                     <p style={{ color: '#EF4444', fontSize: '12px', marginTop: '10px' }}>⚠ Veuillez saisir au moins un symptôme</p>
+                  )}
+                  {isQuickStart && !manualAge && (
+                    <p style={{ color: '#EA580C', fontSize: '12px', marginTop: '6px' }}>⚠ Veuillez renseigner l'âge du patient</p>
                   )}
                 </div>
               )}
             </div>
           )}
 
-          {/* Étape 5 — Examens */}
-          {step === 5 && (
+          {/* Étape 4 — Examens */}
+          {step === 4 && (
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1F2937' }}>Examens Complémentaires</h2>
@@ -1074,8 +1565,8 @@ export default function ConsultationWorkflow() {
             </div>
           )}
 
-          {/* Étape 6 — Diagnostic IA Final */}
-          {step === 6 && (
+          {/* Étape 5 — Diagnostic IA Final */}
+          {step === 5 && (
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1F2937' }}>Diagnostic IA Final</h2>
@@ -1087,7 +1578,7 @@ export default function ConsultationWorkflow() {
 
               {analysePreliminaire && (
                 <div style={{ padding: '14px 18px', background: '#F3F4F6', borderRadius: '8px', marginBottom: '20px', border: '1px solid #E5E7EB' }}>
-                  <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: 600, marginBottom: '6px' }}>HYPOTHÈSE PRÉLIMINAIRE (étape 4)</div>
+                  <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: 600, marginBottom: '6px' }}>HYPOTHÈSE PRÉLIMINAIRE (étape 3)</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ fontWeight: 600, color: '#374151' }}>{analysePreliminaire.maladie_predite}</span>
                     <span style={{ color: '#6B7280' }}>{(analysePreliminaire.confiance * 100).toFixed(1)}%</span>
@@ -1117,8 +1608,8 @@ export default function ConsultationWorkflow() {
             </div>
           )}
 
-          {/* Étape 7 — Validation */}
-          {step === 7 && (
+          {/* Étape 6 — Validation */}
+          {step === 6 && (
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1F2937' }}>Validation Médicale</h2>
@@ -1165,8 +1656,8 @@ export default function ConsultationWorkflow() {
             </div>
           )}
 
-          {/* Étape 8 — Ordonnance */}
-          {step === 8 && (
+          {/* Étape 7 — Ordonnance */}
+          {step === 7 && (
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1F2937' }}>Ordonnance & Traitement</h2>
@@ -1263,8 +1754,8 @@ export default function ConsultationWorkflow() {
             </div>
           )}
 
-          {/* Étape 9 — Suivi & Clôture */}
-          {step === 9 && (
+          {/* Étape 8 — Suivi & Clôture */}
+          {step === 8 && (
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                 <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1F2937' }}>Suivi & Clôture</h2>
@@ -1313,86 +1804,82 @@ export default function ConsultationWorkflow() {
 
           {/* ── Navigation ── */}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '36px', paddingTop: '20px', borderTop: '1px solid #E5E7EB' }}>
-            <button onClick={() => setStep(s => Math.max(1, s - 1))} disabled={step === 1} className="sp-btn sp-btn-outline" style={{ opacity: step === 1 ? 0.4 : 1 }}>
-              <ArrowLeft size={16} /> Précédent
+            {/* Précédent : limité par stepMin */}
+            <button
+              onClick={() => {
+                if (step <= stepMin && isMedecin) {
+                  if (reprendreId) { safeNavigate('/consultations'); } else { isDirty ? (setPendingNavTo('search'), setLeaveModalOpen(true)) : setDoctorPhase('search'); }
+                  return;
+                }
+                setStep(s => Math.max(stepMin, s - 1));
+              }}
+              disabled={step === stepMin && !isMedecin}
+              className="sp-btn sp-btn-outline"
+              style={{ opacity: step === stepMin && !isMedecin ? 0.4 : 1 }}
+            >
+              <ArrowLeft size={16} /> {step === stepMin && isMedecin ? (reprendreId ? 'Consultations' : 'Recherche') : 'Précédent'}
             </button>
 
-            {/* Étapes 1-2 : bouton Suivant pour tous */}
-            {step < 3 && (
-              <button
-                onClick={step === 1 ? handleNextStep : () => setStep(s => s + 1)}
-                disabled={step === 1 && loading}
-                className="sp-btn sp-btn-primary"
-                style={{ opacity: step === 1 && loading ? 0.7 : 1 }}
-              >
-                {step === 1 && loading
-                  ? <><RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Enregistrement...</>
-                  : <>Suivant <ArrowRight size={16} /></>}
+            {/* ── Étape 1 : Suivant pour infirmier/admin ou médecin nouveau ── */}
+            {step === 1 && (isInfirmier || isAdmin) && (
+              <button onClick={handleNextStep} disabled={loading} className="sp-btn sp-btn-primary" style={{ opacity: loading ? 0.7 : 1 }}>
+                {loading ? <><RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Enregistrement...</> : <>Suivant <ArrowRight size={16} /></>}
               </button>
             )}
 
-            {/* Étape 3 : infirmier soumet → médecin continue vers étape 4 */}
-            {step === 3 && isInfirmier && (
-              <button
-                onClick={handleSubmitInfirmier}
-                disabled={loading || !medecinId}
-                className="sp-btn sp-btn-success"
-                style={{ opacity: !medecinId ? 0.5 : 1 }}
-              >
-                {loading
-                  ? <><RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Envoi en cours...</>
-                  : <><Send size={16} /> Envoyer au médecin</>}
+            {/* ── Étape 2 : admin & infirmier → envoyer au médecin ── */}
+            {step === 2 && (isInfirmier || isAdmin) && (
+              <button onClick={handleSubmitInfirmier} disabled={loading || !medecinId} className="sp-btn sp-btn-success" style={{ opacity: !medecinId ? 0.5 : 1 }}>
+                {loading ? <><RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Envoi en cours...</> : <><Send size={16} /> Envoyer au médecin</>}
               </button>
             )}
-            {step === 3 && !isInfirmier && (
-              <button onClick={() => setStep(4)} className="sp-btn sp-btn-primary">
+
+            {/* ── Étape 2 : médecin nouveau patient → vers analyse IA ── */}
+            {step === 2 && isMedecin && doctorMode === 'nouveau' && (
+              <button onClick={() => setStep(3)} className="sp-btn sp-btn-primary">
                 Suivant <ArrowRight size={16} />
               </button>
             )}
 
-            {/* Étape 4 : après analyse IA préliminaire → médecin saisit les examens */}
-            {step === 4 && !analysePreliminaire && null}
-            {step === 4 && analysePreliminaire && (
-              <button onClick={() => setStep(5)} className="sp-btn sp-btn-primary">
+            {/* ── Étape 3 : Analyse IA préliminaire ── */}
+            {step === 3 && !analysePreliminaire && null}
+            {step === 3 && analysePreliminaire && (
+              <button onClick={() => setStep(4)} className="sp-btn sp-btn-primary">
                 Saisir les examens <ArrowRight size={16} />
               </button>
             )}
 
-            {/* Étape 5 → 6 */}
-            {step === 5 && (
-              <button onClick={() => setStep(6)} className="sp-btn sp-btn-primary">
+            {/* ── Étape 4 → 5 ── */}
+            {step === 4 && (
+              <button onClick={() => setStep(5)} className="sp-btn sp-btn-primary">
                 Lancer diagnostic final <ArrowRight size={16} />
               </button>
             )}
 
-            {/* Étape 6 : déclenchement IA finale */}
-            {step === 6 && !analyseFinale && null}
-            {step === 6 && analyseFinale && (
-              <button onClick={() => setStep(7)} className="sp-btn sp-btn-primary">
+            {/* ── Étape 5 : Diagnostic IA final ── */}
+            {step === 5 && !analyseFinale && null}
+            {step === 5 && analyseFinale && (
+              <button onClick={() => setStep(6)} className="sp-btn sp-btn-primary">
                 Valider le diagnostic <ArrowRight size={16} />
               </button>
             )}
 
-            {/* Étape 7 → 8 */}
-            {step === 7 && (
-              <button
-                onClick={() => setStep(8)}
-                disabled={!validationDecision || (validationDecision === 'rejete' && !diagnosticCorrection.trim())}
-                className="sp-btn sp-btn-primary"
-                style={{ opacity: !validationDecision || (validationDecision === 'rejete' && !diagnosticCorrection.trim()) ? 0.4 : 1 }}>
+            {/* ── Étape 6 → 7 ── */}
+            {step === 6 && (
+              <button onClick={() => setStep(7)} disabled={!validationDecision || (validationDecision === 'rejete' && !diagnosticCorrection.trim())} className="sp-btn sp-btn-primary" style={{ opacity: !validationDecision || (validationDecision === 'rejete' && !diagnosticCorrection.trim()) ? 0.4 : 1 }}>
                 Rédiger l'ordonnance <ArrowRight size={16} />
               </button>
             )}
 
-            {/* Étape 8 → 9 */}
-            {step === 8 && (
-              <button onClick={() => setStep(9)} className="sp-btn sp-btn-primary">
+            {/* ── Étape 7 → 8 ── */}
+            {step === 7 && (
+              <button onClick={() => setStep(8)} className="sp-btn sp-btn-primary">
                 Planifier le suivi <ArrowRight size={16} />
               </button>
             )}
 
-            {/* Étape 9 : soumission finale (reprendre = médecin complète, sinon workflow normal) */}
-            {step === 9 && (
+            {/* ── Étape 8 : soumission finale ── */}
+            {step === 8 && (
               <button onClick={isReprendre ? handleSubmitComplet : handleSubmit} disabled={loading} className="sp-btn sp-btn-success">
                 {loading ? <><RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Enregistrement...</> : <><CheckCircle size={16} /> Clôturer la consultation</>}
               </button>
@@ -1401,5 +1888,45 @@ export default function ConsultationWorkflow() {
         </div>
       </div>
     </div>
+
+    {/* ── Modal confirmation quitter ── */}
+    {leaveModalOpen && (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: '#fff', borderRadius: '16px', padding: '32px', maxWidth: '440px', width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <AlertCircle size={22} style={{ color: '#D97706' }} />
+            </div>
+            <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#1F2937', margin: 0 }}>Quitter la consultation ?</h3>
+          </div>
+          <p style={{ color: '#6B7280', fontSize: '14px', marginBottom: '24px', lineHeight: 1.6 }}>
+            Toutes les données non enregistrées (symptômes, signes vitaux, analyses en cours) seront perdues si vous quittez maintenant.
+          </p>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button
+              onClick={() => { setLeaveModalOpen(false); setPendingNavTo(null); }}
+              className="sp-btn sp-btn-outline"
+              style={{ flex: 1 }}
+            >
+              Rester sur la page
+            </button>
+            <button
+              onClick={() => {
+                setLeaveModalOpen(false);
+                if (pendingNavTo === 'search') { setDoctorPhase('search'); }
+                else if (pendingNavTo === -1) { navigate(-1); }
+                else if (pendingNavTo) { navigate(pendingNavTo as string); }
+                setPendingNavTo(null);
+              }}
+              className="sp-btn"
+              style={{ flex: 1, background: '#EF4444', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+            >
+              Quitter quand même
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
