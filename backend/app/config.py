@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     
     # Database
     DATABASE_URL: str
+    DB_NAME: str = ""
     
     # Security
     SECRET_KEY: str

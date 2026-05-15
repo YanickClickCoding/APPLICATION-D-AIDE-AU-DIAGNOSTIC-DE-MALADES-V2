@@ -287,19 +287,91 @@ export default function AdminSystem() {
       )}
 
       {!status && !loadingStatus && (
-        <div style={{ padding: 32, textAlign: 'center', background: '#FEF2F2', borderRadius: 12, color: '#991B1B', fontWeight: 600 }}>
-          <XCircle size={32} style={{ margin: '0 auto 8px' }} />
-          {fetchError === 'Impossible de se connecter au serveur. Vérifiez que le backend est démarré sur http://localhost:8000'
-            ? <>Serveur FastAPI injoignable — lancez-le avec :<br />
-               <code style={{ fontFamily: 'monospace', fontSize: 13, background: '#fff', padding: '4px 10px', borderRadius: 6, marginTop: 8, display: 'inline-block' }}>
-                 cd backend &amp;&amp; python start_server_auto.py
-               </code></>
-            : <>{fetchError || 'Erreur de connexion au backend'}<br />
-               <button onClick={() => { setLoadingStatus(true); fetchStatus(); }} style={{ marginTop: 12, padding: '8px 20px', borderRadius: 8, border: 'none', background: '#DC2626', color: 'white', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
-                 Réessayer
-               </button></>
-          }
-        </div>
+        <>
+          <div style={{ padding: 20, background: '#FEF2F2', borderRadius: 12, color: '#991B1B', fontWeight: 600, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <XCircle size={24} style={{ flexShrink: 0 }} />
+            <span style={{ flex: 1 }}>
+              {fetchError === 'Impossible de se connecter au serveur. Vérifiez que le backend est démarré sur http://localhost:8000'
+                ? <>Serveur FastAPI injoignable — lancez-le avec : <code style={{ fontFamily: 'monospace', fontSize: 13, background: '#fff', padding: '2px 8px', borderRadius: 4 }}>cd backend &amp;&amp; python start_server_auto.py</code></>
+                : fetchError || 'Erreur de connexion au backend'}
+            </span>
+            <button onClick={() => { setLoadingStatus(true); fetchStatus(); }} style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: '#DC2626', color: 'white', cursor: 'pointer', fontWeight: 600, fontSize: 13, flexShrink: 0 }}>
+              Réessayer
+            </button>
+          </div>
+
+          {/* Section entraînement accessible même sans connexion au status */}
+          <Card title="Entraîner le modèle ML" icon={Brain} accent="#7C3AED">
+            <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 16 }}>
+              Aucun modèle n'est chargé. Configurez les paramètres et lancez l'entraînement.
+            </p>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 12 }}>
+              <div>
+                <label style={{ fontSize: 11, color: '#6B7280', fontWeight: 600, display: 'block', marginBottom: 4 }}>Nombre d'arbres</label>
+                <input
+                  type="number" value={nEstimators} min={50} max={500} step={50}
+                  onChange={e => setNEstimators(+e.target.value)}
+                  style={{ width: 100, padding: '6px 10px', borderRadius: 6, border: '1px solid #D1D5DB', fontSize: 13 }}
+                  disabled={trainingRunning}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: '#6B7280', fontWeight: 600, display: 'block', marginBottom: 4 }}>Profondeur max</label>
+                <input
+                  type="number" value={maxDepth} min={5} max={60} step={5}
+                  onChange={e => setMaxDepth(+e.target.value)}
+                  style={{ width: 100, padding: '6px 10px', borderRadius: 6, border: '1px solid #D1D5DB', fontSize: 13 }}
+                  disabled={trainingRunning}
+                />
+              </div>
+              <button
+                onClick={startTraining}
+                disabled={trainingRunning || loadingTrain}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '9px 20px', borderRadius: 8, border: 'none',
+                  cursor: trainingRunning ? 'not-allowed' : 'pointer',
+                  background: trainingRunning ? '#E5E7EB' : 'linear-gradient(135deg,#7C3AED,#4F46E5)',
+                  color: trainingRunning ? '#9CA3AF' : 'white', fontWeight: 700, fontSize: 14,
+                  opacity: trainingRunning ? 0.7 : 1,
+                }}
+              >
+                {trainingRunning
+                  ? <><RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Entraînement en cours…</>
+                  : <><Play size={16} /> Entraîner le modèle</>
+                }
+              </button>
+            </div>
+
+            {training && training.status !== 'idle' && (
+              <div style={{
+                marginTop: 12, padding: 16, borderRadius: 10,
+                background: training.status === 'success' ? '#ECFDF5' : training.status === 'error' ? '#FEF2F2' : '#EEF2FF',
+                border: `1px solid ${training.status === 'success' ? '#6EE7B7' : training.status === 'error' ? '#FECACA' : '#C7D2FE'}`,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  {training.status === 'running' && <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite', color: '#4F46E5' }} />}
+                  {training.status === 'success' && <CheckCircle size={14} style={{ color: '#059669' }} />}
+                  {training.status === 'error' && <XCircle size={14} style={{ color: '#DC2626' }} />}
+                  <span style={{ fontSize: 13, fontWeight: 600, color: training.status === 'success' ? '#065F46' : training.status === 'error' ? '#991B1B' : '#3730A3' }}>
+                    {training.message}
+                  </span>
+                </div>
+                {training.status === 'running' && (
+                  <div style={{ overflow: 'hidden', borderRadius: 99, background: '#C7D2FE', height: 6 }}>
+                    <div style={{ height: '100%', width: '40%', background: '#4F46E5', animation: 'pulse 2s infinite', borderRadius: 99 }} />
+                  </div>
+                )}
+                {training.status === 'error' && <p style={{ fontSize: 12, color: '#991B1B', margin: 0 }}>{training.error}</p>}
+                {training.status === 'success' && (
+                  <p style={{ fontSize: 12, color: '#065F46', margin: '8px 0 0' }}>
+                    Entraînement terminé. Actualisez la page pour voir les détails complets.
+                  </p>
+                )}
+              </div>
+            )}
+          </Card>
+        </>
       )}
 
       {status && (

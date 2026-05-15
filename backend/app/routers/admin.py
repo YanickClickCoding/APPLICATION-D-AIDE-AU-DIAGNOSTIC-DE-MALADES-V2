@@ -129,7 +129,18 @@ class IAConfigUpdate(BaseModel):
 
 @router.get("/status")
 def get_system_status(admin: User = Depends(get_current_admin)):
-    model_info = model_manager.get_model_info()
+    try:
+        model_info = model_manager.get_model_info()
+    except Exception:
+        model_info = {
+            "loaded": False,
+            "version": None,
+            "metadata": None,
+            "n_features": 0,
+            "n_classes": 0,
+            "classes": [],
+            "normalization_loaded": False,
+        }
 
     resources: Dict = {}
     try:

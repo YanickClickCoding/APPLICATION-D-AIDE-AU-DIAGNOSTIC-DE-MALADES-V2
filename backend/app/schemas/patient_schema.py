@@ -26,6 +26,8 @@ class PatientUpdate(BaseModel):
     """Schema pour mettre à jour un patient"""
     nom: Optional[str] = Field(None, min_length=1, max_length=100)
     prenoms: Optional[str] = Field(None, min_length=1, max_length=150)
+    date_naissance: Optional[date] = None
+    sexe: Optional[str] = Field(None, pattern="^(M|F)$")
     telephone: Optional[str] = Field(None, max_length=20)
     email: Optional[str] = None
     adresse: Optional[str] = None
@@ -36,6 +38,9 @@ class PatientResponse(PatientBase):
     """Schema pour retourner un patient"""
     patient_id: int  # INT AUTO_INCREMENT
     created_at: datetime
-    
+    # Pas de min_length sur la réponse — la BDD peut contenir des valeurs vides
+    nom: str = Field(..., max_length=100)
+    prenoms: str = Field(..., max_length=150)
+
     class Config:
         from_attributes = True

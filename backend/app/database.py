@@ -2,13 +2,35 @@
 Database configuration and session management
 """
 from sqlalchemy import create_engine
+from sqlalchemy.engine import URL
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from .config import settings
 
+
+def _build_engine_url() -> str | URL:
+    """Build engine URL, using DB_NAME to handle database names with special characters."""
+    if settings.DB_NAME:
+        # Parse host/port/credentials from DATABASE_URL, override database name
+        base = settings.DATABASE_URL
+        # Extract driver, user, password, host, port from base URL
+        # Format: driver://user:password@host:port/...
+        from urllib.parse import urlparse
+        parsed = urlparse(base)
+        return URL.create(
+            drivername=parsed.scheme,
+            username=parsed.username or "root",
+            password=parsed.password or None,
+            host=parsed.hostname or "localhost",
+            port=parsed.port or 3306,
+            database=settings.DB_NAME,
+        )
+    return settings.DATABASE_URL
+
+
 # Create database engine
 engine = create_engine(
-    settings.DATABASE_URL,
+    _build_engine_url(),
     pool_pre_ping=True,
     echo=False
 )

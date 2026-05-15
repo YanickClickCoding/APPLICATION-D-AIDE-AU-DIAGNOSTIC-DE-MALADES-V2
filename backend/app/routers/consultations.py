@@ -395,7 +395,6 @@ def init_consultation(data: dict, db: Session = Depends(get_db)):
         patient_email = (patient_data.get('email') or '').strip()
         if patient_email:
             patient = db.query(Patient).filter(Patient.email == patient_email).first()
-        
         if not patient:
             from datetime import date as date_type
             dn = patient_data.get('date_naissance')

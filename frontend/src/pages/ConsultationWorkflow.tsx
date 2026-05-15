@@ -8,7 +8,7 @@ import {
   ArrowRight, ArrowLeft, X, AlertCircle, Thermometer,
   Heart, Wind, Droplet, Weight, Ruler, FlaskConical,
   Pill, Calendar, Plus, Lightbulb, RefreshCw, ClipboardList,
-  UserCheck, Send, Search, UserX
+  UserCheck, Send, Search, UserX, UserPlus
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -340,6 +340,7 @@ export default function ConsultationWorkflow() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [selectLoading, setSelectLoading] = useState(false);
+  const [forceNewPatient, setForceNewPatient] = useState(false);
 
 
   const [manualAge, setManualAge] = useState<number | null>(null);
@@ -570,8 +571,10 @@ export default function ConsultationWorkflow() {
       setPatientSearchResults([]);
       setHasSearched(false);
       setSearchLoading(false);
+      setForceNewPatient(false);
       return;
     }
+    setForceNewPatient(false);
     setSearchLoading(true);
     const timer = setTimeout(async () => {
       try {
@@ -600,14 +603,14 @@ export default function ConsultationWorkflow() {
   }, [patientSearchQuery]);
 
 
-  // Découpe nom/prénoms automatique quand patient introuvable
+  // Découpe nom/prénoms automatique quand patient introuvable ou création forcée
   useEffect(() => {
-    if (hasSearched && patientSearchResults.length === 0 && patientSearchQuery.trim()) {
+    if (hasSearched && (patientSearchResults.length === 0 || forceNewPatient) && patientSearchQuery.trim()) {
       const { nom, prenoms } = splitNameSmart(patientSearchQuery);
       setQuickStartNom(nom);
       setQuickStartPrenoms(prenoms);
     }
-  }, [hasSearched, patientSearchResults.length, patientSearchQuery]);
+  }, [hasSearched, patientSearchResults.length, patientSearchQuery, forceNewPatient]);
 
   // Garde de navigation — fermeture/actualisation navigateur + liens sidebar
   useEffect(() => {
@@ -985,24 +988,52 @@ export default function ConsultationWorkflow() {
                   </div>
                   );
                 })}
+
+                {/* Bouton homonyme — créer un nouveau patient malgré les résultats */}
+                {!forceNewPatient && (
+                  <button
+                    onClick={() => setForceNewPatient(true)}
+                    className="sp-btn sp-btn-ghost"
+                    style={{ width: '100%', justifyContent: 'center', fontSize: '13px', color: '#6B7280', border: '1px dashed #D1D5DB', borderRadius: '8px', padding: '10px' }}
+                  >
+                    <UserPlus size={14} style={{ marginRight: '6px' }} />
+                    Aucun de ces patients — Créer un nouveau dossier
+                  </button>
+                )}
               </div>
             )}
 
-            {/* Patient introuvable — mini-formulaire avec découpe intelligente */}
-            {hasSearched && patientSearchResults.length === 0 && (
-              <div style={{ padding: '20px', background: '#FFF7ED', borderRadius: '10px', border: '1px solid #FED7AA', marginBottom: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                  <UserX size={20} style={{ color: '#EA580C' }} />
-                  <div>
-                    <div style={{ fontWeight: 700, color: '#9A3412', fontSize: '15px' }}>Patient introuvable</div>
-                    <div style={{ fontSize: '13px', color: '#C2410C' }}>
-                      Aucun dossier pour « {patientSearchQuery} ». Vérifiez et corrigez le nom/prénom ci-dessous, puis démarrez la consultation.
+            {/* Patient introuvable ou création forcée — mini-formulaire avec découpe intelligente */}
+            {hasSearched && (patientSearchResults.length === 0 || forceNewPatient) && (
+              <div style={{ padding: '20px', background: forceNewPatient ? '#EFF6FF' : '#FFF7ED', borderRadius: '10px', border: `1px solid ${forceNewPatient ? '#BFDBFE' : '#FED7AA'}`, marginBottom: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <UserX size={20} style={{ color: forceNewPatient ? '#2563EB' : '#EA580C', flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontWeight: 700, color: forceNewPatient ? '#1E3A8A' : '#9A3412', fontSize: '15px' }}>
+                        {forceNewPatient ? 'Nouveau patient homonyme' : 'Patient introuvable'}
+                      </div>
+                      <div style={{ fontSize: '13px', color: forceNewPatient ? '#1D4ED8' : '#C2410C' }}>
+                        {forceNewPatient
+                          ? 'Vérifiez le nom/prénom ci-dessous puis créez un nouveau dossier.'
+                          : `Aucun dossier pour « ${patientSearchQuery} ». Vérifiez et corrigez le nom/prénom ci-dessous, puis démarrez la consultation.`}
+                      </div>
                     </div>
                   </div>
+                  {forceNewPatient && (
+                    <button
+                      onClick={() => setForceNewPatient(false)}
+                      className="sp-btn sp-btn-ghost sp-btn-sm"
+                      style={{ flexShrink: 0, fontSize: '12px', color: '#6B7280' }}
+                      title="Revenir aux résultats"
+                    >
+                      <X size={14} /> Annuler
+                    </button>
+                  )}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                   <div className="sp-form-group" style={{ margin: 0 }}>
-                    <label className="sp-form-label" style={{ color: '#92400E', fontWeight: 700 }}>Nom de famille <span style={{ color: '#EF4444' }}>*</span></label>
+                    <label className="sp-form-label" style={{ color: forceNewPatient ? '#1E40AF' : '#92400E', fontWeight: 700 }}>Nom de famille <span style={{ color: '#EF4444' }}>*</span></label>
                     <input
                       type="text"
                       className="sp-form-input"
@@ -1013,7 +1044,7 @@ export default function ConsultationWorkflow() {
                     />
                   </div>
                   <div className="sp-form-group" style={{ margin: 0 }}>
-                    <label className="sp-form-label" style={{ color: '#92400E', fontWeight: 700 }}>Prénoms</label>
+                    <label className="sp-form-label" style={{ color: forceNewPatient ? '#1E40AF' : '#92400E', fontWeight: 700 }}>Prénoms</label>
                     <input
                       type="text"
                       className="sp-form-input"
@@ -1023,7 +1054,7 @@ export default function ConsultationWorkflow() {
                     />
                   </div>
                 </div>
-                <button onClick={handleQuickStart} disabled={loading || !quickStartNom.trim()} className="sp-btn sp-btn-outline" style={{ color: '#EA580C', borderColor: '#EA580C', opacity: !quickStartNom.trim() ? 0.5 : 1 }}>
+                <button onClick={handleQuickStart} disabled={loading || !quickStartNom.trim()} className="sp-btn sp-btn-outline" style={{ color: forceNewPatient ? '#2563EB' : '#EA580C', borderColor: forceNewPatient ? '#2563EB' : '#EA580C', opacity: !quickStartNom.trim() ? 0.5 : 1 }}>
                   {loading
                     ? <><RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> Création...</>
                     : <><Plus size={15} /> Démarrer la consultation</>}

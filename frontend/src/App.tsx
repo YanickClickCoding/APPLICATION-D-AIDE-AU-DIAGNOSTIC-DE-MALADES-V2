@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
+import { triggerNavigationGuard } from './utils/navigationGuard';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './components/Toast';
 import { initDB } from './db';
@@ -33,7 +34,13 @@ const PrivateRoute = ({ children, adminOnly = false, medicalOnly = false, noInfi
 const Sidebar = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
   const location = useLocation();
   const { user, isAdmin, logout } = useAuth();
+  const nav = useNavigate();
   const [showConfirm, setShowConfirm] = React.useState(false);
+
+  const navTo = (e: React.MouseEvent, to: string) => {
+    e.preventDefault();
+    if (triggerNavigationGuard(to)) { nav(to); onClose(); }
+  };
   
   useEffect(() => {
     // @ts-ignore
@@ -63,57 +70,57 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
           <div className="sp-nav-label">Navigation</div>
           <nav>
               {/* Tableau de bord — admin ET médecin */}
-              <Link to="/" className={`sp-nav-item ${location.pathname === '/' ? 'active' : ''}`} onClick={onClose}>
+              <a href="/" className={`sp-nav-item ${location.pathname === '/' ? 'active' : ''}`} onClick={e => navTo(e, '/')}>
                   <i data-feather="grid"></i>
                   <span>Tableau de bord</span>
-              </Link>
+              </a>
 
-              <Link to="/consultations" className={`sp-nav-item ${location.pathname === '/consultations' ? 'active' : ''}`} onClick={onClose}>
+              <a href="/consultations" className={`sp-nav-item ${location.pathname === '/consultations' ? 'active' : ''}`} onClick={e => navTo(e, '/consultations')}>
                   <Calendar size={18} />
                   <span>Consultations</span>
-              </Link>
+              </a>
 
               {/* Nav médecin */}
               {!isAdmin && user?.role === 'medecin' && (
                 <>
-                  <Link to="/mes-patients" className={`sp-nav-item ${location.pathname === '/mes-patients' ? 'active' : ''}`} onClick={onClose}>
+                  <a href="/mes-patients" className={`sp-nav-item ${location.pathname === '/mes-patients' ? 'active' : ''}`} onClick={e => navTo(e, '/mes-patients')}>
                       <User size={18} />
                       <span>Mes Patients</span>
-                  </Link>
-                  <Link to="/diagnostics" className={`sp-nav-item ${location.pathname === '/diagnostics' ? 'active' : ''}`} onClick={onClose}>
+                  </a>
+                  <a href="/diagnostics" className={`sp-nav-item ${location.pathname === '/diagnostics' ? 'active' : ''}`} onClick={e => navTo(e, '/diagnostics')}>
                       <Brain size={18} />
                       <span>Diagnostics IA</span>
-                  </Link>
+                  </a>
                 </>
               )}
 
               {/* Nav admin */}
               {isAdmin && (
                 <>
-                  <Link to="/mes-patients" className={`sp-nav-item ${location.pathname === '/mes-patients' ? 'active' : ''}`} onClick={onClose}>
+                  <a href="/mes-patients" className={`sp-nav-item ${location.pathname === '/mes-patients' ? 'active' : ''}`} onClick={e => navTo(e, '/mes-patients')}>
                       <User size={18} />
                       <span>Mes Patients</span>
-                  </Link>
-                  <Link to="/diagnostics" className={`sp-nav-item ${location.pathname === '/diagnostics' ? 'active' : ''}`} onClick={onClose}>
+                  </a>
+                  <a href="/diagnostics" className={`sp-nav-item ${location.pathname === '/diagnostics' ? 'active' : ''}`} onClick={e => navTo(e, '/diagnostics')}>
                       <Brain size={18} />
                       <span>Diagnostics IA</span>
-                  </Link>
-                  <Link to="/personnel" className={`sp-nav-item ${location.pathname === '/personnel' ? 'active' : ''}`} onClick={onClose}>
+                  </a>
+                  <a href="/personnel" className={`sp-nav-item ${location.pathname === '/personnel' ? 'active' : ''}`} onClick={e => navTo(e, '/personnel')}>
                       <UserCheck size={18} />
                       <span>Personnel Médical</span>
-                  </Link>
-                  <Link to="/utilisateurs" className={`sp-nav-item ${location.pathname === '/utilisateurs' ? 'active' : ''}`} onClick={onClose}>
+                  </a>
+                  <a href="/utilisateurs" className={`sp-nav-item ${location.pathname === '/utilisateurs' ? 'active' : ''}`} onClick={e => navTo(e, '/utilisateurs')}>
                       <Users size={18} />
                       <span>Utilisateurs</span>
-                  </Link>
-                  <Link to="/identifiants" className={`sp-nav-item ${location.pathname === '/identifiants' ? 'active' : ''}`} onClick={onClose}>
+                  </a>
+                  <a href="/identifiants" className={`sp-nav-item ${location.pathname === '/identifiants' ? 'active' : ''}`} onClick={e => navTo(e, '/identifiants')}>
                       <i data-feather="key"></i>
                       <span>Identifiants</span>
-                  </Link>
-                  <Link to="/admin/systeme" className={`sp-nav-item ${location.pathname === '/admin/systeme' ? 'active' : ''}`} onClick={onClose}>
+                  </a>
+                  <a href="/admin/systeme" className={`sp-nav-item ${location.pathname === '/admin/systeme' ? 'active' : ''}`} onClick={e => navTo(e, '/admin/systeme')}>
                       <Settings size={18} />
                       <span>Système</span>
-                  </Link>
+                  </a>
                 </>
               )}
           </nav>
@@ -391,7 +398,7 @@ function AppContent() {
       <Route path="/consultations" element={<PrivateRoute><Layout><Consultations /></Layout></PrivateRoute>} />
       <Route path="/consultation/nouvelle" element={<PrivateRoute medicalOnly><Layout><ConsultationWorkflow /></Layout></PrivateRoute>} />
       <Route path="/consultation/:consultationId/details" element={<PrivateRoute noInfirmier><Layout><ConsultationDetails /></Layout></PrivateRoute>} />
-      <Route path="/dossier-patient/:patientId" element={<PrivateRoute noInfirmier><Layout><DossierPatient /></Layout></PrivateRoute>} />
+      <Route path="/dossier-patient/:patientId" element={<PrivateRoute medicalOnly><Layout><DossierPatient /></Layout></PrivateRoute>} />
       <Route path="/mes-patients" element={<PrivateRoute noInfirmier><Layout><MesPatients /></Layout></PrivateRoute>} />
       <Route path="/diagnostics" element={<PrivateRoute noInfirmier><Layout><DiagnosticsIA /></Layout></PrivateRoute>} />
       <Route path="/personnel" element={<PrivateRoute><Layout><PersonnelMedical /></Layout></PrivateRoute>} />

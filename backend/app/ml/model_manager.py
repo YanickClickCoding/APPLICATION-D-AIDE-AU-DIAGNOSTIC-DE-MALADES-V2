@@ -552,8 +552,8 @@ class ModelManager:
             "version": self.model_version,
             "metadata": self.model_metadata,
             "n_features": len(self.trainer.feature_names) if self.trainer.feature_names else 0,
-            "n_classes": len(self.trainer.label_encoder.classes_) if self.trainer.label_encoder else 0,
-            "classes": self.trainer.label_encoder.classes_.tolist() if self.trainer.label_encoder else [],
+            "n_classes": len(self.trainer.label_encoder.classes_) if self.trainer.label_encoder and hasattr(self.trainer.label_encoder, 'classes_') else 0,
+            "classes": self.trainer.label_encoder.classes_.tolist() if self.trainer.label_encoder and hasattr(self.trainer.label_encoder, 'classes_') else [],
             "normalization_loaded": len(self.normalization_params) > 0,
         }
 
