@@ -1,0 +1,89 @@
+L'état de l'art
+
+La tecnologie qui a permit de construire ce model ML (Randpm Forest) en rapport avec le Dataset (Première chose)
+
+-   La recherche des outils d'inferances  qui on permit de faire des diqgnostics
+-   Quelle autre tecnologie mise a part le Random Forest on peut utilisr pour contruire cet outil d'aide ?
+-   Les matériels et méthodes (Dataset) analyse descriptive complete du Dataset, avec la distribution des classes() 
+    avec les occurances pour voir si il n'y a pas un desequilibre, un Bostplot de chauqe attribut pour voir les outlayers, 
+    un centrage, quadrature avec les cartilles permettant de voir l'impacte de chaque attribut dans la décision.
+
+*** Deuxième chose
+    Le model que nous avon entraîner et qui sert d'inferance en Backoffice, nous devons presenter sa matrice de 
+    onfuion(ce sont des classes), sa précision, les données seront splitées en deux groupes, les données de teste s
+    ont des étiquettes,
+    - Le Dataset est un tableau çà deux dimenssions: 
+    --  Les colonnes sont les caractéristiques, les lignes c'est les se sont les observations, les données sont étiquetées c'est à dire
+     que quelqu'un dit que cette observation c'est telle maladies, c'est ce qu'on appel la (classe), il y a une colonnes dans le Dataset 
+     dédiée à cela. En ce moment, nous rentrons dans une famille qu'on appelle (apprentisage supervisé) parce que un espert a déjà pris chaque 
+     observation et la annotée, dans le cas contraire, nous rentrons dans un autre domaine d'un (apprentisage supervisé) c'est à dire que 
+     personne ne sait c'est quoi chaque observation
+- Nous devons faire une analyse descriptive complete de notre Dataset qui permettra de savoir: (paramettres = attributs)
+
+    **  Le nombre de classe(les verdites), 10000 cas = 10000 observations(ou maladies), 212 cas = 121 classes, les observations, c'est comme les
+     paramettres qu'on a relever chez un individu qui ont permis de fair un Diagnostic
+     121 maladides = 121 classes pour 10000 cas, attributs 
+- Nous allons faire une analyse de chaque attribut permettant d'apprécier les écarts qui influance le ML, voir un attribut plus dominant dans la 
+    prise de décision
+- Nous irons sur Pandas, faire une pd.read csv chemin\vers\csv, variable info.disprite cela nous permettra d'avoir Bostplot des attributs, 
+    la distribution des classes sous forme de graphique(le prof veut les deux parties à savoir: 
+    le Bostplot des attributs et la distribution des classes tout cela sous frome de graphique dans notrre partie matériel), nous allons aussi besoin de la 
+    courbe d'apprentissage permettant de voir les probabilités qu'il a fiat à chaque apprentisage à chaque paramettres.
+-- La deuxième partie en rapport avec la partie matériel(notre model ML), lorsque nous lançons l'entraînement et que nous avons spliter nos données 
+        en deux groupes, nous devont lui demander de générer des métriques qui nous permettront d'apprécier si son apprentissage a été bien fait ou pas. 
+        en ce moment lors de l'entraînement, les données seront splitées en deux groupes: les données de teste seront utilisées plus tard pour faire des testes,
+        dans le sens où nous allons prendre less étiquettes (c'est à dire les clases ou les maladies), supprimer la colonnes des maladies, et nous allons lui
+        envoyer ça. Et il va prédire lui meme les classes et nous allons comparer ce qu'il a prédit avec ce qu'on a enlever et c'est exactement ce qui permet
+        d'avoir (la matrice de confusion), c'est à dire dans la classe initiale, réelle, normalement, telle maladie c'est le palu, mais dans la prédiction lui(ML) 
+        dit que c'est Céphalée, ça na rien avoir (alors là c'est une prédiction)
+-- NOus allons dégager la matrice de confusion donner les métriques qu'il donne, la précision, son rappel, son F1_Score, les Features sont les variables, les attributs.
+*** Nous allons parler des méthodes: C'est cce à quoi nous nous sommes abstenir dans la conception;
+-- Ce que le prof veut: La méthode utilisée
+- Qu'est ce que nous envoyons en imput(entrée) à notre model ? Ce sont les caractéristiques,
+        Donc nous devons avoir un formulaire où l'on entre les caractéristiques, en appuyant sur Prédire, il envoit ça à notre model, cela veut dire que lorsque nous allons 
+        entraîner notre model et qu'il est bon, nous devons l'exporter de sorte qu'on puisse l'utiliser sans réantraîner à nouveau, ensuite exporter
+        le model, avoir le fichier du model déjà entraîner.
+--La sortie:
+    -Nous devons afficher en sortie les prédictions de maladies, les éléments sur lesquels le model s'est basé pour prendre des décisions
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+pour les admin et les infirmiers, je vuex que tu enleve les atres parties aprres l'etatpe des Signes Vitaux dans l'interface nouvelle consultaton, 
+que le medecin commences direactement au niveau de la quartrieme etatpe du workflow de consultation c'et a dire Analyse IA, en principe, le medecin 
+n'ayant pas ccez de temps, il pourra completer ou continuer une consultation directement a partir du dossier deja preparé d'un patient depuis un
+infirmier, cela veut dire que ce patient existe deja dans la base de donnees depuis le passage chezz un infirmier, dans le cas où le patient n'existe 
+pas encore dans la base de donnees cela veut dire que son dossier n'existe pas encore, du coup, si le medecin doit commencer à partir des Symptômes 
+jusqu'au Suivi sans se soucier d'enregistrer le patient, alors la consultation sera enregistrer avec juste le nom du patient, et apres son dossier et 
+ses informations seront completer apres au niveau de l'infirmier. Donc je recapitule, le medecin commence sa consultation a partir de Analyse IA apres
+avoir rechercher le dossier du patient et l'a trouver, dans le cas où il ne le trouve pas, un message indique que patient introuvable et il pourra 
+commencer la consultation avec ce patient et son dossier sera completer ou mis a jours apres, en gros l'application doit etre modulaire.
+Vas y

@@ -2,7 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, Activity, FileText, Pill, AlertCircle, User, Phone, Mail, MapPin, Cake, Edit, Brain, CheckCircle, XCircle, Droplet, Printer, Download, Clipboard, Eye, ClipboardCheck, Save, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/Toast';
 import { patientsAPI, consultationsAPI } from '../services/api';
+
+interface DossierMedicalInfo {
+  dossier_id: number;
+  numero_dossier: string;
+  antecedents_familiaux?: string;
+  antecedents_personnels?: string;
+  allergies?: string;
+}
 
 interface Patient {
   patient_id: number;  // INT AUTO_INCREMENT
@@ -14,8 +23,7 @@ interface Patient {
   email?: string;
   adresse?: string;
   groupe_sanguin?: string;
-  allergies?: string;
-  antecedents_medicaux?: string;
+  dossier_medical?: DossierMedicalInfo;
 }
 
 interface DiagnosticInfo {
@@ -31,6 +39,7 @@ interface Consultation {
   date_heure: string;
   motif: string;
   statut: string;
+  medecin_id?: number | null;
   medecin_nom?: string;
   diagnostic?: DiagnosticInfo | null;
 }
@@ -39,6 +48,7 @@ const DossierPatient = () => {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
   const { user, token } = useAuth();
+  const { showToast } = useToast();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +71,7 @@ const DossierPatient = () => {
         // Récupérer l'historique des consultations
         const consultationsData = await consultationsAPI.getByPatient(parseInt(patientId), token);
         setConsultations([...consultationsData].sort((a, b) =>
-          new Date(b.date_heure).getTime() - new Date(a.date_heure).getTime()
+          new Date(b.date_heure ?? '').getTime() - new Date(a.date_heure ?? '').getTime()
         ));
         
         setError(null);
@@ -185,14 +195,16 @@ const DossierPatient = () => {
           <Link to="/consultations" className="sp-btn sp-btn-outline no-print">
             <ArrowLeft size={18} /> Retour
           </Link>
+          {(user?.role === 'admin' || user?.role === 'medecin' || user?.role === 'infirmier') && (
+            <Link
+              to={`/consultation/nouvelle?patientId=${patientId}`}
+              className="sp-btn sp-btn-primary no-print"
+            >
+              <Plus size={18} /> Nouvelle consultation
+            </Link>
+          )}
           {(user?.role === 'admin' || user?.role === 'medecin') && (
             <>
-              <Link 
-                to={`/consultation/nouvelle?patientId=${patientId}`} 
-                className="sp-btn sp-btn-primary no-print"
-              >
-                <Plus size={18} /> Nouvelle consultation
-              </Link>
               <button className="sp-btn sp-btn-outline no-print" onClick={handlePrint}>
                 <Printer size={18} /> Imprimer
               </button>
@@ -373,28 +385,35 @@ const DossierPatient = () => {
             </div>
 
             {/* Allergies */}
-            {patient.allergies && (
+            {patient.dossier_medical?.allergies && (
               <div style={{ marginTop: '24px', padding: '12px', background: '#FEF3C7', borderRadius: '8px', border: '1px solid #FCD34D' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#92400E', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
                   <AlertCircle size={14} />
                   <span>ALLERGIES</span>
                 </div>
                 <div style={{ fontSize: '13px', color: '#78350F' }}>
-                  {patient.allergies}
+                  {patient.dossier_medical.allergies}
                 </div>
               </div>
             )}
 
             {/* Antécédents */}
-            {patient.antecedents_medicaux && (
+            {(patient.dossier_medical?.antecedents_personnels || patient.dossier_medical?.antecedents_familiaux) && (
               <div style={{ marginTop: '16px', padding: '12px', background: '#DBEAFE', borderRadius: '8px', border: '1px solid #93C5FD' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1E40AF', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
                   <FileText size={14} />
                   <span>ANTÉCÉDENTS MÉDICAUX</span>
                 </div>
-                <div style={{ fontSize: '13px', color: '#1E3A8A' }}>
-                  {patient.antecedents_medicaux}
-                </div>
+                {patient.dossier_medical?.antecedents_personnels && (
+                  <div style={{ fontSize: '13px', color: '#1E3A8A', marginBottom: '4px' }}>
+                    <strong>Personnels : </strong>{patient.dossier_medical.antecedents_personnels}
+                  </div>
+                )}
+                {patient.dossier_medical?.antecedents_familiaux && (
+                  <div style={{ fontSize: '13px', color: '#1E3A8A' }}>
+                    <strong>Familiaux : </strong>{patient.dossier_medical.antecedents_familiaux}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -563,14 +582,24 @@ const DossierPatient = () => {
                       ) : (
                         <div style={{ marginTop: '10px', padding: '12px 14px', background: '#F9FAFB', borderRadius: '8px', border: '1px dashed #D1D5DB', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
                           <span style={{ fontSize: '12px', color: '#9CA3AF', fontStyle: 'italic' }}>Aucun diagnostic enregistré pour cette consultation</span>
-                          {(consultation.statut === 'en attente' || consultation.statut === 'en cours') && (user?.role === 'medecin' || user?.role === 'admin') && (
-                            <button
-                              onClick={() => navigate(`/consultation/nouvelle?reprendre=${consultation.consultation_id}`)}
-                              className="sp-btn sp-btn-primary"
-                              style={{ fontSize: '12px', padding: '6px 16px', whiteSpace: 'nowrap', flexShrink: 0 }}
-                            >
-                              <Brain size={13} /> Continuer le diagnostic
-                            </button>
+                          {(consultation.statut === 'en attente' || consultation.statut === 'en cours' || consultation.statut === 'en_attente_medecin') && (user?.role === 'medecin' || user?.role === 'admin') && (
+                            consultation.medecin_id == null || consultation.medecin_id === user?.medecin_id || user?.role === 'admin' ? (
+                              <button
+                                onClick={() => navigate(`/consultation/nouvelle?reprendre=${consultation.consultation_id}`)}
+                                className="sp-btn sp-btn-primary"
+                                style={{ fontSize: '12px', padding: '6px 16px', whiteSpace: 'nowrap', flexShrink: 0 }}
+                              >
+                                <Brain size={13} /> Continuer le diagnostic
+                              </button>
+                            ) : (
+                              <button
+                                className="sp-btn sp-btn-outline"
+                                style={{ fontSize: '12px', padding: '6px 16px', whiteSpace: 'nowrap', flexShrink: 0, opacity: 0.5, cursor: 'not-allowed' }}
+                                onClick={() => showToast('Cette consultation est assignée à un autre médecin', 'error')}
+                              >
+                                <Brain size={13} /> Réservé
+                              </button>
+                            )
                           )}
                         </div>
                       )}
@@ -622,19 +651,25 @@ const DossierPatient = () => {
           </table>
         </div>
 
-        {(patient.allergies || patient.antecedents_medicaux) && (
+        {(patient.dossier_medical?.allergies || patient.dossier_medical?.antecedents_personnels || patient.dossier_medical?.antecedents_familiaux) && (
           <div style={{ marginBottom: '30px' }}>
             <h2 style={{ fontSize: '20px', borderBottom: '1px solid #ccc', paddingBottom: '5px', marginBottom: '15px' }}>ALERTE ET ANTÉCÉDENTS</h2>
-            {patient.allergies && (
+            {patient.dossier_medical?.allergies && (
               <div style={{ marginBottom: '10px' }}>
                 <strong style={{ color: '#d32f2f' }}>ALLERGIES: </strong>
-                <span>{patient.allergies}</span>
+                <span>{patient.dossier_medical.allergies}</span>
               </div>
             )}
-            {patient.antecedents_medicaux && (
+            {patient.dossier_medical?.antecedents_personnels && (
+              <div style={{ marginBottom: '6px' }}>
+                <strong>ANTÉCÉDENTS PERSONNELS: </strong>
+                <span>{patient.dossier_medical.antecedents_personnels}</span>
+              </div>
+            )}
+            {patient.dossier_medical?.antecedents_familiaux && (
               <div>
-                <strong>ANTÉCÉDENTS: </strong>
-                <span>{patient.antecedents_medicaux}</span>
+                <strong>ANTÉCÉDENTS FAMILIAUX: </strong>
+                <span>{patient.dossier_medical.antecedents_familiaux}</span>
               </div>
             )}
           </div>

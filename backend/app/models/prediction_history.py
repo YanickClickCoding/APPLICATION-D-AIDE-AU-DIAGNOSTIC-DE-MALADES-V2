@@ -14,7 +14,7 @@ class PredictionHistory(Base):
     Modèle pour l'historique des prédictions ML
     Enregistre toutes les prédictions faites pour chaque patient
     """
-    __tablename__ = "prediction_history"
+    __tablename__ = "historique_prediction"
     
     # Clé primaire
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)

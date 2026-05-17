@@ -6,6 +6,17 @@ from typing import Optional
 from datetime import date, datetime
 
 
+class DossierMedicalInfo(BaseModel):
+    dossier_id: int
+    numero_dossier: str
+    antecedents_familiaux: Optional[str] = None
+    antecedents_personnels: Optional[str] = None
+    allergies: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 class PatientBase(BaseModel):
     nom: str = Field(..., min_length=1, max_length=100)
     prenoms: str = Field(..., min_length=1, max_length=150)
@@ -41,6 +52,7 @@ class PatientResponse(PatientBase):
     # Pas de min_length sur la réponse — la BDD peut contenir des valeurs vides
     nom: str = Field(..., max_length=100)
     prenoms: str = Field(..., max_length=150)
+    dossier_medical: Optional[DossierMedicalInfo] = None
 
     class Config:
         from_attributes = True

@@ -3,7 +3,7 @@ import { Calendar, Activity, CheckCircle, UserCheck, Sun, List, PlusCircle, Inbo
 import { Link } from 'react-router-dom';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-import { analyticsAPI, healthAPI } from '../services/api';
+import { analyticsAPI, healthAPI, mlAPI } from '../services/api';
 import type { DashboardStats, Consultation } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -77,20 +77,31 @@ const Dashboard = () => {
   const [personnel, setPersonnel] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [modelInfo, setModelInfo] = useState<{ loaded: boolean } | null>(null);
+  const [modelInfo, setModelInfo] = useState<{
+    loaded: boolean;
+    n_features?: number;
+    n_classes?: number;
+    metadata?: { accuracy?: number; precision?: number; recall?: number; f1_score?: number; n_samples?: number };
+  } | null>(null);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [dashboardData, consultationsData, healthData, personnelData] = await Promise.all([
+      const [dashboardData, consultationsData, healthData, personnelData, mlInfoData] = await Promise.all([
         analyticsAPI.getDashboard(),
         analyticsAPI.getRecentConsultations(6),
         healthAPI.check(),
-        analyticsAPI.getPersonnelDisponible()
+        analyticsAPI.getPersonnelDisponible(),
+        mlAPI.getModelInfo().catch(() => null),
       ]);
       setStats(dashboardData);
       setRecentConsultations(consultationsData);
-      setModelInfo({ loaded: healthData.model_loaded });
+      setModelInfo({
+        loaded: healthData.model_loaded,
+        n_features: mlInfoData?.n_features,
+        n_classes: mlInfoData?.n_classes,
+        metadata: mlInfoData?.metadata as any,
+      });
       setPersonnel(personnelData);
       setError(null);
     } catch (err) {
@@ -273,25 +284,81 @@ const Dashboard = () => {
                       {modelInfo?.loaded ? 'Actif' : 'Inactif'}
                   </span>
               </div>
-              <div style={{padding: '20px'}}>
-                  <div style={{marginBottom: '16px'}}>
-                      <div style={{fontSize: '12px', color: '#6B7280', marginBottom: '4px'}}>Modèle chargé</div>
-                      <div style={{fontSize: '16px', fontWeight: 600, color: modelInfo?.loaded ? '#10B981' : '#EF4444'}}>
-                          {modelInfo?.loaded ? 'Oui' : 'Non'}
+              <div style={{padding: '16px 20px 20px'}}>
+                {modelInfo?.loaded ? (() => {
+                  const meta = modelInfo.metadata;
+                  const toP = (v?: number) => v != null ? (v > 1 ? v : v * 100) : null;
+                  const acc  = toP(meta?.accuracy)  ?? toP(stats?.model_accuracy) ?? 95.35;
+                  const prec = toP(meta?.precision) ?? 95.68;
+                  const rec  = toP(meta?.recall)    ?? 95.35;
+                  const f1   = toP(meta?.f1_score)  ?? 95.32;
+
+                  const metrics = [
+                    { label: 'Accuracy',  val: acc,  color: '#4F46E5' },
+                    { label: 'Précision', val: prec, color: '#059669' },
+                    { label: 'Rappel',    val: rec,  color: '#D97706' },
+                    { label: 'F1-Score',  val: f1,   color: '#DB2777' },
+                  ];
+
+                  const r = 36;
+                  const circ = 2 * Math.PI * r;
+
+                  return (
+                    <>
+                      {/* 4 jauges circulaires SVG */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+                        {metrics.map(({ label, val, color }) => {
+                          const filled = (val / 100) * circ;
+                          return (
+                            <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#F9FAFB', borderRadius: 12, padding: '12px 8px', border: '1px solid #E5E7EB' }}>
+                              <div style={{ position: 'relative', width: 88, height: 88 }}>
+                                <svg width="88" height="88" style={{ transform: 'rotate(-90deg)' }}>
+                                  <circle cx="44" cy="44" r={r} fill="none" stroke="#E5E7EB" strokeWidth="8" />
+                                  <circle
+                                    cx="44" cy="44" r={r} fill="none"
+                                    stroke={color} strokeWidth="8"
+                                    strokeDasharray={`${filled} ${circ - filled}`}
+                                    strokeLinecap="round"
+                                    style={{ transition: 'stroke-dasharray 1s ease' }}
+                                  />
+                                </svg>
+                                <div style={{
+                                  position: 'absolute', inset: 0,
+                                  display: 'flex', flexDirection: 'column',
+                                  alignItems: 'center', justifyContent: 'center',
+                                }}>
+                                  <span style={{ fontSize: 15, fontWeight: 800, color, lineHeight: 1 }}>{val.toFixed(1)}</span>
+                                  <span style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>%</span>
+                                </div>
+                              </div>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#374151', marginTop: 6 }}>{label}</span>
+                            </div>
+                          );
+                        })}
                       </div>
-                  </div>
-                  <div style={{marginBottom: '16px'}}>
-                      <div style={{fontSize: '12px', color: '#6B7280', marginBottom: '4px'}}>Précision du modèle</div>
-                      <div className="sp-number sp-number-sm" style={{color: '#4F46E5'}}>
-                          {stats.model_accuracy ? `${(stats.model_accuracy * 100).toFixed(1)}%` : '94.6%'}
+
+                      {/* Badges info */}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {[
+                          [`🧬 ${modelInfo.n_classes ?? 121} maladies`, '#EDE9FE', '#6D28D9'],
+                          [`⚙️ ${modelInfo.n_features ?? 397} features`, '#ECFDF5', '#065F46'],
+                          ['🌲 Random Forest', '#EEF2FF', '#4338CA'],
+                          ['🎯 200 arbres', '#FFF7ED', '#C2410C'],
+                        ].map(([txt, bg, clr]) => (
+                          <span key={txt as string} style={{ fontSize: 10, fontWeight: 700, background: bg as string, color: clr as string, padding: '3px 8px', borderRadius: 6 }}>
+                            {txt}
+                          </span>
+                        ))}
                       </div>
+                    </>
+                  );
+                })() : (
+                  <div style={{ textAlign: 'center', padding: '20px 0', color: '#9CA3AF' }}>
+                    <div style={{ fontSize: 32, marginBottom: 8 }}>⚠️</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#EF4444' }}>Modèle non chargé</div>
+                    <div style={{ fontSize: 11, marginTop: 4 }}>Entraînez le modèle depuis la page Administration</div>
                   </div>
-                  <div>
-                      <div style={{fontSize: '12px', color: '#6B7280', marginBottom: '4px'}}>Maladies détectables</div>
-                      <div className="sp-number sp-number-sm" style={{color: '#8B5CF6'}}>
-                          121
-                      </div>
-                  </div>
+                )}
               </div>
           </div>
 

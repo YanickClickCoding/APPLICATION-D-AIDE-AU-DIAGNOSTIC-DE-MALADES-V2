@@ -15,7 +15,6 @@ import json
 from pathlib import Path
 from sqlalchemy.orm import Session
 
-from ..models.training_log import ModelTrainingLog
 from ..models.diagnostic import Diagnostic
 from ..models.consultation import Consultation
 from .model_training import ModelTrainer
@@ -127,20 +126,10 @@ class RetrainingManager:
             Tuple (should_retrain, validated_count, threshold)
         """
         try:
-            # Compter les diagnostics validés depuis le dernier entraînement
-            last_training = self.db.query(ModelTrainingLog).order_by(
-                ModelTrainingLog.training_date.desc()
-            ).first()
-            
-            if last_training:
-                validated_count = self.db.query(Diagnostic).filter(
-                    Diagnostic.statut == 'confirme',
-                    Diagnostic.date_diagnostic > last_training.training_date
-                ).count()
-            else:
-                validated_count = self.db.query(Diagnostic).filter(
-                    Diagnostic.statut == 'confirme'
-                ).count()
+            # Compter tous les diagnostics validés
+            validated_count = self.db.query(Diagnostic).filter(
+                Diagnostic.statut == 'confirme'
+            ).count()
             
             should_retrain = validated_count >= self.retraining_threshold
             
@@ -312,24 +301,6 @@ class RetrainingManager:
             production_path = self.model_dir / f"random_forest_{version}.joblib"
             joblib.dump(model_data, production_path)
             
-            # Enregistrer dans les logs
-            training_log = ModelTrainingLog(
-                version=version,
-                accuracy=model_data['metadata']['metrics']['accuracy'],
-                precision=model_data['metadata']['metrics']['precision'],
-                recall=model_data['metadata']['metrics']['recall'],
-                f1_score=model_data['metadata']['metrics']['f1_score'],
-                confusion_matrix=json.dumps(model_data['metadata']['metrics']['confusion_matrix']),
-                n_samples=model_data['metadata']['n_samples'],
-                n_features=model_data['metadata']['n_features'],
-                n_classes=model_data['metadata']['n_classes'],
-                training_date=datetime.now(),
-                deployed=True
-            )
-            
-            self.db.add(training_log)
-            self.db.commit()
-            
             # Supprimer le modèle temporaire
             Path(model_path).unlink()
             
@@ -418,19 +389,8 @@ class RetrainingManager:
             }
     
     def _get_current_model_accuracy(self) -> float:
-        """Récupère l'accuracy du modèle actuellement déployé"""
-        try:
-            last_deployed = self.db.query(ModelTrainingLog).filter(
-                ModelTrainingLog.deployed == True
-            ).order_by(ModelTrainingLog.training_date.desc()).first()
-            
-            if last_deployed:
-                return last_deployed.accuracy
-            
-            return 0.0
-            
-        except Exception:
-            return 0.0
+        """Retourne 0.0 (log de training supprimé)"""
+        return 0.0
     
     def _calculate_age(self, date_naissance: datetime) -> int:
         """Calcule l'âge à partir de la date de naissance"""

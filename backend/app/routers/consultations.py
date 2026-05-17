@@ -12,11 +12,36 @@ from ..models import (
     AnalyseIA, Diagnostic, Examen, Traitement, Ordonnance, Medicament, Suivi
 )
 from ..models.prediction_history import PredictionHistory
-from ..models.prescription import Prescription
-from ..models.feedback import DoctorFeedback
 from ..schemas.consultation_schema import ConsultationCreate, ConsultationResponse
 
 router = APIRouter(prefix="/consultations", tags=["Consultations"])
+
+# Symptômes réservés à un seul sexe — utilisés pour bloquer les incohérences cliniques
+_SYMPTOMES_HOMME_SEULEMENT = {
+    "Douleur testiculaire",
+    "Éjaculation douloureuse",
+}
+_SYMPTOMES_FEMME_SEULEMENT = {
+    "Cervicite",
+    "Dysparéunie",
+    "Salpingite",
+}
+
+
+def _valider_symptomes_par_sexe(sexe: str, noms_symptomes: set) -> None:
+    """Lève HTTP 400 si un symptôme est incompatible avec le sexe du patient."""
+    if sexe == 'M':
+        incompatibles = noms_symptomes & _SYMPTOMES_FEMME_SEULEMENT
+    elif sexe == 'F':
+        incompatibles = noms_symptomes & _SYMPTOMES_HOMME_SEULEMENT
+    else:
+        return
+    if incompatibles:
+        liste = ", ".join(sorted(incompatibles))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Symptôme(s) incompatible(s) avec le sexe du patient ({sexe}) : {liste}"
+        )
 
 
 @router.post("/", response_model=ConsultationResponse, status_code=status.HTTP_201_CREATED)
@@ -38,7 +63,9 @@ def create_consultation(consultation: ConsultationCreate, db: Session = Depends(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Au moins un symptôme est requis"
         )
-    
+
+    _valider_symptomes_par_sexe(patient.sexe, {s.nom for s in consultation.symptomes})
+
     # Créer la consultation
     db_consultation = Consultation(
         patient_id=consultation.patient_id,
@@ -85,13 +112,15 @@ def list_consultations(skip: int = 0, limit: int = 100, db: Session = Depends(ge
 
 
 @router.get("/en-attente")
-def get_consultations_en_attente(db: Session = Depends(get_db)):
+def get_consultations_en_attente(medecin_id: int = None, db: Session = Depends(get_db)):
     """
-    Retourne toutes les consultations en attente de prise en charge par un médecin.
+    Retourne les consultations en attente. Si medecin_id est fourni, filtre uniquement
+    celles assignées à ce médecin.
     """
-    consultations = db.query(Consultation).filter(
-        Consultation.statut == "en_attente_medecin"
-    ).order_by(Consultation.date_heure.desc()).all()
+    query = db.query(Consultation).filter(Consultation.statut == "en_attente_medecin")
+    if medecin_id is not None:
+        query = query.filter(Consultation.medecin_id == medecin_id)
+    consultations = query.order_by(Consultation.date_heure.desc()).all()
     return [
         {
             "consultation_id": c.consultation_id,
@@ -230,6 +259,9 @@ def create_consultation_workflow(data: dict, db: Session = Depends(get_db)):
             cid_int = db_consultation.consultation_id
 
         # ── 3. Symptômes ────────────────────────────────────────────────────
+        noms_symptomes = {s.get('nom', '').strip() for s in symptomes_data if (s.get('nom') or '').strip()}
+        if patient:
+            _valider_symptomes_par_sexe(patient.sexe, noms_symptomes)
         sev_map = {'Légère': 'LEGER', 'Modérée': 'MODERE', 'Sévère': 'SEVERE'}
         for s in symptomes_data:
             if not (s.get('nom') or '').strip():
@@ -351,6 +383,109 @@ def create_consultation_workflow(data: dict, db: Session = Depends(get_db)):
                 certitude=confiance,
                 statut=statut_diag,
                 date_validation=datetime.now().date(),
+            ))
+
+        # ── 10. Traitement + Ordonnance + Médicaments ───────────────────────────
+        ordonnance_data = data.get('ordonnance', [])
+        meds_valides = [m for m in ordonnance_data if (m.get('nom') or '').strip()]
+
+        traitement_obj = None
+        if meds_valides:
+            diag_obj = db.query(Diagnostic).filter(
+                Diagnostic.consultation_id == cid_int
+            ).order_by(Diagnostic.diagnostic_id.desc()).first()
+
+            if diag_obj:
+                traitement_obj = Traitement(
+                    diagnostic_id=diag_obj.diagnostic_id,
+                    nom_traitement=f"Traitement — {diagnostic_final or diag_obj.nom_maladie}",
+                    type='MEDICAMENTEUX',
+                    date_debut=datetime.now().date(),
+                    statut='PRESCRIT',
+                )
+                db.add(traitement_obj)
+                db.flush()
+
+                medecin_id_ord = db_consultation.medecin_id or data.get('medecin_id')
+                ord_db = Ordonnance(
+                    traitement_id=traitement_obj.traitement_id,
+                    medecin_id=medecin_id_ord,
+                    patient_id=patient.patient_id,
+                    dossier_id=dossier.dossier_id,
+                    posologie_generale='Voir médicaments prescrits',
+                )
+                db.add(ord_db)
+                db.flush()
+
+                for med in meds_valides:
+                    instructions = (med.get('instructions') or '').upper()
+                    forme = 'COMPRIME'
+                    for f in ['INJECTION', 'SIROP', 'CREME']:
+                        if f in instructions:
+                            forme = f
+                            break
+                    voie = 'ORALE'
+                    for v in ['INTRAVEINEUSE', 'CUTANEE', 'INTRAMUSCULAIRE']:
+                        if v in instructions:
+                            voie = v
+                            break
+                    db.add(Medicament(
+                        ordonnance_id=ord_db.ordonnance_id,
+                        nom_commercial=med['nom'].strip(),
+                        denomination_commune=med.get('nom', '').strip(),
+                        dosage=med.get('dosage') or '',
+                        frequence=med.get('frequence') or '',
+                        duree_jours=int(med.get('duree_jours') or 7),
+                        forme=forme,
+                        voie_administration=voie,
+                        quantite=1,
+                    ))
+
+        # ── 11. Suivi ────────────────────────────────────────────────────────────
+        suivi_data_raw = data.get('suivi', {})
+        if suivi_data_raw and patient:
+            rdv_str = suivi_data_raw.get('date_prochain_rdv', '')
+            rdv_date = None
+            if rdv_str:
+                try:
+                    rdv_date = datetime.strptime(rdv_str, '%Y-%m-%d').date()
+                except (ValueError, TypeError):
+                    pass
+            diag_obj_for_suivi = db.query(Diagnostic).filter(
+                Diagnostic.consultation_id == cid_int
+            ).order_by(Diagnostic.diagnostic_id.desc()).first()
+            ts = datetime.now().strftime('%Y%m%d%H%M%S%f')[:17]
+            medecin_id_suivi = db_consultation.medecin_id or data.get('medecin_id')
+            db.add(Suivi(
+                patient_id=patient.patient_id,
+                medecin_id=medecin_id_suivi,
+                consultation_id=cid_int,
+                diagnostic_id=diag_obj_for_suivi.diagnostic_id if diag_obj_for_suivi else None,
+                traitement_id=traitement_obj.traitement_id if traitement_obj else None,
+                dossier_id=dossier.dossier_id,
+                numero_suivi=f"SV-{ts}-{cid_int}",
+                date_suivi=datetime.now().date(),
+                prochaine_consultation=rdv_date,
+                statut='EN_COURS',
+            ))
+
+        # ── 12. Historique des prédictions ML ───────────────────────────────────
+        ref_analyse = analyse_finale or analyse_prelim or {}
+        if ref_analyse and patient:
+            confidence = float(ref_analyse.get('confiance', 0.0))
+            level = 'HIGH' if confidence >= 0.75 else ('MEDIUM' if confidence >= 0.5 else 'LOW')
+            top = ref_analyse.get('top_predictions', [])
+            prob_dict = {p.get('maladie', ''): p.get('probabilite', 0) for p in top if p.get('maladie')}
+            db.add(PredictionHistory(
+                patient_id=patient.patient_id,
+                consultation_id=cid_int,
+                predicted_disease=ref_analyse.get('maladie_predite') or (diagnostic_final or ''),
+                confidence=confidence,
+                confidence_level=level,
+                prediction_probabilities=prob_dict or None,
+                model_version='RandomForest_v1.0',
+                actual_disease=diagnostic_final or None,
+                is_validated=1 if validation_type == 'confirme' else -1,
             ))
 
         db.commit()
@@ -580,8 +715,6 @@ def delete_consultation(consultation_id: int, db: Session = Depends(get_db)):
     db.query(Symptome).filter(Symptome.consultation_id == consultation_id).delete(synchronize_session=False)
     db.query(Suivi).filter(Suivi.consultation_id == consultation_id).delete(synchronize_session=False)
     db.query(PredictionHistory).filter(PredictionHistory.consultation_id == consultation_id).delete(synchronize_session=False)
-    db.query(Prescription).filter(Prescription.consultation_id == consultation_id).delete(synchronize_session=False)
-    db.query(DoctorFeedback).filter(DoctorFeedback.consultation_id == consultation_id).delete(synchronize_session=False)
 
     # 3. Supprimer la consultation elle-même
     db.delete(c)
@@ -655,6 +788,9 @@ def create_consultation_partielle(data: dict, db: Session = Depends(get_db)):
             db.flush()
             cid = db_consultation.consultation_id
 
+        noms_symptomes_partiel = {s.get('nom', '').strip() for s in symptomes_data if (s.get('nom') or '').strip()}
+        if patient:
+            _valider_symptomes_par_sexe(patient.sexe, noms_symptomes_partiel)
         sev_map = {'Légère': 'LEGER', 'Modérée': 'MODERE', 'Sévère': 'SEVERE'}
         for s in symptomes_data:
             if not (s.get('nom') or '').strip():
@@ -851,6 +987,108 @@ def complete_consultation_medecin(consultation_id: int, data: dict, db: Session 
             ))
 
         c.statut = "terminée"
+        db.flush()
+
+        # ── Traitement + Ordonnance + Médicaments ────────────────────────────
+        ordonnance_data = data.get('ordonnance', [])
+        meds_valides = [m for m in ordonnance_data if (m.get('nom') or '').strip()]
+
+        traitement_obj = None
+        if meds_valides:
+            diag_obj = db.query(Diagnostic).filter(
+                Diagnostic.consultation_id == consultation_id
+            ).order_by(Diagnostic.diagnostic_id.desc()).first()
+
+            if diag_obj:
+                traitement_obj = Traitement(
+                    diagnostic_id=diag_obj.diagnostic_id,
+                    nom_traitement=f"Traitement — {diagnostic_final or diag_obj.nom_maladie}",
+                    type='MEDICAMENTEUX',
+                    date_debut=datetime.now().date(),
+                    statut='PRESCRIT',
+                )
+                db.add(traitement_obj)
+                db.flush()
+
+                ord_db = Ordonnance(
+                    traitement_id=traitement_obj.traitement_id,
+                    medecin_id=c.medecin_id,
+                    patient_id=c.patient_id,
+                    dossier_id=dossier.dossier_id,
+                    posologie_generale='Voir médicaments prescrits',
+                )
+                db.add(ord_db)
+                db.flush()
+
+                for med in meds_valides:
+                    instructions = (med.get('instructions') or '').upper()
+                    forme = 'COMPRIME'
+                    for f in ['INJECTION', 'SIROP', 'CREME']:
+                        if f in instructions:
+                            forme = f
+                            break
+                    voie = 'ORALE'
+                    for v in ['INTRAVEINEUSE', 'CUTANEE', 'INTRAMUSCULAIRE']:
+                        if v in instructions:
+                            voie = v
+                            break
+                    db.add(Medicament(
+                        ordonnance_id=ord_db.ordonnance_id,
+                        nom_commercial=med['nom'].strip(),
+                        denomination_commune=med.get('nom', '').strip(),
+                        dosage=med.get('dosage') or '',
+                        frequence=med.get('frequence') or '',
+                        duree_jours=int(med.get('duree_jours') or 7),
+                        forme=forme,
+                        voie_administration=voie,
+                        quantite=1,
+                    ))
+
+        # ── Suivi ────────────────────────────────────────────────────────────
+        suivi_data_raw = data.get('suivi', {})
+        if suivi_data_raw:
+            rdv_str = suivi_data_raw.get('date_prochain_rdv', '')
+            rdv_date = None
+            if rdv_str:
+                try:
+                    rdv_date = datetime.strptime(rdv_str, '%Y-%m-%d').date()
+                except (ValueError, TypeError):
+                    pass
+            diag_obj_suivi = db.query(Diagnostic).filter(
+                Diagnostic.consultation_id == consultation_id
+            ).order_by(Diagnostic.diagnostic_id.desc()).first()
+            ts = datetime.now().strftime('%Y%m%d%H%M%S%f')[:17]
+            db.add(Suivi(
+                patient_id=c.patient_id,
+                medecin_id=c.medecin_id,
+                consultation_id=consultation_id,
+                diagnostic_id=diag_obj_suivi.diagnostic_id if diag_obj_suivi else None,
+                traitement_id=traitement_obj.traitement_id if traitement_obj else None,
+                dossier_id=dossier.dossier_id,
+                numero_suivi=f"SV-{ts}-{consultation_id}",
+                date_suivi=datetime.now().date(),
+                prochaine_consultation=rdv_date,
+                statut='EN_COURS',
+            ))
+
+        # ── Historique des prédictions ML ────────────────────────────────────
+        if analyse_finale:
+            confidence = float(analyse_finale.get('confiance', 0.0))
+            level = 'HIGH' if confidence >= 0.75 else ('MEDIUM' if confidence >= 0.5 else 'LOW')
+            top = analyse_finale.get('top_predictions', [])
+            prob_dict = {p.get('maladie', ''): p.get('probabilite', 0) for p in top if p.get('maladie')}
+            db.add(PredictionHistory(
+                patient_id=c.patient_id,
+                consultation_id=consultation_id,
+                predicted_disease=analyse_finale.get('maladie_predite') or (diagnostic_final or ''),
+                confidence=confidence,
+                confidence_level=level,
+                prediction_probabilities=prob_dict or None,
+                model_version='RandomForest_v1.0',
+                actual_disease=diagnostic_final or None,
+                is_validated=1 if validation_type == 'confirme' else -1,
+            ))
+
         db.commit()
         return {"success": True, "consultation_id": consultation_id}
 
@@ -1050,3 +1288,47 @@ def get_consultation_details_complets(consultation_id: int, db: Session = Depend
         "ordonnance": ordonnance_data,
         "suivi": suivi_data,
     }
+
+
+@router.get("/catalogue-medicaments")
+def get_catalogue_medicaments(maladie: str, db: Session = Depends(get_db)):
+    """
+    Retourne les médicaments du catalogue de référence pour une maladie.
+    Utilisé pour l'autocomplétion dans la section ordonnance du workflow.
+    """
+    from ..models.catalogue_medicament import CatalogueMedicament
+    resultats = (
+        db.query(CatalogueMedicament)
+        .filter(CatalogueMedicament.maladie == maladie)
+        .order_by(CatalogueMedicament.categorie, CatalogueMedicament.nom_commercial)
+        .all()
+    )
+    return [
+        {
+            "id": r.id,
+            "nom_commercial": r.nom_commercial,
+            "denomination_commune": r.denomination_commune,
+            "dosage": r.dosage_standard,
+            "forme": r.forme,
+            "voie_administration": r.voie_administration,
+            "frequence": r.frequence_habituelle,
+            "duree_jours": r.duree_standard_jours,
+            "categorie": r.categorie,
+            "notes": r.notes,
+            "quantite": 1,
+        }
+        for r in resultats
+    ]
+
+
+@router.get("/catalogue-medicaments/maladies")
+def get_maladies_catalogue(db: Session = Depends(get_db)):
+    """Retourne toutes les maladies disponibles dans le catalogue de référence."""
+    from ..models.catalogue_medicament import CatalogueMedicament
+    from sqlalchemy import distinct as sa_distinct
+    maladies = (
+        db.query(sa_distinct(CatalogueMedicament.maladie))
+        .order_by(CatalogueMedicament.maladie)
+        .all()
+    )
+    return [m[0] for m in maladies]

@@ -3,11 +3,36 @@ import {
   Server, Brain, Database, Trash2, RefreshCw, Play, CheckCircle,
   XCircle, FileText, Cpu, Clock, ChevronDown,
   ChevronUp, Terminal, Package, Zap, Sliders, AlertTriangle,
+  BarChart2, Activity, History, TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { adminAPI, type IAConfig } from '../services/api';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
+
+interface ModelPerformance {
+  available: boolean;
+  model_version?: string;
+  metrics?: {
+    accuracy: number; precision: number; recall: number; f1_score: number;
+    n_samples?: number; n_features?: number; n_classes?: number; duration_s?: number;
+  };
+  feature_importance?: { features: string[]; importances: number[] };
+  message?: string;
+}
+
+interface AIStats {
+  total_predictions: number;
+  avg_confidence_pct: number;
+  confidence_distribution: { HIGH: number; MEDIUM: number; LOW: number };
+  top_diseases: Array<{ disease: string; count: number }>;
+}
+
+interface TrainingSession {
+  date: string; accuracy: number; precision: number; recall: number;
+  f1_score: number; n_samples?: number; n_features?: number; n_classes?: number;
+  duration_s?: number; n_estimators?: number; max_depth?: number;
+}
 
 interface SystemStatus {
   server: { status: string; timestamp: string; platform: string; python_version: string; uvicorn_port: number };
@@ -86,6 +111,11 @@ export default function AdminSystem() {
   const [savingIA, setSavingIA] = useState(false);
   const [iaConfigDirty, setIaConfigDirty] = useState(false);
 
+  // Nouvelles sections
+  const [modelPerf, setModelPerf] = useState<ModelPerformance | null>(null);
+  const [aiStats, setAIStats] = useState<AIStats | null>(null);
+  const [trainingHistory, setTrainingHistory] = useState<TrainingSession[]>([]);
+
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
@@ -116,6 +146,20 @@ export default function AdminSystem() {
     }
   }, [token]);
 
+  const fetchExtras = useCallback(async () => {
+    if (!token) return;
+    try {
+      const [perf, stats, hist] = await Promise.all([
+        adminAPI.getModelPerformance(token),
+        adminAPI.getAIStats(token),
+        adminAPI.getTrainingHistory(token),
+      ]);
+      setModelPerf(perf);
+      setAIStats(stats);
+      setTrainingHistory(hist.sessions || []);
+    } catch { /* silencieux */ }
+  }, [token]);
+
   const fetchLogs = useCallback(async () => {
     if (!token) return;
     try {
@@ -138,6 +182,7 @@ export default function AdminSystem() {
           if (data.status !== 'running') {
             clearInterval(pollRef.current!);
             fetchStatus();
+            fetchExtras();
             if (data.status === 'success') showToast('Entraînement terminé avec succès !');
             else showToast(data.error ?? 'Entraînement échoué', false);
           }
@@ -150,8 +195,8 @@ export default function AdminSystem() {
   }, [training?.status, fetchStatus, token]);
 
   useEffect(() => {
-    if (!authLoading) fetchStatus();
-  }, [fetchStatus, authLoading]);
+    if (!authLoading) { fetchStatus(); fetchExtras(); }
+  }, [fetchStatus, fetchExtras, authLoading]);
   useEffect(() => { if (logsOpen) fetchLogs(); }, [logsOpen, fetchLogs]);
 
   const startTraining = async () => {
@@ -271,7 +316,7 @@ export default function AdminSystem() {
       {/* Bouton actualiser */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <button
-          onClick={() => { setLoadingStatus(true); fetchStatus(); }}
+          onClick={() => { setLoadingStatus(true); fetchStatus(); fetchExtras(); }}
           style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, border: '1px solid #E5E7EB', background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#374151' }}
         >
           <RefreshCw size={14} style={{ animation: loadingStatus ? 'spin 1s linear infinite' : 'none' }} />
@@ -643,6 +688,205 @@ export default function AdminSystem() {
               </div>
             )}
           </Card>
+
+          {/* ─── Performances du modèle ──────────────────────────────── */}
+          {modelPerf?.available && modelPerf.metrics && (
+            <Card title="Performances du modèle (dernière session)" icon={TrendingUp} accent="#059669">
+              {/* Métriques */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
+                {([
+                  ['Accuracy', modelPerf.metrics.accuracy, '#4F46E5'],
+                  ['Précision', modelPerf.metrics.precision, '#059669'],
+                  ['Rappel', modelPerf.metrics.recall, '#D97706'],
+                  ['F1-Score', modelPerf.metrics.f1_score, '#DB2777'],
+                ] as [string, number, string][]).map(([label, val, color]) => (
+                  <div key={label} style={{ background: '#F9FAFB', borderRadius: 12, padding: '14px 16px', border: '1px solid #E5E7EB' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>{label}</span>
+                      <span style={{ fontSize: 15, fontWeight: 800, color }}>{val?.toFixed(2)} %</span>
+                    </div>
+                    <ProgressBar pct={val ?? 0} color={color} />
+                  </div>
+                ))}
+              </div>
+
+              {/* Infos */}
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+                {[
+                  ['Observations', modelPerf.metrics.n_samples?.toLocaleString('fr-FR')],
+                  ['Features', modelPerf.metrics.n_features],
+                  ['Classes', modelPerf.metrics.n_classes],
+                  ['Durée', modelPerf.metrics.duration_s != null ? `${modelPerf.metrics.duration_s} s` : '—'],
+                ].map(([lbl, val]) => val != null && (
+                  <span key={lbl as string} style={{ fontSize: 12, color: '#374151', background: '#EEF2FF', padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}>
+                    {lbl} : <strong>{val}</strong>
+                  </span>
+                ))}
+              </div>
+
+              {/* Feature Importance */}
+              {modelPerf.feature_importance && modelPerf.feature_importance.features.length > 0 && (
+                <>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12, borderTop: '1px solid #E5E7EB', paddingTop: 16 }}>
+                    Top {modelPerf.feature_importance.features.length} Features — Impact sur la décision IA
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {modelPerf.feature_importance.features.map((feat, i) => {
+                      const imp = modelPerf.feature_importance!.importances[i];
+                      const maxImp = modelPerf.feature_importance!.importances[0];
+                      const pct = maxImp > 0 ? (imp / maxImp) * 100 : 0;
+                      const shortName = feat.replace(/^(Lab_|Vital_|SYM_)/, '').replace(/_/g, ' ').substring(0, 40);
+                      const isSym = feat.startsWith('SYM_');
+                      return (
+                        <div key={feat} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{
+                            fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4,
+                            background: isSym ? '#DBEAFE' : '#D1FAE5',
+                            color: isSym ? '#1D4ED8' : '#065F46',
+                            minWidth: 38, textAlign: 'center', flexShrink: 0,
+                          }}>
+                            {isSym ? 'SYM' : 'LAB'}
+                          </span>
+                          <span style={{ fontSize: 11, color: '#374151', minWidth: 180, maxWidth: 220, flexShrink: 0 }}>{shortName}</span>
+                          <div style={{ flex: 1, background: '#F3F4F6', borderRadius: 99, height: 8, overflow: 'hidden' }}>
+                            <div style={{ width: `${pct}%`, height: '100%', background: isSym ? '#3B82F6' : '#10B981', borderRadius: 99, transition: 'width .4s' }} />
+                          </div>
+                          <span style={{ fontSize: 10, color: '#9CA3AF', minWidth: 50, textAlign: 'right' }}>{(imp * 100).toFixed(3)} %</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display: 'flex', gap: 16, marginTop: 10, fontSize: 11, color: '#6B7280' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ background: '#3B82F6', width: 10, height: 10, borderRadius: 2, display: 'inline-block' }} /> Symptôme (SYM)
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ background: '#10B981', width: 10, height: 10, borderRadius: 2, display: 'inline-block' }} /> Paramètre biologique (LAB/VITAL)
+                    </span>
+                  </div>
+                </>
+              )}
+            </Card>
+          )}
+
+          {/* ─── Statistiques d'utilisation de l'IA ─────────────────── */}
+          {aiStats && (
+            <Card title="Statistiques d'utilisation de l'IA" icon={Activity} accent="#7C3AED">
+              {aiStats.total_predictions === 0 ? (
+                <p style={{ fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' }}>
+                  Aucun diagnostic IA effectué pour l'instant. Les statistiques apparaîtront dès la première prédiction.
+                </p>
+              ) : (
+                <>
+                  {/* KPI row */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 16, marginBottom: 20 }}>
+                    <div style={{ textAlign: 'center', background: '#F9FAFB', borderRadius: 12, padding: '14px 8px', border: '1px solid #E5E7EB' }}>
+                      <div style={{ fontSize: 26, fontWeight: 900, color: '#7C3AED' }}>{aiStats.total_predictions.toLocaleString('fr-FR')}</div>
+                      <div style={{ fontSize: 11, color: '#6B7280', fontWeight: 600, marginTop: 2 }}>Diagnostics IA effectués</div>
+                    </div>
+                    <div style={{ textAlign: 'center', background: '#F9FAFB', borderRadius: 12, padding: '14px 8px', border: '1px solid #E5E7EB' }}>
+                      <div style={{ fontSize: 26, fontWeight: 900, color: '#059669' }}>{aiStats.avg_confidence_pct} %</div>
+                      <div style={{ fontSize: 11, color: '#6B7280', fontWeight: 600, marginTop: 2 }}>Confiance moyenne</div>
+                    </div>
+                  </div>
+
+                  {/* Distribution confiance */}
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 10 }}>Distribution des niveaux de confiance</div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {([
+                        ['HIGH', aiStats.confidence_distribution.HIGH, '#059669', '#ECFDF5', 'Élevée ≥ 70%'],
+                        ['MEDIUM', aiStats.confidence_distribution.MEDIUM, '#D97706', '#FFFBEB', 'Moyenne 40–70%'],
+                        ['LOW', aiStats.confidence_distribution.LOW, '#DC2626', '#FEF2F2', 'Basse < 40%'],
+                      ] as [string, number, string, string, string][]).map(([key, count, color, bg, label]) => {
+                        const total = aiStats.total_predictions || 1;
+                        const pct = Math.round((count / total) * 100);
+                        return (
+                          <div key={key} style={{ flex: 1, background: bg, border: `1px solid ${color}30`, borderRadius: 10, padding: '12px 10px', textAlign: 'center' }}>
+                            <div style={{ fontSize: 20, fontWeight: 800, color }}>{count.toLocaleString('fr-FR')}</div>
+                            <div style={{ fontSize: 10, fontWeight: 700, color, marginTop: 2 }}>{pct} %</div>
+                            <div style={{ fontSize: 10, color: '#6B7280', marginTop: 2 }}>{label}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {aiStats.total_predictions > 0 && (() => {
+                      const t = aiStats.total_predictions;
+                      return (
+                        <div style={{ display: 'flex', height: 8, borderRadius: 99, overflow: 'hidden', marginTop: 10 }}>
+                          <div style={{ width: `${(aiStats.confidence_distribution.HIGH / t) * 100}%`, background: '#059669' }} />
+                          <div style={{ width: `${(aiStats.confidence_distribution.MEDIUM / t) * 100}%`, background: '#D97706' }} />
+                          <div style={{ width: `${(aiStats.confidence_distribution.LOW / t) * 100}%`, background: '#DC2626' }} />
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Top diseases */}
+                  {aiStats.top_diseases.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 10 }}>Top 5 maladies prédites</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {aiStats.top_diseases.map((d, i) => {
+                          const maxCount = aiStats.top_diseases[0].count;
+                          const pct = maxCount > 0 ? (d.count / maxCount) * 100 : 0;
+                          const rankColors = ['#4F46E5', '#7C3AED', '#0891B2', '#059669', '#D97706'];
+                          return (
+                            <div key={d.disease} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <span style={{ fontSize: 11, fontWeight: 800, color: 'white', background: rankColors[i], borderRadius: 99, width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</span>
+                              <span style={{ fontSize: 12, color: '#374151', minWidth: 160 }}>{d.disease}</span>
+                              <div style={{ flex: 1, background: '#F3F4F6', borderRadius: 99, height: 7, overflow: 'hidden' }}>
+                                <div style={{ width: `${pct}%`, height: '100%', background: rankColors[i], borderRadius: 99 }} />
+                              </div>
+                              <span style={{ fontSize: 11, color: '#6B7280', minWidth: 36, textAlign: 'right' }}>{d.count}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </Card>
+          )}
+
+          {/* ─── Historique des entraînements ────────────────────────── */}
+          {trainingHistory.length > 0 && (
+            <Card title="Historique des entraînements" icon={History} accent="#0891B2">
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ background: '#F9FAFB', borderBottom: '2px solid #E5E7EB' }}>
+                      {['Date', 'Accuracy', 'Précision', 'Rappel', 'F1-Score', 'Obs.', 'Arbres', 'Durée'].map(h => (
+                        <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#6B7280', whiteSpace: 'nowrap' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trainingHistory.map((s, i) => {
+                      const isFirst = i === 0;
+                      return (
+                        <tr key={s.date} style={{ borderBottom: '1px solid #F3F4F6', background: isFirst ? '#F0FDF4' : 'white' }}>
+                          <td style={{ padding: '8px 12px', color: '#374151', whiteSpace: 'nowrap' }}>
+                            {isFirst && <span style={{ background: '#059669', color: 'white', fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3, marginRight: 5 }}>ACTIF</span>}
+                            {s.date ? new Date(s.date).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}
+                          </td>
+                          {[s.accuracy, s.precision, s.recall, s.f1_score].map((v, j) => (
+                            <td key={j} style={{ padding: '8px 12px', fontWeight: 700, color: v >= 90 ? '#059669' : v >= 70 ? '#D97706' : '#DC2626' }}>
+                              {v?.toFixed(2)} %
+                            </td>
+                          ))}
+                          <td style={{ padding: '8px 12px', color: '#6B7280' }}>{s.n_samples?.toLocaleString('fr-FR') ?? '—'}</td>
+                          <td style={{ padding: '8px 12px', color: '#6B7280' }}>{s.n_estimators ?? '—'}</td>
+                          <td style={{ padding: '8px 12px', color: '#6B7280' }}>{s.duration_s != null ? `${s.duration_s} s` : '—'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
 
           {/* ─── Nettoyage ───────────────────────────────────────────── */}
           <Card title="Nettoyage" icon={Trash2} accent="#DC2626">

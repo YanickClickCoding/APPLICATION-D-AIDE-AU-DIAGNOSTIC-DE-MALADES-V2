@@ -3,6 +3,7 @@ Admin Router - Gestion système, CRUD utilisateurs, CRUD personnel, config IA
 Tous les endpoints sont protégés : token JWT admin requis.
 """
 import os
+import json
 import platform
 import threading
 import logging
@@ -29,6 +30,29 @@ _ia_config: Dict = {
     "n_estimators": 200,
     "max_depth": 30,
 }
+
+# ─── Historique des entraînements ────────────────────────────────────────────
+_TRAINING_HISTORY_FILE = "./ml_models/training_history.json"
+
+
+def _load_training_history() -> List[Dict]:
+    if not os.path.exists(_TRAINING_HISTORY_FILE):
+        return []
+    try:
+        with open(_TRAINING_HISTORY_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+
+def _append_training_history(session: Dict):
+    history = _load_training_history()
+    history.append(session)
+    history = history[-20:]  # Garder les 20 dernières sessions
+    os.makedirs(os.path.dirname(_TRAINING_HISTORY_FILE), exist_ok=True)
+    with open(_TRAINING_HISTORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)
+
 
 # ─── État entraînement ────────────────────────────────────────────────────────
 _training_state: Dict = {
@@ -568,21 +592,31 @@ def _run_training_task(n_estimators: int, max_depth: int):
         with _training_lock:
             if results.get("success"):
                 eval_r, train_r = results.get("evaluation", {}), results.get("training", {})
+                session_results = {
+                    "accuracy":   round(eval_r.get("accuracy", 0) * 100, 2),
+                    "precision":  round(eval_r.get("precision", 0) * 100, 2),
+                    "recall":     round(eval_r.get("recall", 0) * 100, 2),
+                    "f1_score":   round(eval_r.get("f1_score", 0) * 100, 2),
+                    "n_samples":  train_r.get("n_samples"),
+                    "n_features": train_r.get("n_features"),
+                    "n_classes":  train_r.get("n_classes"),
+                    "duration_s": round(train_r.get("training_duration_seconds", 0), 1),
+                    "model_path": train_r.get("model_path", ""),
+                }
                 _training_state.update({
                     "status": "success",
                     "message": "Entraînement terminé ✓",
-                    "results": {
-                        "accuracy":   round(eval_r.get("accuracy", 0) * 100, 2),
-                        "precision":  round(eval_r.get("precision", 0) * 100, 2),
-                        "recall":     round(eval_r.get("recall", 0) * 100, 2),
-                        "f1_score":   round(eval_r.get("f1_score", 0) * 100, 2),
-                        "n_samples":  train_r.get("n_samples"),
-                        "n_features": train_r.get("n_features"),
-                        "n_classes":  train_r.get("n_classes"),
-                        "duration_s": round(train_r.get("training_duration_seconds", 0), 1),
-                        "model_path": train_r.get("model_path", ""),
-                    },
+                    "results": session_results,
                 })
+                try:
+                    _append_training_history({
+                        "date": datetime.now().isoformat(),
+                        "n_estimators": n_estimators,
+                        "max_depth": max_depth,
+                        **session_results,
+                    })
+                except Exception:
+                    pass
             else:
                 _training_state.update({"status": "error", "error": results.get("error", "Erreur inconnue"),
                                         "message": "Entraînement échoué"})
@@ -686,6 +720,114 @@ def cleanup_logs(admin: User = Depends(get_current_admin)):
         except:
             pass
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PERFORMANCES DU MODÈLE & FEATURE IMPORTANCE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/model/performance")
+def get_model_performance(admin: User = Depends(get_current_admin)):
+    """Retourne les métriques du modèle chargé et le top feature importance."""
+    if not model_manager.model_loaded:
+        return {"available": False, "message": "Aucun modèle chargé"}
+
+    feature_importance: Dict = {"features": [], "importances": []}
+    try:
+        feature_importance = model_manager.trainer.get_feature_importance(top_n=20)
+    except Exception:
+        pass
+
+    # Métriques : priorité à l'état d'entraînement courant, sinon métadonnées du fichier
+    metrics: Dict = {}
+    if _training_state.get("results"):
+        metrics = dict(_training_state["results"])
+    elif model_manager.model_metadata:
+        meta = model_manager.model_metadata
+        # training_history peut contenir accuracy / precision / recall directement
+        metrics = {
+            "accuracy":   round(float(meta.get("accuracy", 0)) * 100, 2),
+            "precision":  round(float(meta.get("precision", 0)) * 100, 2),
+            "recall":     round(float(meta.get("recall", 0)) * 100, 2),
+            "f1_score":   round(float(meta.get("f1_score", 0)) * 100, 2),
+            "n_samples":  meta.get("n_samples"),
+            "n_features": meta.get("n_features"),
+            "n_classes":  meta.get("n_classes"),
+        }
+
+    return {
+        "available": True,
+        "model_version": model_manager.model_version,
+        "metrics": metrics,
+        "feature_importance": feature_importance,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STATISTIQUES D'UTILISATION DE L'IA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/ai-stats")
+def get_ai_usage_stats(
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    """Statistiques d'utilisation de l'IA depuis la table historique_prediction."""
+    from ..models.prediction_history import PredictionHistory
+    from sqlalchemy import func
+
+    total = db.query(func.count(PredictionHistory.id)).scalar() or 0
+
+    avg_conf_raw = db.query(func.avg(PredictionHistory.confidence)).scalar()
+    avg_conf_pct = round(float(avg_conf_raw) * 100, 1) if avg_conf_raw else 0.0
+
+    def _count_level(level: str) -> int:
+        return db.query(func.count(PredictionHistory.id)).filter(
+            PredictionHistory.confidence_level == level
+        ).scalar() or 0
+
+    high   = _count_level("HIGH")
+    medium = _count_level("MEDIUM")
+    low    = _count_level("LOW")
+
+    top_diseases_rows = (
+        db.query(
+            PredictionHistory.predicted_disease,
+            func.count(PredictionHistory.id).label("cnt"),
+        )
+        .group_by(PredictionHistory.predicted_disease)
+        .order_by(func.count(PredictionHistory.id).desc())
+        .limit(5)
+        .all()
+    )
+
+    return {
+        "total_predictions": total,
+        "avg_confidence_pct": avg_conf_pct,
+        "confidence_distribution": {"HIGH": high, "MEDIUM": medium, "LOW": low},
+        "top_diseases": [{"disease": r[0], "count": r[1]} for r in top_diseases_rows],
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# HISTORIQUE DES ENTRAÎNEMENTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/training/history")
+def get_training_history_endpoint(admin: User = Depends(get_current_admin)):
+    """Retourne l'historique des sessions d'entraînement (fichier JSON persistant)."""
+    sessions = _load_training_history()
+    # Compléter avec la session courante si pas encore sauvegardée
+    if _training_state.get("status") == "success" and _training_state.get("results"):
+        current = {
+            "date": _training_state.get("finished_at"),
+            "n_estimators": _ia_config.get("n_estimators", "—"),
+            "max_depth": _ia_config.get("max_depth", "—"),
+            **_training_state["results"],
+        }
+        if not sessions or sessions[-1].get("model_path") != current.get("model_path"):
+            sessions = sessions + [current]
+    return {"sessions": list(reversed(sessions))}  # Plus récent en premier
 
 
 @router.get("/logs")

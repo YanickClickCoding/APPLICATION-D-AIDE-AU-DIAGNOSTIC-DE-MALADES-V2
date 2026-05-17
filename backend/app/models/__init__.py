@@ -17,10 +17,7 @@ from .medicament import Medicament
 from .examen import Examen
 from .suivi import Suivi
 from .prediction_history import PredictionHistory
-from .prescription import Prescription
-from .training_log import ModelTrainingLog
-from .feedback import DoctorFeedback
-
+from .catalogue_medicament import CatalogueMedicament
 __all__ = [
     "Patient",
     "Consultation",
@@ -38,7 +35,5 @@ __all__ = [
     "Examen",
     "Suivi",
     "PredictionHistory",
-    "Prescription",
-    "ModelTrainingLog",
-    "DoctorFeedback"
+    "CatalogueMedicament",
 ]

@@ -21,6 +21,15 @@ const Login = () => {
     return () => document.body.classList.remove('sp-auth');
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('session') === 'expired') {
+      showToast('Votre session a expiré. Veuillez vous reconnecter.', 'info');
+      // Nettoyer le paramètre de l'URL sans recharger la page
+      window.history.replaceState({}, '', '/login');
+    }
+  }, [showToast]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     

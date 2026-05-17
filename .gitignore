@@ -38,3 +38,7 @@ dist-ssr
 
 # Scripts temporaires
 server/ai_engine.py
+
+# Modèles ML volumineux (>100MB — limite GitHub)
+*.pkl
+analyse_ml/model/

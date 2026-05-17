@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, User, Phone, Mail, Calendar, Activity, AlertCircle, FileText, PlusCircle, Edit2, Trash2, Grid, List, X, Save, Droplet, Clipboard } from 'lucide-react';
+import { Search, User, Phone, Mail, Calendar, Activity, AlertCircle, PlusCircle, Edit2, Trash2, Grid, List, X, Save, Clipboard } from 'lucide-react';
 import { patientsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
@@ -23,11 +23,11 @@ const MesPatients = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [filtered, setFiltered] = useState<Patient[]>([]);
   const [search, setSearch] = useState('');
+  const [sexFilter, setSexFilter] = useState<'all' | 'M' | 'F'>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<'grid' | 'table'>(() => (localStorage.getItem('sp_patients_view') as 'grid' | 'table') || 'grid');
 
-  // Modal states
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [currentPatient, setCurrentPatient] = useState<Partial<Patient> | null>(null);
@@ -54,13 +54,14 @@ const MesPatients = () => {
     const q = search.toLowerCase();
     setFiltered(
       patients.filter(p =>
-        p.nom.toLowerCase().includes(q) ||
-        p.prenoms.toLowerCase().includes(q) ||
-        (p.telephone ?? '').includes(q) ||
-        (p.email ?? '').toLowerCase().includes(q)
+        (sexFilter === 'all' || p.sexe === sexFilter) &&
+        (p.nom.toLowerCase().includes(q) ||
+          p.prenoms.toLowerCase().includes(q) ||
+          (p.telephone ?? '').includes(q) ||
+          (p.email ?? '').toLowerCase().includes(q))
       )
     );
-  }, [search, patients]);
+  }, [search, sexFilter, patients]);
 
   const handleViewChange = (v: 'grid' | 'table') => {
     setView(v);
@@ -104,7 +105,7 @@ const MesPatients = () => {
   };
 
   const openForm = (patient?: Patient) => {
-    setCurrentPatient(patient || { nom: '', prenoms: '', sexe: 'M', date_naissance: '', telephone: '', email: '', adresse: '', groupe_sanguin: '' });
+    setCurrentPatient(patient || { nom: '', prenoms: '', sexe: 'M', date_naissance: '', telephone: '', email: '', groupe_sanguin: '' });
     setFormModalOpen(true);
   };
 
@@ -127,9 +128,9 @@ const MesPatients = () => {
 
   const bloodGroupColor = (bg?: string) => {
     if (!bg) return { bg: '#F3F4F6', text: '#6B7280' };
+    if (bg.includes('AB')) return { bg: '#EDE9FE', text: '#7C3AED' };
     if (bg.includes('A')) return { bg: '#FEE2E2', text: '#DC2626' };
     if (bg.includes('B')) return { bg: '#DBEAFE', text: '#2563EB' };
-    if (bg.includes('AB')) return { bg: '#EDE9FE', text: '#7C3AED' };
     return { bg: '#D1FAE5', text: '#065F46' };
   };
 
@@ -154,263 +155,307 @@ const MesPatients = () => {
     );
   }
 
+  const filterOptions = [
+    { key: 'all' as const, label: 'Tous', count: patients.length },
+    { key: 'M' as const, label: 'Hommes', count: patients.filter(p => p.sexe === 'M').length },
+    { key: 'F' as const, label: 'Femmes', count: patients.filter(p => p.sexe === 'F').length },
+  ];
+
   return (
     <>
-      {/* Header */}
+      {/* Page Header */}
       <div className="sp-page-header sp-fade-in">
         <div>
           <h1 className="sp-page-title">Mes Patients</h1>
           <p className="sp-page-subtitle">{patients.length} patient{patients.length > 1 ? 's' : ''} enregistré{patients.length > 1 ? 's' : ''}</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          {isAdmin && (
-            <button className="sp-btn sp-btn-primary" onClick={() => openForm()}>
-              <PlusCircle size={18} />
-              <span>Nouveau patient</span>
-            </button>
-          )}
-        </div>
+        {isAdmin && (
+          <button className="sp-btn sp-btn-primary" onClick={() => openForm()}>
+            <PlusCircle size={18} />
+            <span>Nouveau patient</span>
+          </button>
+        )}
       </div>
 
-      {/* Toolbar */}
-      <div className="sp-card sp-fade-in" style={{ padding: '12px 20px', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
-            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }} />
-            <input
-              type="text"
-              placeholder="Rechercher par nom, prénom, téléphone..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="sp-input"
-              style={{ paddingLeft: '38px', height: '40px' }}
-            />
-          </div>
-          <div className="sp-view-toggle">
-            <button className={`sp-view-btn ${view === 'grid' ? 'active' : ''}`} onClick={() => handleViewChange('grid')} title="Vue cartes">
-              <Grid size={18} />
-            </button>
-            <button className={`sp-view-btn ${view === 'table' ? 'active' : ''}`} onClick={() => handleViewChange('table')} title="Vue tableau">
-              <List size={18} />
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* Main Panel */}
+      <div className="sp-card sp-fade-in" style={{ padding: 0, overflow: 'hidden' }}>
 
-      {/* Main View */}
-      {filtered.length === 0 ? (
-        <div className="sp-card sp-fade-in" style={{ padding: '60px', textAlign: 'center' }}>
-          <User size={48} style={{ color: '#D1D5DB', margin: '0 auto 16px' }} />
-          <h3 style={{ color: '#1F2937', marginBottom: '8px' }}>Aucun patient trouvé</h3>
-          <p style={{ color: '#6B7280' }}>
-            {search ? `Aucun résultat pour "${search}"` : 'Aucun patient enregistré dans le système.'}
-          </p>
+        {/* Toolbar */}
+        <div style={{
+          padding: '14px 20px',
+          borderBottom: '1px solid #F3F4F6',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          flexWrap: 'wrap',
+        }}>
+          <span style={{ fontSize: '15px', fontWeight: 700, color: '#1F2937', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            Liste des patients
+          </span>
+
+          {/* Filter pills */}
+          <div style={{ display: 'flex', gap: '6px', flex: 1, flexWrap: 'wrap' }}>
+            {filterOptions.map(({ key, label, count }) => {
+              const isActive = sexFilter === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setSexFilter(key)}
+                  style={{
+                    padding: '4px 14px',
+                    borderRadius: '20px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    background: isActive ? '#0B2545' : 'transparent',
+                    color: isActive ? '#fff' : '#6B7280',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {label} ({count})
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Search + View toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ position: 'relative' }}>
+              <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }} />
+              <input
+                type="text"
+                placeholder="Rechercher patient, motif..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="sp-input"
+                style={{ paddingLeft: '32px', height: '36px', width: '220px', fontSize: '13px' }}
+              />
+            </div>
+            <div className="sp-view-toggle">
+              <button className={`sp-view-btn ${view === 'grid' ? 'active' : ''}`} onClick={() => handleViewChange('grid')} title="Vue cartes">
+                <Grid size={16} />
+              </button>
+              <button className={`sp-view-btn ${view === 'table' ? 'active' : ''}`} onClick={() => handleViewChange('table')} title="Vue tableau">
+                <List size={16} />
+              </button>
+            </div>
+          </div>
         </div>
-      ) : (
-        <>
-          {view === 'grid' ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }} className="sp-fade-in">
-              {filtered.map(patient => {
-                const bgColor = bloodGroupColor(patient.groupe_sanguin);
-                return (
-                  <div key={patient.patient_id} className="sp-card patient-card-hover" style={{ padding: '20px', position: 'relative', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', overflow: 'hidden' }}>
-                    {/* Admin Actions overlay (Hover) */}
-                    {isAdmin && (
-                      <div className="patient-actions-overlay" style={{ 
-                        position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '6px', 
-                        opacity: 0, transform: 'translateY(-10px)', transition: 'all 0.2s ease' 
+
+        {/* Content */}
+        {filtered.length === 0 ? (
+          <div style={{ padding: '60px', textAlign: 'center' }}>
+            <User size={48} style={{ color: '#D1D5DB', margin: '0 auto 16px' }} />
+            <h3 style={{ color: '#1F2937', marginBottom: '8px' }}>Aucun patient trouvé</h3>
+            <p style={{ color: '#6B7280' }}>
+              {search ? `Aucun résultat pour "${search}"` : 'Aucun patient enregistré dans le système.'}
+            </p>
+          </div>
+        ) : view === 'grid' ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', padding: '20px' }}>
+            {filtered.map(patient => (
+              <div
+                key={patient.patient_id}
+                className="sp-item-card mp-patient-card"
+                style={{ padding: '20px', display: 'flex', flexDirection: 'column', minHeight: '260px' }}
+              >
+                {/* Admin actions */}
+                {isAdmin && (
+                  <div className="mp-actions-overlay" style={{
+                    position: 'absolute', top: '12px', right: '12px',
+                    display: 'flex', gap: '6px',
+                    opacity: 0, transform: 'translateY(-6px)', transition: 'all 0.2s ease',
+                  }}>
+                    <button onClick={() => openForm(patient)} className="sp-btn sp-btn-ghost sp-btn-sm" style={{ background: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', padding: '6px' }} title="Modifier">
+                      <Edit2 size={14} style={{ color: '#4F46E5' }} />
+                    </button>
+                    <button onClick={() => openDelete(patient)} className="sp-btn sp-btn-ghost sp-btn-sm" style={{ background: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', padding: '6px' }} title="Supprimer">
+                      <Trash2 size={14} style={{ color: '#EF4444' }} />
+                    </button>
+                  </div>
+                )}
+
+                {/* Avatar + Name + Badges */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '14px' }}>
+                  <div
+                    className="sp-item-avatar"
+                    style={{ width: '46px', height: '46px', fontSize: '16px', borderRadius: '10px', flexShrink: 0 }}
+                  >
+                    {getInitials(patient.nom, patient.prenoms)}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <Link
+                      to={`/dossier-patient/${patient.patient_id}`}
+                      style={{
+                        fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '15px',
+                        color: 'var(--sp-primary)', textDecoration: 'none', display: 'block',
+                        marginBottom: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {patient.prenoms} {patient.nom}
+                    </Link>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{
+                        padding: '2px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 600,
+                        background: patient.sexe === 'M' ? '#DBEAFE' : '#FCE7F3',
+                        color: patient.sexe === 'M' ? '#1D4ED8' : '#BE185D',
                       }}>
-                        <button onClick={() => openForm(patient)} className="sp-btn sp-btn-ghost sp-btn-sm" style={{ background: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', padding: '6px' }} title="Modifier">
-                          <Edit2 size={14} style={{ color: '#4F46E5' }} />
-                        </button>
-                        <button onClick={() => openDelete(patient)} className="sp-btn sp-btn-ghost sp-btn-sm" style={{ background: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', padding: '6px' }} title="Supprimer">
-                          <Trash2 size={14} style={{ color: '#EF4444' }} />
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Header patient */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
-                      <Link
-                        to={`/dossier-patient/${patient.patient_id}`}
-                        style={{
-                          width: '52px', height: '52px', borderRadius: '14px',
-                          background: patient.sexe === 'M'
-                            ? 'linear-gradient(135deg, #3B82F6, #1D4ED8)'
-                            : 'linear-gradient(135deg, #EC4899, #BE185D)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          color: '#fff', fontSize: '18px', fontWeight: 700, flexShrink: 0,
-                          textDecoration: 'none', cursor: 'pointer',
-                          transition: 'transform 0.2s, box-shadow 0.2s'
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
-                        title="Voir le dossier patient"
-                      >
-                        {getInitials(patient.nom, patient.prenoms)}
-                      </Link>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <Link
-                          to={`/dossier-patient/${patient.patient_id}`}
-                          style={{ fontWeight: 700, color: '#1F2937', fontSize: '15px', textDecoration: 'none', display: 'block', cursor: 'pointer' }}
-                          onMouseEnter={e => { e.currentTarget.style.color = '#4F46E5'; e.currentTarget.style.textDecoration = 'underline'; }}
-                          onMouseLeave={e => { e.currentTarget.style.color = '#1F2937'; e.currentTarget.style.textDecoration = 'none'; }}
-                          title="Voir le dossier patient"
-                        >
-                          {patient.prenoms} {patient.nom}
-                        </Link>
-                        <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
-                          #{patient.patient_id.toString().padStart(4, '0')} · {patient.sexe === 'M' ? '♂ Masculin' : '♀ Féminin'}
-                        </div>
-                      </div>
+                        {patient.sexe === 'M' ? '♂ Masculin' : '♀ Féminin'}
+                      </span>
                       {patient.groupe_sanguin && (
                         <span style={{
-                          padding: '3px 8px', background: bgColor.bg, color: bgColor.text,
-                          borderRadius: '6px', fontSize: '12px', fontWeight: 700, flexShrink: 0
+                          padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 700,
+                          background: bloodGroupColor(patient.groupe_sanguin).bg,
+                          color: bloodGroupColor(patient.groupe_sanguin).text,
                         }}>
                           {patient.groupe_sanguin}
                         </span>
                       )}
                     </div>
-
-                    {/* Infos */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#4B5563' }}>
-                        <Calendar size={13} style={{ color: '#9CA3AF', flexShrink: 0 }} />
-                        <span>{new Date(patient.date_naissance).toLocaleDateString('fr-FR')} ({calculateAge(patient.date_naissance)} ans)</span>
-                      </div>
-                      {patient.telephone && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#4B5563' }}>
-                          <Phone size={13} style={{ color: '#9CA3AF', flexShrink: 0 }} />
-                          <span>{patient.telephone}</span>
-                        </div>
-                      )}
-                      {patient.email && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#4B5563' }}>
-                          <Mail size={13} style={{ color: '#9CA3AF', flexShrink: 0 }} />
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{patient.email}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div style={{ display: 'flex', gap: '8px', paddingTop: '12px', borderTop: '1px solid #F3F4F6' }}>
-                      <Link
-                        to={`/dossier-patient/${patient.patient_id}`}
-                        className="sp-btn sp-btn-primary"
-                        style={{ flex: 1, justifyContent: 'center', fontSize: '13px', padding: '8px' }}
-                      >
-                        <Clipboard size={14} /> Dossier
-                      </Link>
-                      <Link
-                        to="/consultation/nouvelle"
-                        className="sp-btn sp-btn-outline"
-                        style={{ flex: 1, justifyContent: 'center', fontSize: '13px', padding: '8px' }}
-                      >
-                        <Calendar size={14} /> Consulter
-                      </Link>
-                    </div>
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            /* Table View */
-            <div className="sp-card sp-fade-in" style={{ overflow: 'hidden' }}>
-              <div className="sp-table-wrap">
-                <table className="sp-table">
-                  <thead>
-                    <tr>
-                      <th>Patient</th>
-                      <th>Sexe</th>
-                      <th>Âge</th>
-                      <th>Téléphone</th>
-                      <th>Groupe</th>
-                      <th style={{ textAlign: 'right' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map(patient => (
-                      <tr key={patient.patient_id} className="sp-table-row-hover">
-                        <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <Link
-                              to={`/dossier-patient/${patient.patient_id}`}
-                              style={{ 
-                                width: '32px', height: '32px', borderRadius: '8px', fontSize: '12px', fontWeight: 700, color: '#fff', 
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                background: patient.sexe === 'M' ? '#3B82F6' : '#EC4899',
-                                textDecoration: 'none', cursor: 'pointer',
-                                transition: 'transform 0.2s, box-shadow 0.2s'
-                              }}
-                              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)'; }}
-                              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
-                              title="Voir le dossier patient"
-                            >
-                              {getInitials(patient.nom, patient.prenoms)}
-                            </Link>
-                            <div>
-                              <Link
-                                to={`/dossier-patient/${patient.patient_id}`}
-                                style={{ fontWeight: 600, color: '#1F2937', textDecoration: 'none', display: 'block', cursor: 'pointer' }}
-                                onMouseEnter={e => { e.currentTarget.style.color = '#4F46E5'; e.currentTarget.style.textDecoration = 'underline'; }}
-                                onMouseLeave={e => { e.currentTarget.style.color = '#1F2937'; e.currentTarget.style.textDecoration = 'none'; }}
-                                title="Voir le dossier patient"
-                              >
-                                {patient.prenoms} {patient.nom}
-                              </Link>
-                              <div style={{ fontSize: '11px', color: '#9CA3AF' }}>#{patient.patient_id.toString().padStart(4, '0')}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span style={{ fontSize: '13px', color: patient.sexe === 'M' ? '#3B82F6' : '#EC4899', fontWeight: 600 }}>
-                            {patient.sexe === 'M' ? '♂ Masc.' : '♀ Fém.'}
-                          </span>
-                        </td>
-                        <td>{calculateAge(patient.date_naissance)} ans</td>
-                        <td>{patient.telephone || '—'}</td>
-                        <td>
-                          {patient.groupe_sanguin ? (
-                            <span style={{ padding: '2px 6px', borderRadius: '4px', background: bloodGroupColor(patient.groupe_sanguin).bg, color: bloodGroupColor(patient.groupe_sanguin).text, fontSize: '11px', fontWeight: 700 }}>
-                              {patient.groupe_sanguin}
-                            </span>
-                          ) : '—'}
-                        </td>
-                        <td>
-                          <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
-                            <Link to={`/dossier-patient/${patient.patient_id}`} className="sp-btn sp-btn-ghost sp-btn-sm" title="Voir dossier">
-                              <Clipboard size={14} />
-                            </Link>
-                            {isAdmin && (
-                              <>
-                                <button onClick={() => openForm(patient)} className="sp-btn sp-btn-ghost sp-btn-sm" title="Modifier">
-                                  <Edit2 size={14} style={{ color: '#4F46E5' }} />
-                                </button>
-                                <button onClick={() => openDelete(patient)} className="sp-btn sp-btn-ghost sp-btn-sm" title="Supprimer">
-                                  <Trash2 size={14} style={{ color: '#EF4444' }} />
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </>
-      )}
+                </div>
 
-      {/* Styles pour le survol */}
+                {/* Info label */}
+                <div style={{ fontSize: '12.5px', color: 'var(--sp-gray-500)', marginBottom: '10px' }}>
+                  Informations patient :
+                </div>
+
+                {/* Info rows — flex:1 pour pousser les boutons en bas */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px' }}>
+                    <Calendar size={14} style={{ color: 'var(--sp-gray-400)', flexShrink: 0 }} />
+                    <span style={{ color: 'var(--sp-gray-700)' }}>{new Date(patient.date_naissance).toLocaleDateString('fr-FR')} · {calculateAge(patient.date_naissance)} ans</span>
+                  </div>
+                  {patient.telephone && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px' }}>
+                      <Phone size={14} style={{ color: 'var(--sp-gray-400)', flexShrink: 0 }} />
+                      <span style={{ color: 'var(--sp-gray-700)' }}>{patient.telephone}</span>
+                    </div>
+                  )}
+                  {patient.email && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px' }}>
+                      <Mail size={14} style={{ color: 'var(--sp-gray-400)', flexShrink: 0 }} />
+                      <span style={{ color: 'var(--sp-gray-700)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{patient.email}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions — toujours en bas grâce à flex:1 sur la section infos */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  paddingTop: '14px', marginTop: '14px', borderTop: '1px solid var(--sp-gray-100)',
+                }}>
+                  <Link
+                    to={`/consultation/nouvelle?patientId=${patient.patient_id}`}
+                    className="sp-btn sp-btn-outline"
+                    style={{ padding: '6px 14px', fontSize: '12px', height: '34px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
+                  >
+                    <Calendar size={14} /> Consulter
+                  </Link>
+                  <Link
+                    to={`/dossier-patient/${patient.patient_id}`}
+                    className="sp-btn sp-btn-primary"
+                    style={{ padding: '6px 16px', fontSize: '12px', height: '34px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
+                  >
+                    <Clipboard size={14} /> Dossier
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* Table View */
+          <div style={{ overflowX: 'auto' }}>
+            <table className="sp-table" style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Sexe</th>
+                  <th>Âge</th>
+                  <th>Téléphone</th>
+                  <th>Groupe</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(patient => (
+                  <tr key={patient.patient_id} className="sp-table-row-hover">
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Link
+                          to={`/dossier-patient/${patient.patient_id}`}
+                          style={{
+                            width: '32px', height: '32px', borderRadius: '8px', fontSize: '12px', fontWeight: 700, color: '#fff',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: patient.sexe === 'M' ? '#1a6b8a' : '#b83280',
+                            textDecoration: 'none', flexShrink: 0,
+                          }}
+                        >
+                          {getInitials(patient.nom, patient.prenoms)}
+                        </Link>
+                        <div>
+                          <Link
+                            to={`/dossier-patient/${patient.patient_id}`}
+                            style={{ fontWeight: 600, color: '#1F2937', textDecoration: 'none', display: 'block' }}
+                            onMouseEnter={e => { e.currentTarget.style.color = '#4F46E5'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = '#1F2937'; }}
+                          >
+                            {patient.prenoms} {patient.nom}
+                          </Link>
+                          <div style={{ fontSize: '11px', color: '#9CA3AF' }}>#{patient.patient_id.toString().padStart(4, '0')}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span style={{
+                        padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 600,
+                        background: patient.sexe === 'M' ? '#DBEAFE' : '#FCE7F3',
+                        color: patient.sexe === 'M' ? '#1D4ED8' : '#BE185D',
+                      }}>
+                        {patient.sexe === 'M' ? '♂ Masc.' : '♀ Fém.'}
+                      </span>
+                    </td>
+                    <td style={{ fontSize: '13px', color: '#374151' }}>{calculateAge(patient.date_naissance)} ans</td>
+                    <td style={{ fontSize: '13px', color: '#374151' }}>{patient.telephone || '—'}</td>
+                    <td>
+                      {patient.groupe_sanguin ? (
+                        <span style={{
+                          padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 700,
+                          background: bloodGroupColor(patient.groupe_sanguin).bg,
+                          color: bloodGroupColor(patient.groupe_sanguin).text,
+                        }}>
+                          {patient.groupe_sanguin}
+                        </span>
+                      ) : '—'}
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                        <Link to={`/dossier-patient/${patient.patient_id}`} className="sp-btn sp-btn-ghost sp-btn-sm" title="Voir dossier">
+                          <Clipboard size={14} />
+                        </Link>
+                        {isAdmin && (
+                          <>
+                            <button onClick={() => openForm(patient)} className="sp-btn sp-btn-ghost sp-btn-sm" title="Modifier">
+                              <Edit2 size={14} style={{ color: '#4F46E5' }} />
+                            </button>
+                            <button onClick={() => openDelete(patient)} className="sp-btn sp-btn-ghost sp-btn-sm" title="Supprimer">
+                              <Trash2 size={14} style={{ color: '#EF4444' }} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       <style>{`
-        .patient-card-hover:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
-        }
-        .patient-card-hover:hover .patient-actions-overlay {
+        .mp-patient-card:hover .mp-actions-overlay {
           opacity: 1 !important;
           transform: translateY(0) !important;
         }
@@ -419,7 +464,7 @@ const MesPatients = () => {
         }
       `}</style>
 
-      {/* Modal Formulaire (Ajout/Edition) */}
+      {/* Modal Formulaire */}
       {formModalOpen && (
         <div className="sp-modal-overlay open">
           <div className="sp-modal" style={{ maxWidth: '600px' }}>

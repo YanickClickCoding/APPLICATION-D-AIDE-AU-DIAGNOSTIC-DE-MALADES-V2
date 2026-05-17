@@ -12,7 +12,6 @@ from ..models.consultation import Consultation
 from ..models.diagnostic import Diagnostic
 from ..models.analyse_ia import AnalyseIA
 from ..models.user import User
-from ..models.training_log import ModelTrainingLog
 
 logger = logging.getLogger(__name__)
 
@@ -271,15 +270,8 @@ class DashboardService:
         logger.info("🎯 Récupération des métriques du modèle...")
         
         try:
-            # Dernière version déployée
-            last_model = self.db.query(ModelTrainingLog).filter(
-                ModelTrainingLog.deployed == True
-            ).order_by(
-                ModelTrainingLog.training_date.desc()
-            ).first()
-            
+            last_model = None
             if not last_model:
-                logger.warning("⚠️ Aucun modèle déployé trouvé")
                 return {
                     'model_deployed': False,
                     'message': 'Aucun modèle déployé'

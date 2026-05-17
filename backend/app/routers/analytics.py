@@ -225,11 +225,16 @@ def get_model_performance(db: Session = Depends(get_db)) -> Dict:
 @router.get("/consultations/recent")
 def get_recent_consultations(limit: int = 10, db: Session = Depends(get_db)) -> List[Dict]:
     """
-    Consultations récentes avec patient_id pour accès au dossier
+    Consultations récentes avec patient_id pour accès au dossier.
+    Exclut les consultations orphelines (patient supprimé hors API).
     """
-    consultations = db.query(Consultation).order_by(
-        Consultation.date_heure.desc()
-    ).limit(limit).all()
+    consultations = (
+        db.query(Consultation)
+        .join(Patient, Consultation.patient_id == Patient.patient_id)
+        .order_by(Consultation.date_heure.desc())
+        .limit(limit)
+        .all()
+    )
     
     return [
         {

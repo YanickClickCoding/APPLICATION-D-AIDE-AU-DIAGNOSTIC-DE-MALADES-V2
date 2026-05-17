@@ -46,6 +46,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
+  // Écouter les expirations de session émises par fetchAPI
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      // Éviter de déclencher si déjà déconnecté
+      if (!localStorage.getItem('sp_token')) return;
+      localStorage.removeItem('sp_token');
+      localStorage.removeItem('sp_user');
+      setUser(null);
+      setToken(null);
+      window.location.href = '/login?session=expired';
+    };
+    window.addEventListener('auth:session-expired', handleSessionExpired);
+    return () => window.removeEventListener('auth:session-expired', handleSessionExpired);
+  }, []);
+
   const login = async (email: string, password: string) => {
     console.log('📡 AuthContext.login appelé avec:', email);
     try {
@@ -68,16 +83,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    // Appeler l'API de déconnexion si on a un token
-    if (token) {
-      authAPI.logout(token).catch(console.error);
-    }
-
-    // Nettoyer l'état et le localStorage
+    // Nettoyer l'état local immédiatement
     setUser(null);
     setToken(null);
     localStorage.removeItem('sp_token');
     localStorage.removeItem('sp_user');
+
+    // Notifier le serveur (best-effort, erreurs ignorées)
+    if (token) {
+      authAPI.logout(token).catch(() => {});
+    }
   };
 
   return (

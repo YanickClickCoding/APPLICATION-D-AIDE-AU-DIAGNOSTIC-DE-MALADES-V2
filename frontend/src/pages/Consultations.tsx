@@ -23,6 +23,7 @@ type ViewMode = 'grid' | 'table';
 
 const Consultations = () => {
   const { isAdmin, user } = useAuth();
+  const isInfirmier = user?.role === 'infirmier';
   const { showToast } = useToast();
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [medecins, setMedecins] = useState<Medecin[]>([]);
@@ -485,8 +486,26 @@ const Consultations = () => {
                               paddingTop: '14px', marginTop: '14px', borderTop: '1px solid var(--sp-gray-100)'
                             }}
                           >
-                            {/* Bouton "Voir les X" si plusieurs consultations */}
-                            {count > 1 ? (
+                            {/* Bouton gauche : "Voir les X" ou "Continuer" pour att. médecin */}
+                            {c.statut === 'en_attente_medecin' && user?.role === 'medecin' ? (
+                              c.medecin_id === user.medecin_id ? (
+                                <Link
+                                  to={`/consultation/nouvelle?reprendre=${c.id}`}
+                                  className="sp-btn sp-btn-outline"
+                                  style={{ padding: '6px 14px', fontSize: '12px', height: '34px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
+                                >
+                                  <Play size={14} /> Continuer
+                                </Link>
+                              ) : (
+                                <button
+                                  className="sp-btn sp-btn-outline"
+                                  style={{ padding: '6px 14px', fontSize: '12px', height: '34px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.45, cursor: 'not-allowed' }}
+                                  onClick={() => showToast(`Ce dossier est réservé au Dr. ${getMedecinName(c.medecin_id)}`, 'info')}
+                                >
+                                  <Play size={14} /> Continuer
+                                </button>
+                              )
+                            ) : count > 1 ? (
                               <button
                                 className="sp-btn sp-btn-outline"
                                 style={{ padding: '6px 14px', fontSize: '12px', height: '34px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -771,10 +790,12 @@ const Consultations = () => {
                     <label className="sp-form-label">Nom du patient <span style={{ color: '#EF4444' }}>*</span></label>
                     <div className="sp-input-icon-wrap">
                       <User size={18} className="sp-input-icon" />
-                      <input type="text" className="sp-form-input" style={{ paddingLeft: '40px' }} required
+                      <input type="text" className="sp-form-input" required
                         placeholder="Nom complet du patient"
                         value={formData.nom_patient || ''}
-                        onChange={e => setFormData({ ...formData, nom_patient: e.target.value })} />
+                        readOnly={isInfirmier}
+                        onChange={e => { if (!isInfirmier) setFormData({ ...formData, nom_patient: e.target.value }); }}
+                        style={{ paddingLeft: '40px', ...(isInfirmier ? { background: '#F3F4F6', cursor: 'not-allowed', color: '#6B7280', borderColor: '#E5E7EB' } : {}) }} />
                     </div>
                   </div>
                   <div className="sp-form-group" style={{ marginBottom: '18px' }}>

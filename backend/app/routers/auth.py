@@ -445,16 +445,12 @@ async def get_me(current_user: User = Depends(get_current_active_user)):
 
 
 @router.post("/logout")
-async def logout(current_user: User = Depends(get_current_active_user)):
+async def logout():
     """
-    Déconnexion (côté client, supprimer le token)
+    Déconnexion — JWT est stateless, rien à invalider côté serveur.
+    Retourne toujours 200 ; le client supprime son token local.
     """
-    logger.info(f"Déconnexion: {current_user.email}")
-    
-    return {
-        "message": "Déconnexion réussie",
-        "detail": "Supprimez le token côté client"
-    }
+    return {"message": "Déconnexion réussie"}
 
 
 @router.post("/refresh", response_model=Token)

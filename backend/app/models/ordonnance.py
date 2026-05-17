@@ -8,7 +8,7 @@ class Ordonnance(Base):
     __tablename__ = "ordonnances"
     ordonnance_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     traitement_id = Column(Integer, ForeignKey("traitements.traitement_id"), nullable=False, unique=True)
-    medecin_id = Column(Integer, ForeignKey("medecins.medecin_id"), nullable=False)
+    medecin_id = Column(Integer, ForeignKey("medecins.medecin_id"), nullable=True)
     patient_id = Column(Integer, ForeignKey("patients.patient_id"), nullable=False)
     dossier_id = Column(Integer, ForeignKey("dossiers_medicaux.dossier_id"), nullable=False)
     posologie_generale = Column(Text)

@@ -2,7 +2,7 @@
 Patients API Router (US-001, US-004)
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 from typing import List
 from uuid import UUID
@@ -13,8 +13,6 @@ from ..models import (
     AnalyseIA, Diagnostic, Examen, Traitement, Ordonnance, Medicament, Suivi
 )
 from ..models.prediction_history import PredictionHistory
-from ..models.prescription import Prescription
-from ..models.feedback import DoctorFeedback
 from ..schemas.patient_schema import PatientCreate, PatientResponse, PatientUpdate
 
 router = APIRouter(prefix="/patients", tags=["Patients"])
@@ -43,12 +41,13 @@ def search_patients(q: str = Query(..., min_length=1), db: Session = Depends(get
             continue
         seen_patient_ids.add(p.patient_id)
         
-        # Chercher la dernière consultation en attente pour ce patient
+        # Chercher la dernière consultation COMPLÈTEMENT préparée par l'infirmier
+        # (statut en_attente_medecin = workflow-partiel terminé, symptômes + signes vitaux enregistrés)
         pending = (
             db.query(Consultation)
             .filter(
                 Consultation.patient_id == p.patient_id,
-                Consultation.statut == "en attente",
+                Consultation.statut == "en_attente_medecin",
             )
             .order_by(Consultation.date_heure.desc())
             .first()
@@ -70,6 +69,7 @@ def search_patients(q: str = Query(..., min_length=1), db: Session = Depends(get
             "derniere_consultation_statut": latest.statut if latest else None,
             "derniere_consultation_date": str(latest.date_heure) if latest else None,
             "consultation_en_attente_id": pending.consultation_id if pending else None,
+            "consultation_en_attente_medecin_id": pending.medecin_id if pending else None,
         })
     return results
 
@@ -104,7 +104,13 @@ def list_patients(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
     """
     Liste tous les patients
     """
-    patients = db.query(Patient).offset(skip).limit(limit).all()
+    patients = (
+        db.query(Patient)
+        .options(joinedload(Patient.dossier_medical))
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
     return patients
 
 
@@ -113,7 +119,12 @@ def get_patient(patient_id: int, db: Session = Depends(get_db)):
     """
     Récupère un patient par son ID (INT)
     """
-    patient = db.query(Patient).filter(Patient.patient_id == patient_id).first()
+    patient = (
+        db.query(Patient)
+        .options(joinedload(Patient.dossier_medical))
+        .filter(Patient.patient_id == patient_id)
+        .first()
+    )
     if not patient:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -204,15 +215,12 @@ def delete_patient(patient_id: int, db: Session = Depends(get_db)):
         db.query(Examen).filter(Examen.consultation_id.in_(cids)).delete(synchronize_session=False)
         db.query(SignesVitaux).filter(SignesVitaux.consultation_id.in_(cids)).delete(synchronize_session=False)
         db.query(Symptome).filter(Symptome.consultation_id.in_(cids)).delete(synchronize_session=False)
-        db.query(DoctorFeedback).filter(DoctorFeedback.consultation_id.in_(cids)).delete(synchronize_session=False)
         db.query(PredictionHistory).filter(PredictionHistory.consultation_id.in_(cids)).delete(synchronize_session=False)
-        db.query(Prescription).filter(Prescription.consultation_id.in_(cids)).delete(synchronize_session=False)
         db.query(Suivi).filter(Suivi.consultation_id.in_(cids)).delete(synchronize_session=False)
 
     # 4. Supprimer les données liées directement au patient (hors consultations)
     db.query(Suivi).filter(Suivi.patient_id == patient_id).delete(synchronize_session=False)
     db.query(PredictionHistory).filter(PredictionHistory.patient_id == patient_id).delete(synchronize_session=False)
-    db.query(Prescription).filter(Prescription.patient_id == patient_id).delete(synchronize_session=False)
     # Ordonnances liées directement au patient (hors chaîne traitement)
     db.query(Ordonnance).filter(Ordonnance.patient_id == patient_id).delete(synchronize_session=False)
 

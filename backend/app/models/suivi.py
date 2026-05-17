@@ -8,7 +8,7 @@ class Suivi(Base):
     __tablename__ = "suivis"
     suivi_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     patient_id = Column(Integer, ForeignKey("patients.patient_id"), nullable=False)
-    medecin_id = Column(Integer, ForeignKey("medecins.medecin_id"), nullable=False)
+    medecin_id = Column(Integer, ForeignKey("medecins.medecin_id"), nullable=True)
     consultation_id = Column(Integer, ForeignKey("consultations.consultation_id"))
     diagnostic_id = Column(Integer, ForeignKey("diagnostics.diagnostic_id"))
     traitement_id = Column(Integer, ForeignKey("traitements.traitement_id"))

@@ -1,0 +1,591 @@
+@startuml DiagrammeClasseCorrige
+
+skinparam classAttributeIconSize 0
+skinparam classFontStyle Bold
+skinparam classBackgroundColor #FAFAFA
+skinparam classBorderColor #555555
+skinparam ArrowColor #333333
+skinparam NoteBackgroundColor #FFFFCC
+
+' ============================================================
+' ENUMERATIONS
+' ============================================================
+
+enum StatutCompte {
+  actif
+  suspendu
+  en_attente
+  desactive
+}
+
+enum StatutVerification {
+  non_verifie
+  en_attente
+  verifie
+  rejete
+}
+
+enum StatutDisponibilite {
+  disponible
+  occupe
+  hors_ligne
+}
+
+enum StatutCommande {
+  en_attente
+  confirmee
+  en_confection
+  prete_a_livrer
+  livree
+  annulee
+}
+
+enum StatutPaiement {
+  en_attente
+  complete
+  echoue
+  rembourse
+}
+
+enum StatutLitige {
+  ouvert
+  en_cours
+  resolu
+  ferme
+}
+
+enum TypeNotification {
+  commande
+  paiement
+  livraison
+  message
+  litige
+  systeme
+}
+
+enum AdminRole {
+  super_admin
+  moderateur
+  support
+}
+
+enum TypeVetement {
+  costume
+  robe
+  chemise
+  pantalon
+  boubou
+  autre
+}
+
+enum ModePaiement {
+  mobile_money
+  carte
+  especes
+  virement
+}
+
+' ============================================================
+' CLASSES
+' ============================================================
+
+abstract class Utilisateur {
+  - id_utilisateur : int
+  - nom : varchar
+  - prenom : varchar
+  - email : varchar
+  - telephone : varchar
+  - mot_de_passe : varchar
+  - photo_profil : varchar
+  - statut_compte : StatutCompte
+  + seConnecter() : bool
+  + seDeconnecter() : void
+  + mettreAJourProfil() : void
+}
+
+class Client {
+  - adresse_default : varchar
+  - ville : varchar
+  - quartier : varchar
+  - code_postal : varchar
+  + enregistrerMesures() : void
+  + passerCommande() : void
+  + consulterCommandes() : void
+  + partagerPosition() : void
+  + rechercherTailleursProches() : void
+}
+
+class Tailleur {
+  - nom_atelier : varchar
+  - description_atelier : text
+  - adresse_atelier : varchar
+  - zone_service : varchar
+  - specialites : text
+  - tarif_indicatif : decimal
+  - note_moyenne : decimal
+  - statut_verification : StatutVerification
+  + gererCatalogue() : void
+  + gererCommandes() : void
+  + mettreAJourStatutCommande() : void
+  + consulterStatistiques() : void
+  + afficherZoneCouverture() : void
+}
+
+class Livreur {
+  - vehicule_type : varchar
+  - plaque_immatriculation : varchar
+  - zone_couverture : varchar
+  - note_moyenne : decimal
+  - statut_disponibilite : StatutDisponibilite
+  + consulterMissions() : void
+  + confirmerCollecte() : void
+  + confirmerLivraison() : void
+  + partagerPosition() : void
+  + calculerDistance() : decimal
+  + mettreAJourPosition() : void
+}
+
+class Administrateur {
+  - role : AdminRole
+  - niveau_acces : int
+  + gererUtilisateurs() : void
+  + modererAvis() : void
+  + gererLitiges() : void
+  + superviserPaiements() : void
+  + configurerPlateforme() : void
+}
+
+class Localisation {
+  - id_localisation : int
+  - latitude : decimal
+  - longitude : decimal
+  - adresse_complete : varchar
+  - ville : varchar
+  - code_postal : varchar
+  - pays : varchar
+  - date_mise_a_jour : datetime
+  + obtenirPosition() : void
+  + mettreAJourPosition() : void
+}
+
+class Mesure {
+  - id_mesure : int
+  - unite : varchar
+  - poitrine : decimal
+  - taille : decimal
+  - hanches : decimal
+  - epaules : decimal
+  - longueur_bras : decimal
+  - tour_cou : decimal
+  - longueur_dos : decimal
+  - notes_complementaires : text
+  - date_enregistrement : datetime
+  + afficher() : void
+  + mettreAJour() : void
+}
+
+class Catalogue {
+  - id_catalogue : int
+  - id_tailleur : int
+  - titre : varchar
+  - description : text
+  - date_creation : datetime
+  + ajouterModele() : void
+  + mettreAJour() : void
+}
+
+class Modele {
+  - id_modele : int
+  - id_catalogue : int
+  - nom : varchar
+  - description : text
+  - prix_indicatif : decimal
+  - photo : varchar
+  - type : TypeVetement
+  - date_creation : datetime
+}
+
+class Commande {
+  - id_commande : int
+  - reference : varchar
+  - description : text
+  - date_soumission : datetime
+  - date_creation : datetime
+  - statut : StatutCommande
+  - montant_total : decimal
+  - photo_reference : varchar
+  - notes : varchar
+  + calculerMontant() : decimal
+  + annuler() : void
+  + mettreAJourStatut() : void
+}
+
+class Livraison {
+  - id_livraison : int
+  - id_commande : int
+  - id_livreur : int
+  - adresse_collecte : varchar
+  - latitude_collecte : decimal
+  - longitude_collecte : decimal
+  - adresse_livraison : varchar
+  - latitude_livraison : decimal
+  - longitude_livraison : decimal
+  - distance_km : decimal
+  - duree_estimee : int
+  - date_collecte_prevue : datetime
+  - date_livraison_prevue : datetime
+  + confirmerCollecte() : void
+  + confirmerLivraison() : void
+  + suivreLivraison() : void
+  + estimerTempsLivraison() : int
+}
+
+class SuiviLivraison {
+  - id_suivi : int
+  - id_livraison : int
+  - latitude : decimal
+  - longitude : decimal
+  - horodatage : datetime
+  + enregistrerPosition() : void
+  + obtenirHistorique() : list
+}
+
+class Paiement {
+  - id_paiement : int
+  - id_commande : int
+  - id_tailleur : int
+  - montant_paye : decimal
+  - mode_paiement : ModePaiement
+  - statut : StatutPaiement
+  - reference_transaction : varchar
+  - date_creation : datetime
+  - date_paiement : datetime
+  + initier() : void
+  + traiter() : void
+  + rembourser() : void
+}
+
+class Litige {
+  - id_litige : int
+  - id_commande : int
+  - id_client : int
+  - id_tailleur : int
+  - motif : varchar
+  - description : text
+  - resolution : text
+  - statut : StatutLitige
+  - date_ouverture : datetime
+  - date_resolution : datetime
+  + ouvrir() : void
+  + traiter() : void
+  + resoudre() : void
+  + fermer() : void
+}
+
+class Conversation {
+  - id_conversation : int
+  - id_participant1 : int
+  - id_participant2 : int
+  - date_creation : datetime
+  - date_dernierMessage : datetime
+}
+
+class Message {
+  - id_message : int
+  - id_conversation : int
+  - id_expediteur : int
+  - id_destinataire : int
+  - contenu : text
+  - date_envoi : datetime
+  - lu : bool
+  + marquerCommeLu() : void
+}
+
+class Notification {
+  - id_notification : int
+  - id_utilisateur : int
+  - id_commande : int
+  - type : TypeNotification
+  - message : text
+  - lu : bool
+  - horodatage : datetime
+  + posterCommeLu() : void
+  + marquerCommeLu() : void
+}
+
+class Avis {
+  - id_avis : int
+  - id_commande : int
+  - id_auteur : int
+  - id_tailleur : int
+  - note : int
+  - commentaire : text
+  - date_avis : datetime
+  + modifierAvis() : void
+}
+
+' ============================================================
+' ============================================================
+'  RELATIONS — regroupées par type
+' ============================================================
+' ============================================================
+
+' ============================================================
+' 1. HÉRITAGE (Généralisation)
+' ------------------------------------------------------------
+' Notation PlantUML : SousClasse <|-- ParentClasse
+'   → le triangle creux pointe VERS le parent (Utilisateur)
+'   → la flèche part DE la sous-classe
+'
+' Cardinalité : implicite 1..1 (une sous-classe EST exactement
+'   un Utilisateur, pas zéro, pas plusieurs)
+'
+' Justification : relation IS-A. Client, Tailleur, Livreur et
+'   Administrateur héritent des attributs communs (nom, email,
+'   mot_de_passe, etc.) et des méthodes de base (seConnecter…)
+'   définis dans Utilisateur. Utilisateur est abstract car on
+'   ne crée jamais un "utilisateur brut" sans rôle spécifique.
+' ============================================================
+
+Utilisateur <|-- Client
+Utilisateur <|-- Tailleur
+Utilisateur <|-- Livreur
+Utilisateur <|-- Administrateur
+
+' ============================================================
+' 2. COMPOSITION (cycle de vie dépendant, partie ⊂ tout)
+' ------------------------------------------------------------
+' Notation PlantUML : Tout "1" *-- "n" Partie : label
+'   → diamant PLEIN du côté du Tout (conteneur)
+'   → flèche vers la Partie (contenu)
+'
+' Signification : la Partie NE PEUT PAS exister sans le Tout.
+'   Si le Tout est supprimé, la Partie l'est aussi (CASCADE).
+'   Un seul Tout à la fois peut posséder la Partie.
+' ============================================================
+
+' Client (1) *-- (0..*) Mesure
+'   Flèche : Client → Mesure
+'   Cardinalité : un Client possède zéro ou plusieurs Mesures ;
+'     une Mesure appartient à exactement un Client.
+'   Justification : des mesures corporelles sans client sont
+'     inutiles et n'ont aucun sens métier. Suppression en cascade.
+Client "1" *-- "0..*" Mesure : possède
+
+' Tailleur (1) *-- (1..*) Catalogue
+'   Flèche : Tailleur → Catalogue
+'   Cardinalité : un Tailleur gère au moins un Catalogue ;
+'     un Catalogue appartient à exactement un Tailleur.
+'   Justification : un catalogue sans tailleur est orphelin.
+'     Un tailleur doit avoir au minimum un catalogue actif.
+Tailleur "1" *-- "1..*" Catalogue : gère
+
+' Catalogue (1) *-- (0..*) Modele
+'   Flèche : Catalogue → Modele
+'   Cardinalité : un Catalogue contient zéro ou plusieurs Modèles ;
+'     un Modèle appartient à exactement un Catalogue.
+'   Justification : un modèle de vêtement ne peut pas exister
+'     en dehors d'un catalogue (pas de modèle "flottant").
+Catalogue "1" *-- "0..*" Modele : contient
+
+' Commande (1) *-- (0..1) Paiement
+'   Flèche : Commande → Paiement
+'   Cardinalité : une Commande génère zéro ou un Paiement ;
+'     un Paiement est lié à exactement une Commande.
+'   Justification : un paiement sans commande est impossible
+'     (pas de référence d'achat). Cycle de vie identique.
+Commande "1" *-- "0..1" Paiement : génère
+
+' Commande (1) *-- (0..1) Livraison
+'   Flèche : Commande → Livraison
+'   Cardinalité : une Commande déclenche zéro ou une Livraison ;
+'     une Livraison correspond à exactement une Commande.
+'   Justification : une livraison sans commande n'a aucune
+'     raison d'exister. Elle disparaît si la commande est annulée.
+Commande "1" *-- "0..1" Livraison : declenche
+
+' Livraison (1) *-- (0..*) SuiviLivraison
+'   Flèche : Livraison → SuiviLivraison
+'   Cardinalité : une Livraison génère zéro ou plusieurs points
+'     de suivi (GPS) ; chaque point appartient à une Livraison.
+'   Justification : l'historique de positions n'a de sens que
+'     rattaché à une livraison précise. Suppression en cascade.
+'   Note : SuiviLivraison conserve latitude/longitude en direct
+'     (données brutes de tracking) et n'utilise PAS Localisation.
+Livraison "1" *-- "0..*" SuiviLivraison : enregistre
+
+' Commande (1) *-- (0..1) Litige
+'   Flèche : Commande → Litige
+'   Cardinalité : une Commande peut engendrer zéro ou un Litige ;
+'     un Litige porte sur exactement une Commande.
+'   Justification : un litige sans commande est impossible
+'     (il faut un achat contesté). Il suit le cycle de la commande.
+Commande "1" *-- "0..1" Litige : peut engendrer
+
+' Commande (1) *-- (0..*) Avis
+'   Flèche : Commande → Avis
+'   Cardinalité : une Commande peut recevoir zéro ou plusieurs Avis ;
+'     un Avis porte sur exactement une Commande.
+'   Justification : un avis référence toujours une commande terminée.
+'     Sans commande, pas d'avis possible.
+Commande "1" *-- "0..*" Avis : recoit
+
+' Conversation (1) *-- (1..*) Message
+'   Flèche : Conversation → Message
+'   Cardinalité : une Conversation contient au moins un Message ;
+'     un Message appartient à exactement une Conversation.
+'   Justification : un message isolé sans fil de discussion
+'     n'a pas de contexte. Suppression cascade si conversation supprimée.
+Conversation "1" *-- "1..*" Message : contient
+
+' Utilisateur (1) *-- (0..*) Notification
+'   Flèche : Utilisateur → Notification
+'   Cardinalité : un Utilisateur reçoit zéro ou plusieurs Notifications ;
+'     une Notification est destinée à exactement un Utilisateur.
+'   Justification : une notification sans destinataire n'a aucun sens.
+'     Elle est supprimée avec le compte utilisateur.
+Utilisateur "1" *-- "0..*" Notification : recoit
+
+' ============================================================
+' 3. ASSOCIATION (relation fonctionnelle, cycles de vie indépendants)
+' ------------------------------------------------------------
+' Notation PlantUML : Source "card" --> "card" Cible : label
+'   → flèche simple de la Source vers la Cible
+'
+' Signification : les deux classes ont un cycle de vie propre.
+'   La suppression de l'un n'implique PAS la suppression de l'autre.
+'   La relation est navigable dans le sens indiqué.
+' ============================================================
+
+' Client (1) --> (0..*) Commande
+'   Flèche : Client → Commande (le client initie la commande)
+'   Cardinalité : un Client peut passer zéro ou plusieurs Commandes ;
+'     une Commande est passée par exactement un Client.
+'   Justification : Client et Commande sont indépendants — un client
+'     existe même sans commande (compte créé mais pas encore utilisé).
+Client "1" --> "0..*" Commande : passe
+
+' Tailleur (1) --> (0..*) Commande
+'   Flèche : Tailleur → Commande (le tailleur reçoit et gère)
+'   Cardinalité : un Tailleur gère zéro ou plusieurs Commandes ;
+'     une Commande est gérée par exactement un Tailleur.
+'   Justification : un tailleur existant n'a pas forcément de
+'     commandes en cours. Les deux classes vivent indépendamment.
+Tailleur "1" --> "0..*" Commande : gere
+
+' Livreur (1) --> (0..*) Livraison
+'   Flèche : Livreur → Livraison (le livreur prend en charge)
+'   Cardinalité : un Livreur effectue zéro ou plusieurs Livraisons ;
+'     une Livraison est assignée à exactement un Livreur.
+'   Justification : un livreur inscrit peut ne pas avoir de mission
+'     active. Il peut être réassigné à une autre livraison.
+Livreur "1" --> "0..*" Livraison : livre
+
+' Client (1) --> (0..*) Avis
+'   Flèche : Client → Avis (le client est l'auteur)
+'   Cardinalité : un Client peut rédiger zéro ou plusieurs Avis ;
+'     un Avis est rédigé par exactement un Client.
+'   Justification : navigation complémentaire à Commande *-- Avis.
+'     Permet de consulter tous les avis d'un client donné.
+Client "1" --> "0..*" Avis : redige
+
+' Tailleur (1) --> (0..*) Avis
+'   Flèche : Tailleur → Avis (le tailleur consulte ses évaluations)
+'   Cardinalité : un Tailleur reçoit zéro ou plusieurs Avis ;
+'     un Avis évalue exactement un Tailleur.
+'   Justification : navigation permettant à un tailleur de lire
+'     ses avis sans passer par chaque commande individuellement.
+Tailleur "1" --> "0..*" Avis : recoit
+
+' Utilisateur (1) --> (0..*) Conversation
+'   Flèche : Utilisateur → Conversation (un utilisateur participe)
+'   Cardinalité : un Utilisateur participe à zéro ou plusieurs
+'     Conversations ; une Conversation implique exactement 2 Utilisateurs.
+'   Justification : une conversation implique deux participants
+'     (id_participant1, id_participant2), ce qui empêche la composition.
+'     Les deux Utilisateurs peuvent exister sans la Conversation.
+Utilisateur "1" --> "0..*" Conversation : participe
+
+' ============================================================
+' 4. ASSOCIATION vers LOCALISATION (position centralisée)
+' ------------------------------------------------------------
+' Notation PlantUML : Classe "1" --> "0..1" Localisation : label
+'   → flèche simple vers Localisation
+'
+' Correction appliquée : latitude/longitude supprimés dans Client,
+'   Tailleur et Livreur et délégués à la classe Localisation
+'   pour éliminer la redondance de données géographiques.
+'
+' Localisation n'est PAS liée à SuiviLivraison car ce dernier
+'   stocke des coordonnées brutes éphémères (tracking temps réel),
+'   pas une adresse nommée et persistante.
+' ============================================================
+
+' Client (1) --> (0..1) Localisation
+'   Flèche : Client → Localisation
+'   Cardinalité : un Client a zéro ou une adresse principale enregistrée.
+'   Justification : la position par défaut du client (adresse de livraison
+'     habituelle) est stockée de manière centralisée dans Localisation.
+Client "1" --> "0..1" Localisation : position par defaut
+
+' Tailleur (1) --> (0..1) Localisation
+'   Flèche : Tailleur → Localisation
+'   Cardinalité : un Tailleur a zéro ou une localisation d'atelier.
+'   Justification : la position de l'atelier est utilisée pour la
+'     recherche géographique (rechercherTailleursProches) et pour
+'     afficher la zone de couverture.
+Tailleur "1" --> "0..1" Localisation : position atelier
+
+' Livreur (1) --> (0..1) Localisation
+'   Flèche : Livreur → Localisation
+'   Cardinalité : un Livreur a zéro ou une position actuelle connue.
+'   Justification : la dernière position connue du livreur est stockée
+'     dans Localisation (position mise à jour lors de partagerPosition()).
+'     L'historique complet est dans SuiviLivraison.
+Livreur "1" --> "0..1" Localisation : position actuelle
+
+' ============================================================
+' 5. DÉPENDANCE vers les ÉNUMÉRATIONS (utilisation de type)
+' ------------------------------------------------------------
+' Notation PlantUML : Classe ..> Enumeration : utilise
+'   → flèche POINTILLÉE de la Classe vers l'Énumération
+'
+' Signification : la classe utilise l'énumération comme type
+'   d'un de ses attributs. Relation faible (pas de cycle de vie
+'   partagé, juste une contrainte de valeur).
+'
+' Cardinalité : implicite — un attribut prend exactement
+'   une valeur parmi celles de l'enum.
+' ============================================================
+
+' statut_compte : StatutCompte
+Utilisateur ..> StatutCompte : utilise
+
+' statut_verification : StatutVerification
+Tailleur ..> StatutVerification : utilise
+
+' statut_disponibilite : StatutDisponibilite
+Livreur ..> StatutDisponibilite : utilise
+
+' statut : StatutCommande
+Commande ..> StatutCommande : utilise
+
+' statut : StatutPaiement
+Paiement ..> StatutPaiement : utilise
+
+' mode_paiement : ModePaiement
+Paiement ..> ModePaiement : utilise
+
+' statut : StatutLitige
+Litige ..> StatutLitige : utilise
+
+' type : TypeNotification
+Notification ..> TypeNotification : utilise
+
+' role : AdminRole
+Administrateur ..> AdminRole : utilise
+
+' type : TypeVetement
+Modele ..> TypeVetement : utilise
+
+@enduml

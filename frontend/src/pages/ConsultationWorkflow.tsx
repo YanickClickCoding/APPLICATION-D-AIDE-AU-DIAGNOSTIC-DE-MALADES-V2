@@ -55,14 +55,34 @@ interface PatientSearchResult {
   derniere_consultation_statut?: string;
   derniere_consultation_date?: string;
   consultation_en_attente_id?: number;
+  consultation_en_attente_medecin_id?: number | null;
 }
 
 // ─── Symptom autocomplete list ────────────────────────────────────────────────
 
-// Liste complète des 332 symptômes supportés par le modèle ML (extraits du metadata)
-const SYMPTOMES_SUPPORTES = [
-  "Adénopathie", "Agrandissement des mains pieds", "Albuminémie basse", "Anémie", "Angioedème", "Anorexie", "Anxiété", "Apnée du sommeil", "Arthralgie", "Ascite", "Atrophie musculaire", "Aucun symptôme", "Aucun symptôme habituellement", "Aura", "Ballonnements", "Besoin fréquent d'uriner", "Besoin impérieux de déféquer", "Bleus faciles", "Brûlures d'estomac", "Bulles", "Céphalées", "Cervicite", "Chaleur", "Chancre", "Cheveux cassants", "Choc", "Chute", "Cicatrices", "Cicatrisation lente", "Claudication", "Comédones", "Complications neuro", "Comportement inapproprié", "Confusion", "Congestion nasale", "Constipation", "Convulsions", "Crampes", "Crampes abdominales", "Crevasses", "Cyanose", "Déformation progressive", "Délirium", "Démangeaisons", "Démangeaisons nasales", "Démence", "Dépigmentation", "Dépôts lipidiques aux paupières", "Dépression", "Désorientaton", "Desquamation", "Diarrhée", "Diarrhée sanguinolente", "Difficulté à avaler", "Difficulté à parler", "Difficulté à respirer", "Difficulté de lecture", "Difficulté nocturne", "Difficultés à avaler", "Difficultés à parler", "Difficultés à uriner", "Difficultés de langage", "Difficultés de vision", "Douleur", "Douleur à l'effort", "Douleur abdominale", "Douleur abdominale supérieure", "Douleur articulaire soudaine", "Douleur au bras", "Douleur au bras épaule", "Douleur au repas", "Douleur auriculaire", "Douleur colique intense", "Douleur épigastrique", "Douleur faciale", "Douleur lombaire", "Douleur neuropathique", "Douleur oculaire", "Douleur pelvienne", "Douleur pelvi-périnéale", "Douleur périnéale", "Douleur testiculaire", "Douleur thoracique", "Douleur thoracique pleurétique", "Douleur thoracique sévère", "Douleur thyroïdienne", "Douleurs abdominales", "Douleurs articulaires", "Douleurs musculaires", "Douleurs musculaires diffuses", "Douleurs osseuses", "Durcissement cutané", "Dysarthrie", "Dysparéunie", "Dysphagie", "Dyspnée", "Dysurie", "Ecchymoses", "Écoulement", "Écoulement auriculaire", "Écoulement nasal", "Écoulement puriforme", "Écoulement urétral", "Efforts pour déféquer", "Éjaculation douloureuse", "Encéphalopathie", "Engourdissement", "Engourdissement des pieds", "Epistaxis", "Épistaxis", "Érosions", "Éruption", "Éruption cutanée", "Éruption malaire", "Éruption prurigineuse", "Essoufflement", "Essoufflement soudain", "Éternuements", "Évanouissement", "Évanouissements", "Excroissance cutanée", "Faiblesse", "Faiblesse ascendante", "Faiblesse musculaire", "Faiblesse soudaine", "Fatigue", "Fatigue oculaire", "Fatigue post-critique", "Fièvre", "Fièvre élevée", "Fièvre intermittente", "Fistules", "Flotteurs", "Flux faible", "Fragilité osseuse", "Fréquence urinaire", "Frissons", "Froid excessif", "Frottement péricardique", "Ganglions enflés", "Gaz", "Généralement sans symptôme", "Gonflement", "Gonflement des chevilles", "Gonflement des lèvres", "Gonflement d'un membre", "Grossissement du visage", "Groupées ou dispersées", "Halos colorés", "Hématurie", "Hémoptysie", "Hémorragie digestive", "Hépatomégalie", "Histaminémie", "Hoarseness", "Hypercholangiite", "Hyperlipidémie", "Hyperpigmentation", "Hypertension", "Hypertension portale", "Hypotension", "Ictère", "Impact psychologique", "Incontinence", "Infection", "Infections", "Infections fréquentes", "Infections urinaires", "Infectiosus", "Infectiosus secondaires", "Infrequence des selles", "Injection conjonctivale", "Insomnie", "Intolérance à la chaleur", "Irritabilité", "Jaunisse", "Keratitis", "Larmoiement", "Lenteur de mouvement", "Lignes ondulées", "Lymphadénopathie", "Mal de gorge", "Mal de tête", "Malabsorption", "Malaise", "Malaise général", "Maux de tête", "Maux de tête diffus", "Maux de tête matinaux", "Maux de tête sévère", "Maux de tête sévères", "Mélæna", "Mucus dans les selles", "Nausées", "Nervosité", "Nocturia", "Nodules", "Nycturie", "Œdème pulmonaire", "Œdèmes", "Oligurie ou polyurie", "Oppression thoracique", "Otalgie", "Pâleur", "Palpitations", "Papules", "Paralysie", "Paresthésies", "Peau sèche", "Pérachie", "Perte d'appétit", "Perte d'audition", "Perte d'autonomie", "Perte de conscience", "Perte de goût", "Perte de mémoire", "Perte de poids", "Perte de réflexes", "Perte de vision", "Perte de vision progressive", "Perte de voix", "Perte d'odorat", "Petites bosses ombiliquées", "Phonophobie", "Photophobie", "Photosensibilité", "Plaques rouges squameuses", "Plissement des yeux", "Prise de poids", "Prise de poids rapide", "Production d'expectorations", "Protéinurie", "Prurit", "Prurit sévère", "Pustules", "Raideur matinale", "Ralentissement intellectuel", "Rash", "Rash photosensible", "Rash rose", "Raucité", "Raynaud", "Récidives", "Reflux gastro-esophagien", "Régurgitation", "Respiration sifflante", "Restriction de mobilité", "Rigidité", "Ronflement", "Rot", "Rougeur", "Rougeur cutanée", "Rougeur oculaire", "Rougeur pharyngée", "Saignement", "Saignement des plaques", "Saignement digestif", "Saignements", "Saignements de nez", "Saignements prolongés", "Salpingite", "Scotome central", "Sécheresse", "Sécheresse buccale", "Sécheresse cutanée", "Sécheresse oculaire", "Selles dures", "Selles pâles", "Sensation d'accélération", "Sensation de ballonnement", "Sensation de blocage", "Sensation de pressure", "Sensation de satiété rapide", "Sensibilité à la lumière", "Sensibilité à la palpation", "Soif excessive", "Somnolence diurne", "Souvent asymptomatique", "Spasticité", "Splenomégalie", "Splénomégalie", "Stridor inspiratoire", "Sueurs", "Sueurs froides", "Sueurs nocturnes", "Syncope", "Taches blanches", "Taches de Koplik", "Taches sombres", "Tachycardie", "Thrombose", "Tophi", "Toux", "Toux aboyante", "Toux avec expectorations", "Toux persistante", "Toux sèche", "Tremblements", "Trouble de l'équilibre", "Trouble du sommeil", "Troubles cognitifs", "Troubles du sommeil", "Ulcérations", "Ulcères buccaux", "Ulcères des pieds", "Urétrite", "Urgence urinaire", "Urination fréquente", "Urine foncée", "Urines foncées", "Uveite", "Varices œsophagiennes", "Vergetures", "Verrue génitale", "Verrue plantaire douloureuse", "Verrues génitales", "Vertige", "Vertiges", "Vésicules", "Visage rouge", "Vision centrale floue", "Vision floue", "Vision floue à toutes distances", "Vision floue de loin", "Vision floue de près", "Vision jaunâtre", "Vision rapprochée floue", "Vision tunnel", "Vomissements", "Xanthomes", "Yeux rouges", "Yeux saillants"
+// Symptômes exclusivement masculins (anatomie mâle)
+const SYMPTOMES_HOMME_SEULEMENT = [
+  "Douleur testiculaire",
+  "Éjaculation douloureuse",
 ];
+
+// Symptômes exclusivement féminins (anatomie femelle)
+const SYMPTOMES_FEMME_SEULEMENT = [
+  "Cervicite",
+  "Dysparéunie",
+  "Salpingite",
+];
+
+// Symptômes communs aux deux sexes (tous les autres)
+const SYMPTOMES_COMMUNS = [
+  "Adénopathie", "Agrandissement des mains pieds", "Albuminémie basse", "Anémie", "Angioedème", "Anorexie", "Anxiété", "Apnée du sommeil", "Arthralgie", "Ascite", "Atrophie musculaire", "Aucun symptôme", "Aucun symptôme habituellement", "Aura", "Ballonnements", "Besoin fréquent d'uriner", "Besoin impérieux de déféquer", "Bleus faciles", "Brûlures d'estomac", "Bulles", "Céphalées", "Chaleur", "Chancre", "Cheveux cassants", "Choc", "Chute", "Cicatrices", "Cicatrisation lente", "Claudication", "Comédones", "Complications neuro", "Comportement inapproprié", "Confusion", "Congestion nasale", "Constipation", "Convulsions", "Crampes", "Crampes abdominales", "Crevasses", "Cyanose", "Déformation progressive", "Délirium", "Démangeaisons", "Démangeaisons nasales", "Démence", "Dépigmentation", "Dépôts lipidiques aux paupières", "Dépression", "Désorientaton", "Desquamation", "Diarrhée", "Diarrhée sanguinolente", "Difficulté à avaler", "Difficulté à parler", "Difficulté à respirer", "Difficulté de lecture", "Difficulté nocturne", "Difficultés à avaler", "Difficultés à parler", "Difficultés à uriner", "Difficultés de langage", "Difficultés de vision", "Douleur", "Douleur à l'effort", "Douleur abdominale", "Douleur abdominale supérieure", "Douleur articulaire soudaine", "Douleur au bras", "Douleur au bras épaule", "Douleur au repas", "Douleur auriculaire", "Douleur colique intense", "Douleur épigastrique", "Douleur faciale", "Douleur lombaire", "Douleur neuropathique", "Douleur oculaire", "Douleur pelvienne", "Douleur pelvi-périnéale", "Douleur périnéale", "Douleur thoracique", "Douleur thoracique pleurétique", "Douleur thoracique sévère", "Douleur thyroïdienne", "Douleurs abdominales", "Douleurs articulaires", "Douleurs musculaires", "Douleurs musculaires diffuses", "Douleurs osseuses", "Durcissement cutané", "Dysarthrie", "Dysphagie", "Dyspnée", "Dysurie", "Ecchymoses", "Écoulement", "Écoulement auriculaire", "Écoulement nasal", "Écoulement puriforme", "Écoulement urétral", "Efforts pour déféquer", "Encéphalopathie", "Engourdissement", "Engourdissement des pieds", "Epistaxis", "Épistaxis", "Érosions", "Éruption", "Éruption cutanée", "Éruption malaire", "Éruption prurigineuse", "Essoufflement", "Essoufflement soudain", "Éternuements", "Évanouissement", "Évanouissements", "Excroissance cutanée", "Faiblesse", "Faiblesse ascendante", "Faiblesse musculaire", "Faiblesse soudaine", "Fatigue", "Fatigue oculaire", "Fatigue post-critique", "Fièvre", "Fièvre élevée", "Fièvre intermittente", "Fistules", "Flotteurs", "Flux faible", "Fragilité osseuse", "Fréquence urinaire", "Frissons", "Froid excessif", "Frottement péricardique", "Ganglions enflés", "Gaz", "Généralement sans symptôme", "Gonflement", "Gonflement des chevilles", "Gonflement des lèvres", "Gonflement d'un membre", "Grossissement du visage", "Groupées ou dispersées", "Halos colorés", "Hématurie", "Hémoptysie", "Hémorragie digestive", "Hépatomégalie", "Histaminémie", "Hoarseness", "Hypercholangiite", "Hyperlipidémie", "Hyperpigmentation", "Hypertension", "Hypertension portale", "Hypotension", "Ictère", "Impact psychologique", "Incontinence", "Infection", "Infections", "Infections fréquentes", "Infections urinaires", "Infectiosus", "Infectiosus secondaires", "Infrequence des selles", "Injection conjonctivale", "Insomnie", "Intolérance à la chaleur", "Irritabilité", "Jaunisse", "Keratitis", "Larmoiement", "Lenteur de mouvement", "Lignes ondulées", "Lymphadénopathie", "Mal de gorge", "Mal de tête", "Malabsorption", "Malaise", "Malaise général", "Maux de tête", "Maux de tête diffus", "Maux de tête matinaux", "Maux de tête sévère", "Maux de tête sévères", "Mélæna", "Mucus dans les selles", "Nausées", "Nervosité", "Nocturia", "Nodules", "Nycturie", "Œdème pulmonaire", "Œdèmes", "Oligurie ou polyurie", "Oppression thoracique", "Otalgie", "Pâleur", "Palpitations", "Papules", "Paralysie", "Paresthésies", "Peau sèche", "Pérachie", "Perte d'appétit", "Perte d'audition", "Perte d'autonomie", "Perte de conscience", "Perte de goût", "Perte de mémoire", "Perte de poids", "Perte de réflexes", "Perte de vision", "Perte de vision progressive", "Perte de voix", "Perte d'odorat", "Petites bosses ombiliquées", "Phonophobie", "Photophobie", "Photosensibilité", "Plaques rouges squameuses", "Plissement des yeux", "Prise de poids", "Prise de poids rapide", "Production d'expectorations", "Protéinurie", "Prurit", "Prurit sévère", "Pustules", "Raideur matinale", "Ralentissement intellectuel", "Rash", "Rash photosensible", "Rash rose", "Raucité", "Raynaud", "Récidives", "Reflux gastro-esophagien", "Régurgitation", "Respiration sifflante", "Restriction de mobilité", "Rigidité", "Ronflement", "Rot", "Rougeur", "Rougeur cutanée", "Rougeur oculaire", "Rougeur pharyngée", "Saignement", "Saignement des plaques", "Saignement digestif", "Saignements", "Saignements de nez", "Saignements prolongés", "Scotome central", "Sécheresse", "Sécheresse buccale", "Sécheresse cutanée", "Sécheresse oculaire", "Selles dures", "Selles pâles", "Sensation d'accélération", "Sensation de ballonnement", "Sensation de blocage", "Sensation de pressure", "Sensation de satiété rapide", "Sensibilité à la lumière", "Sensibilité à la palpation", "Soif excessive", "Somnolence diurne", "Souvent asymptomatique", "Spasticité", "Splenomégalie", "Splénomégalie", "Stridor inspiratoire", "Sueurs", "Sueurs froides", "Sueurs nocturnes", "Syncope", "Taches blanches", "Taches de Koplik", "Taches sombres", "Tachycardie", "Thrombose", "Tophi", "Toux", "Toux aboyante", "Toux avec expectorations", "Toux persistante", "Toux sèche", "Tremblements", "Trouble de l'équilibre", "Trouble du sommeil", "Troubles cognitifs", "Troubles du sommeil", "Ulcérations", "Ulcères buccaux", "Ulcères des pieds", "Urétrite", "Urgence urinaire", "Urination fréquente", "Urine foncée", "Urines foncées", "Uveite", "Varices œsophagiennes", "Vergetures", "Verrue génitale", "Verrue plantaire douloureuse", "Verrues génitales", "Vertige", "Vertiges", "Vésicules", "Visage rouge", "Vision centrale floue", "Vision floue", "Vision floue à toutes distances", "Vision floue de loin", "Vision floue de près", "Vision jaunâtre", "Vision rapprochée floue", "Vision tunnel", "Vomissements", "Xanthomes", "Yeux rouges", "Yeux saillants"
+];
+
+function getSymptomesDisponibles(sexe: 'M' | 'F'): string[] {
+  if (sexe === 'M') return [...SYMPTOMES_COMMUNS, ...SYMPTOMES_HOMME_SEULEMENT].sort((a, b) => a.localeCompare(b, 'fr'));
+  if (sexe === 'F') return [...SYMPTOMES_COMMUNS, ...SYMPTOMES_FEMME_SEULEMENT].sort((a, b) => a.localeCompare(b, 'fr'));
+  return [...SYMPTOMES_COMMUNS, ...SYMPTOMES_HOMME_SEULEMENT, ...SYMPTOMES_FEMME_SEULEMENT].sort((a, b) => a.localeCompare(b, 'fr'));
+}
 
 // ─── Exam suggestion engine ───────────────────────────────────────────────────
 
@@ -348,6 +368,8 @@ export default function ConsultationWorkflow() {
   // Quick-start : champs nom/prénoms éditables (découpe intelligente)
   const [quickStartNom, setQuickStartNom] = useState('');
   const [quickStartPrenoms, setQuickStartPrenoms] = useState('');
+  const [quickStartAge, setQuickStartAge] = useState<number | ''>('');
+  const [quickStartSexe, setQuickStartSexe] = useState<'M' | 'F'>('M');
 
   const [step, setStep] = useState(reprendreId ? 0 : 1);
   const [loading, setLoading] = useState(false);
@@ -358,6 +380,7 @@ export default function ConsultationWorkflow() {
   const [medecinSearch, setMedecinSearch] = useState('');
   const [medecins, setMedecins] = useState<{ id: number; nom: string; prenoms: string; specialite?: string }[]>([]);
   const [infirmierSubmitted, setInfirmierSubmitted] = useState(false);
+  const [showDonneesModal, setShowDonneesModal] = useState(false);
 
   // Auto-affectation si le compte est un médecin
   useEffect(() => {
@@ -380,6 +403,12 @@ export default function ConsultationWorkflow() {
   const [notesValidation, setNotesValidation] = useState('');
   const [ordonnance, setOrdonnance] = useState<MedicamentOrdonnance[]>([]);
   const [suivi, setSuivi] = useState<SuiviData>({ date_prochain_rdv: '', instructions_patient: '', notes_medecin: '' });
+  const [catalogueMeds, setCatalogueMeds] = useState<Array<{
+    id: number; nom_commercial: string; denomination_commune: string | null;
+    dosage: string | null; frequence: string | null;
+    duree_jours: number | null; quantite: number | null;
+  }>>([]);
+  const [catalogueLoading, setCatalogueLoading] = useState(false);
 
   // Navigation guard
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
@@ -526,6 +555,27 @@ export default function ConsultationWorkflow() {
     loadPatientAndCreateConsultation();
   }, [directPatientId, isMedecin, user?.medecin_id]);
 
+  // Infirmier/Admin : pré-remplir le formulaire avec les données du patient connu (sans créer de consultation)
+  useEffect(() => {
+    if (!directPatientId || isMedecin || patientLoadedRef.current) return;
+    patientLoadedRef.current = true;
+
+    fetch(`http://localhost:8000/api/patients/${directPatientId}`)
+      .then(r => r.json())
+      .then(pd => {
+        setPatient({
+          nom: pd.nom || '',
+          prenoms: pd.prenoms || '',
+          date_naissance: pd.date_naissance || '',
+          sexe: (pd.sexe as 'M' | 'F') || 'M',
+          telephone: pd.telephone || '',
+          email: pd.email || '',
+          groupe_sanguin: pd.groupe_sanguin || '',
+        });
+      })
+      .catch(() => {});
+  }, [directPatientId, isMedecin]);
+
   // Charger une consultation à reprendre (depuis URL ou depuis la recherche)
   useEffect(() => {
     if (!activeConsultationId) return;
@@ -554,10 +604,20 @@ export default function ConsultationWorkflow() {
         if (isInfirmier || isAdmin) {
           // Infirmier reprend son brouillon → symptômes/vitaux
           setDraftConsultationId(activeConsultationId);
+          if (d.medecin_id) setMedecinId(d.medecin_id);
           setStep(2);
         } else {
-          // Médecin : reprend à l'étape la plus avancée enregistrée en base
-          setStep(d.analyse_preliminaire ? 4 : 3);
+          // Médecin : détermine le mode selon les données sauvegardées en base
+          if (d.symptomes?.length > 0) {
+            // Symptômes sauvegardés par l'infirmier → dossier préparé, reprendre à Analyse IA
+            setDoctorMode('reprendre');
+            setStep(d.analyse_preliminaire ? 4 : 3);
+          } else {
+            // Aucun symptôme en base → consultation créée directement par le médecin
+            setDoctorMode('nouveau');
+            setDraftConsultationId(activeConsultationId);
+            setStep(2);
+          }
         }
         setDoctorPhase('workflow');
       })
@@ -680,22 +740,29 @@ export default function ConsultationWorkflow() {
     const nom = quickStartNom.trim();
     const prenoms = quickStartPrenoms.trim() || nom;
     if (!nom) { showToast('Veuillez renseigner au moins le nom du patient', 'error'); return; }
+    const ageNum = typeof quickStartAge === 'number' && !isNaN(quickStartAge) ? quickStartAge : null;
+    const date_naissance = ageNum !== null ? `${new Date().getFullYear() - ageNum}-01-01` : '';
+    const sexe = quickStartSexe;
     setLoading(true);
     try {
       const res = await fetch('http://localhost:8000/api/consultations/init', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patient: { nom, prenoms, date_naissance: '', sexe: 'M' }, motif: 'Consultation médicale', medecin_id: user?.medecin_id }),
+        body: JSON.stringify({ patient: { nom, prenoms, date_naissance, sexe }, motif: 'Consultation médicale', medecin_id: user?.medecin_id }),
       });
-      if (!res.ok) throw new Error('Erreur création consultation');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || `Erreur ${res.status}`);
+      }
       const data = await res.json();
       setDraftConsultationId(data.consultation_id);
-      setPatient({ nom, prenoms, date_naissance: '', sexe: 'M', groupe_sanguin: '' });
+      setPatient({ nom, prenoms, date_naissance, sexe, groupe_sanguin: '' });
       setMotif('Consultation médicale');
       setDoctorMode('nouveau');
       setStep(2);
       setDoctorPhase('workflow');
-    } catch {
-      showToast('Erreur lors de la création du dossier', 'error');
+    } catch (err: any) {
+      console.error('handleQuickStart error:', err);
+      showToast(err?.message || 'Erreur lors de la création du dossier', 'error');
     } finally {
       setLoading(false);
     }
@@ -719,7 +786,13 @@ export default function ConsultationWorkflow() {
       const res = await fetch('http://localhost:8000/api/consultations/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patient, motif, medecin_id: medecinId }),
+        body: JSON.stringify({
+          patient,
+          motif,
+          medecin_id: medecinId,
+          // Si on arrive depuis "Mes Patients", utiliser le patient existant (évite les doublons)
+          ...(directPatientId ? { patient_id: parseInt(directPatientId) } : {}),
+        }),
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Erreur serveur'); }
       const result = await res.json();
@@ -819,7 +892,13 @@ export default function ConsultationWorkflow() {
   // ── Symptômes helpers ──────────────────────────────────────────────────────
   const addSymptome = () => setSymptomes([...symptomes, { nom: '', severite: 'Modérée', duree_jours: 1 }]);
   const removeSymptome = (i: number) => setSymptomes(symptomes.filter((_, idx) => idx !== i));
-  const editSymptome = (i: number, f: keyof Symptome, v: any) => { const u = [...symptomes]; u[i] = { ...u[i], [f]: v }; setSymptomes(u); };
+  const editSymptome = (i: number, f: keyof Symptome, v: any) => {
+    if (f === 'nom' && typeof v === 'string' && v.trim()) {
+      const déjàSaisi = symptomes.some((s, idx) => idx !== i && s.nom.trim().toLowerCase() === v.trim().toLowerCase());
+      if (déjàSaisi) showToast(`"${v.trim()}" a déjà été saisi`, 'error');
+    }
+    const u = [...symptomes]; u[i] = { ...u[i], [f]: v }; setSymptomes(u);
+  };
 
   // ── Examens helpers ────────────────────────────────────────────────────────
   const addExamen = () => setExamens([...examens, { type: 'BIOLOGIE', nom: '', resultats: '' }]);
@@ -846,6 +925,27 @@ export default function ConsultationWorkflow() {
   const addMed = () => setOrdonnance([...ordonnance, { nom: '', dosage: '', frequence: '1×/jour', duree_jours: 7 }]);
   const removeMed = (i: number) => setOrdonnance(ordonnance.filter((_, idx) => idx !== i));
   const editMed = (i: number, f: keyof MedicamentOrdonnance, v: any) => { const u = [...ordonnance]; u[i] = { ...u[i], [f]: v }; setOrdonnance(u); };
+
+  const addMedFromCatalogue = (med: typeof catalogueMeds[0]) => {
+    setOrdonnance(prev => [...prev, {
+      nom: med.nom_commercial,
+      dosage: med.dosage || '',
+      frequence: med.frequence || '1×/jour',
+      duree_jours: med.duree_jours || 7,
+    }]);
+  };
+
+  // Charge le catalogue dès que le médecin arrive à l'étape ordonnance
+  useEffect(() => {
+    const maladie = validationDecision === 'rejete' ? diagnosticCorrection : diagnosticFinal;
+    if (step !== 7 || !maladie) return;
+    setCatalogueLoading(true);
+    fetch(`http://localhost:8000/api/consultations/catalogue-medicaments?maladie=${encodeURIComponent(maladie)}`)
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setCatalogueMeds(data); })
+      .catch(() => {})
+      .finally(() => setCatalogueLoading(false));
+  }, [step, diagnosticFinal, diagnosticCorrection, validationDecision]);
 
   // ── Stepper ────────────────────────────────────────────────────────────────
   const visibleSteps = useMemo(() => {
@@ -934,20 +1034,32 @@ export default function ConsultationWorkflow() {
                   {patientSearchResults.length} patient(s) trouvé(s)
                 </p>
                 {patientSearchResults.map(r => {
-                  // Calculer l'âge si date de naissance disponible
                   let age = null;
                   if (r.date_naissance && !r.date_naissance.startsWith('1900-01-01')) {
                     const today = new Date();
                     const birth = new Date(r.date_naissance);
                     age = today.getFullYear() - birth.getFullYear();
                     const monthDiff = today.getMonth() - birth.getMonth();
-                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-                      age--;
-                    }
+                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
                   }
-                  
+
+                  // Vérifier si le dossier en attente est assigné au médecin connecté
+                  const pendingMedecinId = r.consultation_en_attente_medecin_id;
+                  const reserveAutreDoc = r.consultation_en_attente_id &&
+                    pendingMedecinId != null &&
+                    pendingMedecinId !== user?.medecin_id;
+                  const disponiblePourMoi = r.consultation_en_attente_id &&
+                    (pendingMedecinId == null || pendingMedecinId === user?.medecin_id);
+
                   return (
-                  <div key={r.patient_id} style={{ padding: '16px', background: r.consultation_en_attente_id ? '#F0FDF4' : '#F9FAFB', borderRadius: '10px', border: `1px solid ${r.consultation_en_attente_id ? '#86EFAC' : '#E5E7EB'}`, marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div key={r.patient_id} style={{
+                    padding: '16px',
+                    background: disponiblePourMoi ? '#F0FDF4' : '#F9FAFB',
+                    borderRadius: '10px',
+                    border: `1px solid ${disponiblePourMoi ? '#86EFAC' : '#E5E7EB'}`,
+                    marginBottom: '10px',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                         <div style={{ fontWeight: 700, color: '#1F2937', fontSize: '15px' }}>
@@ -958,16 +1070,16 @@ export default function ConsultationWorkflow() {
                         </span>
                       </div>
                       <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                        {age !== null ? (
-                          <span>{age} ans ({r.date_naissance})</span>
-                        ) : (
-                          <span>Date de naissance non renseignée</span>
-                        )}
+                        {age !== null ? <span>{age} ans ({r.date_naissance})</span> : <span>Date de naissance non renseignée</span>}
                         <span>• {r.sexe === 'M' ? '♂ Masculin' : '♀ Féminin'}</span>
                       </div>
-                      {r.consultation_en_attente_id ? (
+                      {disponiblePourMoi ? (
                         <div style={{ fontSize: '12px', color: '#059669', marginTop: '4px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <CheckCircle size={12} /> Dossier préparé par l'infirmier — Prêt pour l'analyse IA
+                        </div>
+                      ) : reserveAutreDoc ? (
+                        <div style={{ fontSize: '12px', color: '#DC2626', marginTop: '4px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <AlertCircle size={12} /> Dossier réservé à un autre médecin
                         </div>
                       ) : r.derniere_consultation_id ? (
                         <div style={{ fontSize: '12px', color: '#D97706', marginTop: '4px' }}>
@@ -977,14 +1089,31 @@ export default function ConsultationWorkflow() {
                         <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '4px' }}>Aucune consultation antérieure</div>
                       )}
                     </div>
-                    <button
-                      onClick={() => handleSelectPatient(r)}
-                      disabled={selectLoading}
-                      className={`sp-btn ${r.consultation_en_attente_id ? 'sp-btn-success' : 'sp-btn-primary'}`}
-                      style={{ minWidth: '130px' }}
-                    >
-                      {selectLoading ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> : r.consultation_en_attente_id ? <><Brain size={14} /> Analyse IA</> : <><ArrowRight size={14} /> Nouvelle consult.</>}
-                    </button>
+
+                    {reserveAutreDoc ? (
+                      // Dossier assigné à un autre médecin — bouton bloqué
+                      <button
+                        disabled
+                        className="sp-btn sp-btn-ghost"
+                        style={{ minWidth: '130px', opacity: 0.45, cursor: 'not-allowed' }}
+                        title="Ce dossier est assigné à un autre médecin"
+                      >
+                        <Brain size={14} /> Réservé
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleSelectPatient(r)}
+                        disabled={selectLoading}
+                        className={`sp-btn ${disponiblePourMoi ? 'sp-btn-success' : 'sp-btn-primary'}`}
+                        style={{ minWidth: '130px' }}
+                      >
+                        {selectLoading
+                          ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                          : disponiblePourMoi
+                            ? <><Brain size={14} /> Analyse IA</>
+                            : <><ArrowRight size={14} /> Nouvelle consult.</>}
+                      </button>
+                    )}
                   </div>
                   );
                 })}
@@ -1005,15 +1134,15 @@ export default function ConsultationWorkflow() {
 
             {/* Patient introuvable ou création forcée — mini-formulaire avec découpe intelligente */}
             {hasSearched && (patientSearchResults.length === 0 || forceNewPatient) && (
-              <div style={{ padding: '20px', background: forceNewPatient ? '#EFF6FF' : '#FFF7ED', borderRadius: '10px', border: `1px solid ${forceNewPatient ? '#BFDBFE' : '#FED7AA'}`, marginBottom: '24px' }}>
+              <div style={{ padding: '20px', background: '#EFF6FF', borderRadius: '10px', border: '1px solid #BFDBFE', marginBottom: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px', marginBottom: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <UserX size={20} style={{ color: forceNewPatient ? '#2563EB' : '#EA580C', flexShrink: 0 }} />
+                    <UserX size={20} style={{ color: '#2563EB', flexShrink: 0 }} />
                     <div>
-                      <div style={{ fontWeight: 700, color: forceNewPatient ? '#1E3A8A' : '#9A3412', fontSize: '15px' }}>
+                      <div style={{ fontWeight: 700, color: '#1E3A8A', fontSize: '15px' }}>
                         {forceNewPatient ? 'Nouveau patient homonyme' : 'Patient introuvable'}
                       </div>
-                      <div style={{ fontSize: '13px', color: forceNewPatient ? '#1D4ED8' : '#C2410C' }}>
+                      <div style={{ fontSize: '13px', color: '#1D4ED8' }}>
                         {forceNewPatient
                           ? 'Vérifiez le nom/prénom ci-dessous puis créez un nouveau dossier.'
                           : `Aucun dossier pour « ${patientSearchQuery} ». Vérifiez et corrigez le nom/prénom ci-dessous, puis démarrez la consultation.`}
@@ -1031,30 +1160,75 @@ export default function ConsultationWorkflow() {
                     </button>
                   )}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+
+                {/* Ligne 1 : Nom ⇄ Prénoms */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '8px', alignItems: 'end', marginBottom: '12px' }}>
                   <div className="sp-form-group" style={{ margin: 0 }}>
-                    <label className="sp-form-label" style={{ color: forceNewPatient ? '#1E40AF' : '#92400E', fontWeight: 700 }}>Nom de famille <span style={{ color: '#EF4444' }}>*</span></label>
+                    <label className="sp-form-label" style={{ color: '#1E40AF', fontWeight: 700 }}>Nom de famille <span style={{ color: '#EF4444' }}>*</span></label>
                     <input
                       type="text"
                       className="sp-form-input"
                       value={quickStartNom}
-                      onChange={e => setQuickStartNom(e.target.value)}
+                      onChange={e => setQuickStartNom(e.target.value.toUpperCase())}
                       placeholder="DUPONT"
-                      style={{ textTransform: 'uppercase' }}
                     />
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newNom = quickStartPrenoms.toUpperCase();
+                      const newPrenoms = quickStartNom.charAt(0).toUpperCase() + quickStartNom.slice(1).toLowerCase();
+                      setQuickStartNom(newNom);
+                      setQuickStartPrenoms(newPrenoms);
+                    }}
+                    title="Inverser nom et prénom"
+                    style={{ background: '#DBEAFE', border: '1px solid #93C5FD', borderRadius: '8px', padding: '8px 10px', cursor: 'pointer', color: '#1D4ED8', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1px', fontSize: '16px' }}
+                  >
+                    ⇄
+                  </button>
                   <div className="sp-form-group" style={{ margin: 0 }}>
-                    <label className="sp-form-label" style={{ color: forceNewPatient ? '#1E40AF' : '#92400E', fontWeight: 700 }}>Prénoms</label>
+                    <label className="sp-form-label" style={{ color: '#1E40AF', fontWeight: 700 }}>Prénoms</label>
                     <input
                       type="text"
                       className="sp-form-input"
                       value={quickStartPrenoms}
-                      onChange={e => setQuickStartPrenoms(e.target.value)}
+                      onChange={e => {
+                        const v = e.target.value;
+                        setQuickStartPrenoms(v.charAt(0).toUpperCase() + v.slice(1).toLowerCase());
+                      }}
                       placeholder="Jean"
                     />
                   </div>
                 </div>
-                <button onClick={handleQuickStart} disabled={loading || !quickStartNom.trim()} className="sp-btn sp-btn-outline" style={{ color: forceNewPatient ? '#2563EB' : '#EA580C', borderColor: forceNewPatient ? '#2563EB' : '#EA580C', opacity: !quickStartNom.trim() ? 0.5 : 1 }}>
+
+                {/* Ligne 2 : Âge + Sexe */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                  <div className="sp-form-group" style={{ margin: 0 }}>
+                    <label className="sp-form-label" style={{ color: '#1E40AF', fontWeight: 700 }}>Âge (années)</label>
+                    <input
+                      type="number"
+                      className="sp-form-input"
+                      value={quickStartAge}
+                      onChange={e => setQuickStartAge(e.target.value === '' ? '' : parseInt(e.target.value))}
+                      placeholder="ex: 35"
+                      min={0}
+                      max={130}
+                    />
+                  </div>
+                  <div className="sp-form-group" style={{ margin: 0 }}>
+                    <label className="sp-form-label" style={{ color: '#1E40AF', fontWeight: 700 }}>Sexe</label>
+                    <select
+                      className="sp-form-input"
+                      value={quickStartSexe}
+                      onChange={e => setQuickStartSexe(e.target.value as 'M' | 'F')}
+                    >
+                      <option value="M">♂ Masculin</option>
+                      <option value="F">♀ Féminin</option>
+                    </select>
+                  </div>
+                </div>
+
+                <button onClick={handleQuickStart} disabled={loading || !quickStartNom.trim()} className="sp-btn sp-btn-outline" style={{ color: '#2563EB', borderColor: '#2563EB', opacity: !quickStartNom.trim() ? 0.5 : 1 }}>
                   {loading
                     ? <><RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> Création...</>
                     : <><Plus size={15} /> Démarrer la consultation</>}
@@ -1262,9 +1436,10 @@ export default function ConsultationWorkflow() {
                         placeholder="Fièvre, Toux, Céphalées..."
                         list="symptomes-datalist"
                         autoComplete="off"
+                        style={s.nom.trim() && symptomes.some((o, idx) => idx !== i && o.nom.trim().toLowerCase() === s.nom.trim().toLowerCase()) ? { borderColor: '#EF4444', background: '#FEF2F2' } : undefined}
                       />
                       <datalist id="symptomes-datalist">
-                        {SYMPTOMES_SUPPORTES.map((symptome, idx) => (
+                        {getSymptomesDisponibles(patient.sexe).map((symptome, idx) => (
                           <option key={idx} value={symptome} />
                         ))}
                       </datalist>
@@ -1378,6 +1553,13 @@ export default function ConsultationWorkflow() {
               {analysePreliminaire ? (
                 <div>
                   <AICard analyse={analysePreliminaire} label="Hypothèses diagnostiques (basé sur symptômes + signes vitaux)" />
+                  <button
+                    onClick={() => setShowDonneesModal(true)}
+                    className="sp-btn sp-btn-outline"
+                    style={{ marginBottom: '16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <ClipboardList size={15} /> Voir les symptômes &amp; signes vitaux du patient
+                  </button>
                   <div style={{ padding: '14px 18px', background: '#ECFDF5', borderRadius: '8px', border: '1px solid #6EE7B7', display: 'flex', gap: '10px', marginBottom: '20px' }}>
                     <Lightbulb size={18} style={{ color: '#059669', flexShrink: 0, marginTop: '2px' }} />
                     <div style={{ fontSize: '13px', color: '#065F46' }}>
@@ -1697,7 +1879,72 @@ export default function ConsultationWorkflow() {
               <p style={{ color: '#6B7280', fontSize: '14px', marginBottom: '8px' }}>
                 Diagnostic retenu : <strong style={{ color: '#4F46E5' }}>{validationDecision === 'rejete' ? diagnosticCorrection : diagnosticFinal}</strong>
               </p>
-              <p style={{ color: '#6B7280', fontSize: '14px', marginBottom: '24px' }}>Prescrivez les médicaments et définissez le plan de traitement.</p>
+              <p style={{ color: '#6B7280', fontSize: '14px', marginBottom: '16px' }}>Prescrivez les médicaments et définissez le plan de traitement.</p>
+
+              {/* Suggestions du catalogue par maladie */}
+              {catalogueLoading && (
+                <div style={{ padding: '12px', background: '#EFF6FF', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', color: '#3B82F6' }}>
+                  Chargement des médicaments suggérés…
+                </div>
+              )}
+              {!catalogueLoading && catalogueMeds.length > 0 && (
+                <div style={{ marginBottom: '20px', border: '1px solid #C7D2FE', borderRadius: '12px', overflow: 'hidden' }}>
+                  <div style={{ background: '#EEF2FF', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #C7D2FE' }}>
+                    <Lightbulb size={15} style={{ color: '#4F46E5' }} />
+                    <span style={{ fontWeight: 600, fontSize: '13px', color: '#3730A3' }}>
+                      Médicaments suggérés pour « {validationDecision === 'rejete' ? diagnosticCorrection : diagnosticFinal} »
+                    </span>
+                    <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#6B7280' }}>Cliquez sur + pour ajouter à l'ordonnance</span>
+                  </div>
+                  <div style={{ maxHeight: '260px', overflowY: 'auto', background: '#fff' }}>
+                    {(['PREMIERE_INTENTION', 'DEUXIEME_INTENTION', 'ADJUVANT', 'SYMPTOMATIQUE'] as const).map(cat => {
+                      const meds = catalogueMeds.filter(m => m.categorie === cat);
+                      if (!meds.length) return null;
+                      const catLabels: Record<string, string> = {
+                        PREMIERE_INTENTION: '1ère intention',
+                        DEUXIEME_INTENTION: '2ème intention',
+                        ADJUVANT: 'Adjuvant',
+                        SYMPTOMATIQUE: 'Symptomatique',
+                      };
+                      const catColors: Record<string, string> = {
+                        PREMIERE_INTENTION: '#16A34A',
+                        DEUXIEME_INTENTION: '#D97706',
+                        ADJUVANT: '#2563EB',
+                        SYMPTOMATIQUE: '#7C3AED',
+                      };
+                      return (
+                        <div key={cat}>
+                          <div style={{ padding: '4px 16px', background: '#F8FAFC', borderBottom: '1px solid #E5E7EB', fontSize: '11px', fontWeight: 700, color: catColors[cat], textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            {catLabels[cat]}
+                          </div>
+                          {meds.map(med => {
+                            const dejaPrescrit = ordonnance.some(o => o.nom === med.nom_commercial);
+                            return (
+                              <div key={med.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 16px', borderBottom: '1px solid #F3F4F6', background: dejaPrescrit ? '#F0FDF4' : 'white' }}>
+                                <div style={{ flex: 1 }}>
+                                  <span style={{ fontWeight: 600, fontSize: '13px', color: '#1F2937' }}>{med.nom_commercial}</span>
+                                  <span style={{ fontSize: '12px', color: '#6B7280', marginLeft: '6px' }}>({med.denomination_commune})</span>
+                                  <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px' }}>
+                                    {med.dosage && <span>{med.dosage}</span>}
+                                    {med.frequence && <span> · {med.frequence}</span>}
+                                    {med.duree_jours && <span> · {med.duree_jours} j</span>}
+                                  </div>
+                                </div>
+                                {dejaPrescrit
+                                  ? <span style={{ fontSize: '11px', color: '#16A34A', fontWeight: 600, whiteSpace: 'nowrap' }}>✓ Ajouté</span>
+                                  : <button type="button" onClick={() => addMedFromCatalogue(med)} style={{ background: '#4F46E5', color: 'white', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', fontWeight: 600 }}>
+                                      + Ajouter
+                                    </button>
+                                }
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {ordonnance.map((med, i) => (
                 <div key={i} style={{ padding: '18px', background: '#F9FAFB', borderRadius: '12px', marginBottom: '12px', border: '1px solid #E5E7EB' }}>
@@ -1954,6 +2201,92 @@ export default function ConsultationWorkflow() {
             >
               Quitter quand même
             </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* ── Modal Symptômes & Signes Vitaux ── */}
+    {showDonneesModal && (
+      <div
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+        onClick={() => setShowDonneesModal(false)}
+      >
+        <div
+          style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '560px', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #E5E7EB', position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg,#4F46E5,#7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ClipboardList size={18} style={{ color: '#fff' }} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#1F2937' }}>Données cliniques du patient</h3>
+                <p style={{ margin: 0, fontSize: '12px', color: '#6B7280' }}>{patient.prenoms} {patient.nom}</p>
+              </div>
+            </div>
+            <button onClick={() => setShowDonneesModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: '4px' }}>
+              <X size={20} />
+            </button>
+          </div>
+
+          <div style={{ padding: '24px' }}>
+            {/* Symptômes */}
+            <div style={{ marginBottom: '24px' }}>
+              <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#4F46E5', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Activity size={14} /> Symptômes ({symptomes.filter(s => s.nom.trim()).length})
+              </h4>
+              {symptomes.filter(s => s.nom.trim()).length === 0 ? (
+                <p style={{ color: '#9CA3AF', fontSize: '13px', fontStyle: 'italic' }}>Aucun symptôme saisi</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {symptomes.filter(s => s.nom.trim()).map((s, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#F9FAFB', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
+                      <div>
+                        <span style={{ fontWeight: 600, color: '#1F2937', fontSize: '14px' }}>{s.nom}</span>
+                        {s.description && <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#6B7280' }}>{s.description}</p>}
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                        <span style={{
+                          padding: '2px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: 600,
+                          background: s.severite === 'Sévère' ? '#FEE2E2' : s.severite === 'Modérée' ? '#FEF3C7' : '#D1FAE5',
+                          color: s.severite === 'Sévère' ? '#991B1B' : s.severite === 'Modérée' ? '#92400E' : '#065F46',
+                        }}>{s.severite}</span>
+                        <span style={{ fontSize: '12px', color: '#6B7280' }}>{s.duree_jours}j</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Signes vitaux */}
+            <div>
+              <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#4F46E5', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Heart size={14} /> Signes Vitaux
+              </h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                {[
+                  { label: 'Tension artérielle', value: `${vitaux.tension_systolique}/${vitaux.tension_diastolique}`, unit: 'mmHg', alert: vitaux.tension_systolique > 140 || vitaux.tension_diastolique > 90 },
+                  { label: 'Fréquence cardiaque', value: vitaux.frequence_cardiaque, unit: 'bpm', alert: vitaux.frequence_cardiaque > 100 || vitaux.frequence_cardiaque < 60 },
+                  { label: 'Température', value: `${vitaux.temperature}`, unit: '°C', alert: vitaux.temperature >= 38.5 },
+                  { label: 'Saturation O₂', value: `${vitaux.saturation_o2}`, unit: '%', alert: vitaux.saturation_o2 < 94 },
+                  { label: 'Fréquence respiratoire', value: vitaux.frequence_respiratoire, unit: 'rpm', alert: vitaux.frequence_respiratoire > 20 },
+                  ...(vitaux.poids ? [{ label: 'Poids', value: vitaux.poids, unit: 'kg', alert: false }] : []),
+                  ...(vitaux.taille ? [{ label: 'Taille', value: vitaux.taille, unit: 'cm', alert: false }] : []),
+                ].map((v, i) => (
+                  <div key={i} style={{ padding: '12px 14px', background: v.alert ? '#FEF3C7' : '#F9FAFB', borderRadius: '8px', border: `1px solid ${v.alert ? '#FCD34D' : '#E5E7EB'}` }}>
+                    <div style={{ fontSize: '11px', color: '#6B7280', marginBottom: '4px' }}>{v.label}</div>
+                    <div style={{ fontWeight: 700, fontSize: '18px', color: v.alert ? '#92400E' : '#1F2937' }}>
+                      {v.value} <span style={{ fontSize: '12px', fontWeight: 400, color: '#9CA3AF' }}>{v.unit}</span>
+                    </div>
+                    {v.alert && <div style={{ fontSize: '11px', color: '#D97706', marginTop: '2px', fontWeight: 600 }}>⚠ Valeur anormale</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>

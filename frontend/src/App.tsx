@@ -194,11 +194,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const pendingCount = pendingList.length;
 
   React.useEffect(() => {
-    if (user?.role !== 'medecin') return;
+    if (user?.role !== 'medecin' || !user.medecin_id) return;
     const fetchPending = () =>
-      fetch('http://localhost:8000/api/consultations/en-attente')
+      fetch(`http://localhost:8000/api/consultations/en-attente?medecin_id=${user.medecin_id}`)
         .then(r => r.json())
-        .then(d => setPendingList(Array.isArray(d) ? d : []))
+        .then(d => setPendingList(Array.isArray(d) ? d.filter((c: any) => c.medecin_id === user.medecin_id) : []))
         .catch(() => {});
     fetchPending();
     const id = setInterval(fetchPending, 30_000);
