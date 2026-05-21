@@ -77,14 +77,14 @@ DISEASE_EXAM_MAPPING = {
 
 def load_dataset():
     """Charge le dataset existant"""
-    print(f"\n📂 Chargement du dataset depuis : {DATASET_PATH}")
+    print(f"\n[INFO] Chargement du dataset depuis : {DATASET_PATH}")
     
     if not os.path.exists(DATASET_PATH):
-        print(f"❌ ERREUR : Dataset introuvable à {DATASET_PATH}")
+        print(f"[ERROR] Dataset introuvable à {DATASET_PATH}")
         return None
     
     df = pd.read_csv(DATASET_PATH)
-    print(f"✅ Dataset chargé : {len(df)} lignes, {len(df.columns)} colonnes")
+    print(f"[INFO] Dataset chargé : {len(df)} lignes, {len(df.columns)} colonnes")
     print(f"   Maladies uniques : {df['Maladie_Diagnostic'].nunique()}")
     
     return df
@@ -92,7 +92,7 @@ def load_dataset():
 
 def add_new_exam_columns(df):
     """Ajoute les nouvelles colonnes d'examens au dataset"""
-    print(f"\n🔬 Ajout de {len(NEW_EXAMS)} nouveaux examens...")
+    print(f"\n[INFO] Ajout de {len(NEW_EXAMS)} nouveaux examens...")
     
     for exam_name, exam_config in NEW_EXAMS.items():
         print(f"   • {exam_name} ({exam_config['description']})")
@@ -100,13 +100,13 @@ def add_new_exam_columns(df):
         # Initialiser avec la valeur par défaut
         df[exam_name] = exam_config['default']
     
-    print(f"✅ Nouvelles colonnes ajoutées : {len(df.columns)} colonnes au total")
+    print(f"[INFO] Nouvelles colonnes ajoutées : {len(df.columns)} colonnes au total")
     return df
 
 
 def generate_realistic_values(df):
     """Génère des valeurs réalistes pour les nouveaux examens basées sur les maladies"""
-    print(f"\n🎲 Génération de valeurs réalistes pour les nouveaux examens...")
+    print(f"\n[INFO] Génération de valeurs réalistes pour les nouveaux examens...")
     
     for exam_name in NEW_EXAMS.keys():
         print(f"\n   Examen : {exam_name}")
@@ -143,25 +143,25 @@ def generate_realistic_values(df):
                 values = np.random.binomial(1, 0.005, n_cases)
                 df.loc[disease_mask, exam_name] = values
     
-    print(f"\n✅ Valeurs réalistes générées pour tous les examens")
+    print(f"\n[INFO] Valeurs réalistes générées pour tous les examens")
     return df
 
 
 def save_enhanced_dataset(df):
     """Sauvegarde le dataset enrichi"""
-    print(f"\n💾 Sauvegarde du dataset enrichi...")
+    print(f"\n[INFO] Sauvegarde du dataset enrichi...")
     
     # Créer le dossier si nécessaire
     os.makedirs(os.path.dirname(NEW_DATASET_PATH), exist_ok=True)
     
     # Sauvegarder en CSV
     df.to_csv(NEW_DATASET_PATH, index=False)
-    print(f"✅ Dataset enrichi sauvegardé : {NEW_DATASET_PATH}")
+    print(f"[INFO] Dataset enrichi sauvegardé : {NEW_DATASET_PATH}")
     print(f"   Lignes : {len(df)}")
     print(f"   Colonnes : {len(df.columns)} (anciennes: 400, nouvelles: {len(NEW_EXAMS)})")
     
     # Afficher un échantillon
-    print(f"\n📊 Échantillon des nouvelles colonnes :")
+    print(f"\n[INFO] Échantillon des nouvelles colonnes :")
     print(df[list(NEW_EXAMS.keys())].head(10))
     
     return NEW_DATASET_PATH
@@ -169,7 +169,7 @@ def save_enhanced_dataset(df):
 
 def retrain_model(dataset_path):
     """Réentraîne le modèle avec le nouveau dataset"""
-    print(f"\n🚀 Réentraînement du modèle ML...")
+    print(f"\n[INFO] Réentraînement du modèle ML...")
     print(f"   Dataset : {dataset_path}")
     
     try:
@@ -177,7 +177,7 @@ def retrain_model(dataset_path):
         model_manager = ModelManager()
         
         # Entraîner le nouveau modèle
-        print(f"\n⏳ Entraînement en cours (cela peut prendre plusieurs minutes)...")
+        print(f"\n[INFO] Entraînement en cours...")
         results = model_manager.train_new_model(
             dataset_path=dataset_path,
             n_estimators=350,  # Même configuration que le modèle actuel
@@ -186,28 +186,28 @@ def retrain_model(dataset_path):
         )
         
         if results['success']:
-            print(f"\n✅ Entraînement réussi !")
-            print(f"\n📊 Résultats de l'entraînement :")
-            print(f"   • Précision : {results['training']['accuracy']:.2%}")
-            print(f"   • Nombre de features : {results['training']['n_features']}")
-            print(f"   • Nombre de classes : {results['training']['n_classes']}")
-            print(f"   • Durée : {results['training']['training_duration_seconds']:.1f}s")
+            print(f"\n[INFO] Entraînement réussi !")
+            print(f"\n[INFO] Résultats de l'entraînement :")
+            print(f"   - Précision : {results['training']['accuracy']:.2%}")
+            print(f"   - Nombre de features : {results['training']['n_features']}")
+            print(f"   - Nombre de classes : {results['training']['n_classes']}")
+            print(f"   - Durée : {results['training']['training_duration_seconds']:.1f}s")
             
             if 'evaluation' in results:
-                print(f"\n📈 Résultats de l'évaluation :")
+                print(f"\n[INFO] Résultats de l'évaluation :")
                 eval_results = results['evaluation']
                 if 'accuracy' in eval_results:
-                    print(f"   • Précision test : {eval_results['accuracy']:.2%}")
+                    print(f"   - Précision test : {eval_results['accuracy']:.2%}")
             
-            print(f"\n💾 Modèle sauvegardé : {results['training'].get('model_path', 'N/A')}")
+            print(f"\n[INFO] Modèle sauvegardé : {results['training'].get('model_path', 'N/A')}")
             
             return True
         else:
-            print(f"\n❌ Échec de l'entraînement : {results.get('error', 'Erreur inconnue')}")
+            print(f"\n[ERROR] Échec de l'entraînement : {results.get('error', 'Erreur inconnue')}")
             return False
             
     except Exception as e:
-        print(f"\n❌ Erreur lors du réentraînement : {e}")
+        print(f"\n[ERROR] Erreur lors du réentraînement : {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -215,7 +215,7 @@ def retrain_model(dataset_path):
 
 def verify_new_features():
     """Vérifie que les nouvelles features sont bien dans le modèle"""
-    print(f"\n🔍 Vérification des nouvelles features dans le modèle...")
+    print(f"\n[INFO] Vérification des nouvelles features dans le modèle...")
     
     try:
         model_manager = ModelManager()
@@ -224,29 +224,29 @@ def verify_new_features():
         if model_manager.model_loaded:
             feature_names = model_manager.trainer.feature_names
             
-            print(f"\n✅ Modèle chargé avec {len(feature_names)} features")
+            print(f"\n[INFO] Modèle chargé avec {len(feature_names)} features")
             
             # Vérifier que les nouvelles features sont présentes
             new_features_found = []
             for exam_name in NEW_EXAMS.keys():
                 if exam_name in feature_names:
                     new_features_found.append(exam_name)
-                    print(f"   ✓ {exam_name} trouvé dans le modèle")
+                    print(f"   [FOUND] {exam_name} trouve dans le modele")
                 else:
-                    print(f"   ✗ {exam_name} NON trouvé dans le modèle")
+                    print(f"   [NOT FOUND] {exam_name} NON trouve dans le modele")
             
             if len(new_features_found) == len(NEW_EXAMS):
-                print(f"\n🎉 Toutes les nouvelles features sont présentes dans le modèle !")
+                print(f"\n[INFO] Toutes les nouvelles features sont présentes dans le modèle !")
                 return True
             else:
-                print(f"\n⚠️ Certaines features sont manquantes")
+                print(f"\n[WARNING] Certaines features sont manquantes")
                 return False
         else:
-            print(f"❌ Impossible de charger le modèle")
+            print(f"[ERROR] Impossible de charger le modèle")
             return False
             
     except Exception as e:
-        print(f"❌ Erreur lors de la vérification : {e}")
+        print(f"[ERROR] Erreur lors de la vérification : {e}")
         return False
 
 
@@ -291,15 +291,15 @@ def main():
         verify_new_features()
         
         print(f"\n" + "="*80)
-        print("✅ PROCESSUS TERMINÉ AVEC SUCCÈS !")
+        print("[INFO] PROCESSUS TERMINÉ AVEC SUCCÈS !")
         print("="*80)
-        print(f"\n📝 Prochaines étapes :")
+        print(f"\n[INFO] Prochaines étapes :")
         print(f"   1. Mettre à jour le frontend pour suggérer BAAR pour la tuberculose")
         print(f"   2. Tester le nouveau modèle avec des cas de tuberculose")
-        print(f"   3. Vérifier que la précision est maintenue (≥ 94.4%)")
+        print(f"   3. Vérifier que la précision est maintenue")
     else:
         print(f"\n" + "="*80)
-        print("❌ ÉCHEC DU PROCESSUS")
+        print("[ERROR] ÉCHEC DU PROCESSUS")
         print("="*80)
 
 

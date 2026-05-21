@@ -253,7 +253,7 @@ const MesPatients = () => {
             </p>
           </div>
         ) : view === 'grid' ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', padding: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', padding: '20px', background: '#EEF2F7' }}>
             {filtered.map(patient => (
               <div
                 key={patient.patient_id}

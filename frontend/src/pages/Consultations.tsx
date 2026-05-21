@@ -313,12 +313,6 @@ const Consultations = () => {
                   {(['tous', 'en attente', 'en_attente_medecin', 'en cours', 'terminée'] as const).map(s => {
                     const count = countByStatus(s);
                     const isActive = statusFilter === s;
-                    const colors: Record<string, string> = {
-                      'en attente': '#F59E0B',
-                      'en_attente_medecin': '#6366F1',
-                      'en cours': '#3B82F6',
-                      'terminée': '#10B981',
-                    };
                     return (
                       <button
                         key={s}
@@ -327,8 +321,8 @@ const Consultations = () => {
                           padding: '5px 12px',
                           fontSize: '12px',
                           borderRadius: '20px',
-                          border: `1px solid ${isActive ? (colors[s] || '#4F46E5') : '#E5E7EB'}`,
-                          background: isActive ? (colors[s] || '#4F46E5') : '#fff',
+                          border: 'none',
+                          background: isActive ? '#0B2545' : 'transparent',
                           color: isActive ? '#fff' : '#6B7280',
                           cursor: 'pointer',
                           fontWeight: isActive ? 700 : 400,

@@ -300,41 +300,53 @@ const Dashboard = () => {
                     { label: 'F1-Score',  val: f1,   color: '#DB2777' },
                   ];
 
-                  const r = 36;
-                  const circ = 2 * Math.PI * r;
+                  const svgW = 280, svgH = 160;
+                  const padL = 38, padB = 32, padT = 12, padR = 12;
+                  const chartW = svgW - padL - padR;
+                  const chartH = svgH - padT - padB;
+                  const yMin = 80, yMax = 100;
+                  const yTicks = [80, 85, 90, 95, 100];
+                  const barW = chartW / metrics.length;
+                  const toY = (v: number) => padT + chartH - ((v - yMin) / (yMax - yMin)) * chartH;
 
                   return (
                     <>
-                      {/* 4 jauges circulaires SVG */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
-                        {metrics.map(({ label, val, color }) => {
-                          const filled = (val / 100) * circ;
-                          return (
-                            <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#F9FAFB', borderRadius: 12, padding: '12px 8px', border: '1px solid #E5E7EB' }}>
-                              <div style={{ position: 'relative', width: 88, height: 88 }}>
-                                <svg width="88" height="88" style={{ transform: 'rotate(-90deg)' }}>
-                                  <circle cx="44" cy="44" r={r} fill="none" stroke="#E5E7EB" strokeWidth="8" />
-                                  <circle
-                                    cx="44" cy="44" r={r} fill="none"
-                                    stroke={color} strokeWidth="8"
-                                    strokeDasharray={`${filled} ${circ - filled}`}
-                                    strokeLinecap="round"
-                                    style={{ transition: 'stroke-dasharray 1s ease' }}
-                                  />
-                                </svg>
-                                <div style={{
-                                  position: 'absolute', inset: 0,
-                                  display: 'flex', flexDirection: 'column',
-                                  alignItems: 'center', justifyContent: 'center',
-                                }}>
-                                  <span style={{ fontSize: 15, fontWeight: 800, color, lineHeight: 1 }}>{val.toFixed(1)}</span>
-                                  <span style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 700 }}>%</span>
-                                </div>
-                              </div>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: '#374151', marginTop: 6 }}>{label}</span>
-                            </div>
-                          );
-                        })}
+                      {/* Graphique à barres XY */}
+                      <div style={{ marginBottom: '14px', background: '#F9FAFB', borderRadius: 12, padding: '10px 8px 6px', border: '1px solid #E5E7EB' }}>
+                        <svg width="100%" viewBox={`0 0 ${svgW} ${svgH}`} style={{ display: 'block' }}>
+                          {/* Grille horizontale + axe Y */}
+                          {yTicks.map(tick => {
+                            const y = toY(tick);
+                            return (
+                              <g key={tick}>
+                                <line x1={padL} x2={svgW - padR} y1={y} y2={y} stroke="#E5E7EB" strokeWidth="1" strokeDasharray={tick === yMin ? '0' : '3 3'} />
+                                <text x={padL - 4} y={y + 4} textAnchor="end" fontSize="9" fill="#9CA3AF" fontWeight="600">{tick}</text>
+                              </g>
+                            );
+                          })}
+                          {/* Axe X */}
+                          <line x1={padL} x2={svgW - padR} y1={svgH - padB} y2={svgH - padB} stroke="#D1D5DB" strokeWidth="1.5" />
+                          {/* Axe Y */}
+                          <line x1={padL} x2={padL} y1={padT} y2={svgH - padB} stroke="#D1D5DB" strokeWidth="1.5" />
+                          {/* Label axe Y */}
+                          <text x={10} y={svgH / 2} textAnchor="middle" fontSize="9" fill="#6B7280" fontWeight="700" transform={`rotate(-90,10,${svgH/2})`}>%</text>
+                          {/* Barres */}
+                          {metrics.map(({ label, val, color }, i) => {
+                            const x = padL + i * barW + barW * 0.2;
+                            const bw = barW * 0.6;
+                            const yTop = toY(val);
+                            const yBase = toY(yMin);
+                            return (
+                              <g key={label}>
+                                <rect x={x} y={yTop} width={bw} height={yBase - yTop} rx="4" fill={color} opacity="0.85" />
+                                {/* Valeur au-dessus */}
+                                <text x={x + bw / 2} y={yTop - 4} textAnchor="middle" fontSize="9.5" fill={color} fontWeight="800">{val.toFixed(1)}</text>
+                                {/* Label axe X */}
+                                <text x={x + bw / 2} y={svgH - padB + 14} textAnchor="middle" fontSize="9" fill="#374151" fontWeight="700">{label}</text>
+                              </g>
+                            );
+                          })}
+                        </svg>
                       </div>
 
                       {/* Badges info */}
@@ -427,6 +439,55 @@ const Dashboard = () => {
                           }}></div>
                       </div>
                   </div>
+
+                  {/* Disponibilité — statistiques */}
+                  <div style={{marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #F3F4F6'}}>
+                      <p style={{fontSize: '11px', color: '#9CA3AF', fontWeight: 600, marginBottom: '14px', textTransform: 'uppercase', letterSpacing: '0.06em'}}>Disponibilité en temps réel</p>
+                      <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}>
+                          {[
+                              { label: 'Médecins',   dispo: personnel?.medecins.disponibles   || 0, total: personnel?.medecins.total   || 0, color: '#4F46E5', bg: '#EEF2FF' },
+                              { label: 'Infirmiers', dispo: personnel?.infirmiers.disponibles || 0, total: personnel?.infirmiers.total || 0, color: '#10B981', bg: '#ECFDF5' }
+                          ].map(({ label, dispo, total, color, bg }) => {
+                              const ratio = total > 0 ? dispo / total : 0;
+                              const pct   = Math.round(ratio * 100);
+                              const r     = 26;
+                              const circ  = 2 * Math.PI * r;
+                              const dash  = ratio * circ;
+                              const indispo = total - dispo;
+                              return (
+                                  <div key={label} style={{display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '14px 8px 10px', background: bg, borderRadius: '12px', gap: '8px'}}>
+                                      <div style={{position: 'relative', width: '72px', height: '72px'}}>
+                                          <svg width="72" height="72" viewBox="0 0 72 72">
+                                              <circle cx="36" cy="36" r={r} fill="none" stroke="white" strokeWidth="7"/>
+                                              <circle cx="36" cy="36" r={r} fill="none" stroke={color} strokeWidth="7"
+                                                  strokeDasharray={`${dash} ${circ - dash}`}
+                                                  strokeLinecap={pct < 100 ? 'round' : 'butt'}
+                                                  transform="rotate(-90 36 36)"/>
+                                          </svg>
+                                          <div style={{position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                                              <span style={{fontSize: '16px', fontWeight: 700, color, lineHeight: 1}}>{pct}%</span>
+                                          </div>
+                                      </div>
+                                      <span style={{fontSize: '12px', fontWeight: 700, color: '#374151'}}>{label}</span>
+                                      <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', width: '100%'}}>
+                                          <div style={{display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '11px'}}>
+                                              <span style={{color: '#6B7280'}}>Disponibles</span>
+                                              <span style={{fontWeight: 700, color}}>{dispo}</span>
+                                          </div>
+                                          <div style={{display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '11px'}}>
+                                              <span style={{color: '#6B7280'}}>Indisponibles</span>
+                                              <span style={{fontWeight: 700, color: indispo > 0 ? '#EF4444' : '#9CA3AF'}}>{indispo}</span>
+                                          </div>
+                                          <div style={{display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '11px', borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: '3px', marginTop: '1px'}}>
+                                              <span style={{color: '#6B7280'}}>Total</span>
+                                              <span style={{fontWeight: 600, color: '#374151'}}>{total}</span>
+                                          </div>
+                                      </div>
+                                  </div>
+                              );
+                          })}
+                      </div>
+                  </div>
               </div>
           </div>
 
@@ -445,10 +506,15 @@ const Dashboard = () => {
                     const cls = sc[row.statut] || 'attente';
                     const statutLabel: Record<string, string> = { 'en attente': 'En attente', 'en cours': 'En cours', 'terminée': 'Terminée', 'en_attente_medecin': 'Att. médecin' };
                     
+                    const parts = row.nom_patient.trim().split(/\s+/);
+                    const initials = parts.length >= 2
+                      ? `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase()
+                      : row.nom_patient.substring(0, 2).toUpperCase();
+
                     return (
                       <div key={row.id} style={{display:'flex', alignItems:'center', gap:'14px', padding:'13px 20px', borderBottom:'1px solid var(--sp-gray-100)'}}>
-                          <div style={{width:'38px', height:'38px', borderRadius:'10px', background:'linear-gradient(135deg,var(--sp-primary),var(--sp-accent))', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
-                              <Activity size={16} style={{color:'#fff'}} />
+                          <div style={{width:'38px', height:'38px', borderRadius:'10px', background:'linear-gradient(135deg,var(--sp-primary),var(--sp-accent))', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontFamily:'Syne, sans-serif', fontWeight:700, fontSize:'13px', color:'#fff'}}>
+                              {initials}
                           </div>
                           <div style={{flex:1, minWidth:0}}>
                               <div style={{fontWeight:600, fontSize:'13.5px', color:'var(--sp-gray-800)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>

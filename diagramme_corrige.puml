@@ -168,6 +168,16 @@ class Localisation {
   + mettreAJourPosition() : void
 }
 
+class Geolocalisation {
+  - id_geolocalisation : int
+  - latitude : decimal
+  - longitude : decimal
+  - date_mise_a_jour : datetime
+  + obtenirCoordonnees() : void
+  + mettreAJourCoordonnees() : void
+}
+
+
 class Mesure {
   - id_mesure : int
   - unite : varchar
@@ -543,6 +553,21 @@ Tailleur "1" --> "0..1" Localisation : position atelier
 '     dans Localisation (position mise à jour lors de partagerPosition()).
 '     L'historique complet est dans SuiviLivraison.
 Livreur "1" --> "0..1" Localisation : position actuelle
+
+' ============================================================
+' 4b. ASSOCIATION vers GEOLOCALISATION
+' ------------------------------------------------------------
+' Notation PlantUML : Classe "1" --> "0..1" Geolocalisation : localise
+'   → flèche simple vers Geolocalisation
+'
+' Justification : Client, Tailleur et Livreur possèdent une
+'   localisation géographique en temps réel représentée par la
+'   classe Geolocalisation.
+' ============================================================
+
+Client "1" --> "0..1" Geolocalisation : localise
+Tailleur "1" --> "0..1" Geolocalisation : localise
+Livreur "1" --> "0..1" Geolocalisation : localise
 
 ' ============================================================
 ' 5. DÉPENDANCE vers les ÉNUMÉRATIONS (utilisation de type)

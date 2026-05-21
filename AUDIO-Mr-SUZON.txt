@@ -46,6 +46,10 @@ La tecnologie qui a permit de construire ce model ML (Randpm Forest) en rapport 
 --La sortie:
     -Nous devons afficher en sortie les prédictions de maladies, les éléments sur lesquels le model s'est basé pour prendre des décisions
 
+** Nos attributs sont des caractéristiques de Symptômes c'esrt à dire tout ce qui aide à prendre une décision ( âge), la classe c'est les types de Diagnostic avec 
+    des probabilités c'est à dire que pour ses signes que nous entrons, la personne peut être atteind de(une maldie) avec des probabilités allant de plus élevées 
+    au moins probales(suggestions).
+-- Pour le premier groupe, voilà
 
 
 

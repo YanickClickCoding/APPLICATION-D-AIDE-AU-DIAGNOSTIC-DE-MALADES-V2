@@ -1,136 +1,137 @@
 RAPPORT DE CLASSIFICATION – RANDOM FOREST
 ======================================================================
 Observations test     : 2,000
-Accuracy globale      : 0.9535  (95.35 %)
-Precision (weighted)  : 0.9568  (95.68 %)
-Rappel    (weighted)  : 0.9535  (95.35 %)
-F1-Score  (weighted)  : 0.9532  (95.32 %)
+Accuracy globale      : 0.8705  (87.05 %)
+Precision (weighted)  : 0.8781  (87.81 %)
+Rappel    (weighted)  : 0.8705  (87.05 %)
+F1-Score  (weighted)  : 0.8680  (86.80 %)
 ======================================================================
 
                                   precision    recall  f1-score   support
 
-    Accident vasculaire cérébral       1.00      1.00      1.00        20
-                            Acné       0.95      1.00      0.98        20
-                     Acromégalie       1.00      1.00      1.00        16
-                       Alzheimer       1.00      0.93      0.97        15
-              Angine de poitrine       1.00      0.94      0.97        17
-          Angine streptococcique       1.00      1.00      1.00        16
-                Anémie aplasique       1.00      0.94      0.97        16
-               Anémie ferriprive       1.00      0.88      0.94        17
-              Anémie hemolytique       0.88      1.00      0.94        15
-                Apnée du sommeil       1.00      1.00      1.00        16
+    Accident vasculaire cérébral       0.90      0.95      0.93        20
+                            Acné       0.91      1.00      0.95        20
+                     Acromégalie       0.88      0.94      0.91        16
+                       Alzheimer       0.88      1.00      0.94        15
+              Angine de poitrine       0.93      1.00      0.97        14
+          Angine streptococcique       0.92      0.69      0.79        16
+                Anémie aplasique       0.84      0.94      0.89        17
+               Anémie ferriprive       0.81      0.93      0.87        14
+              Anémie hemolytique       1.00      0.88      0.94        17
+                Apnée du sommeil       0.94      0.94      0.94        16
              Arthrite rhumatoïde       1.00      0.86      0.92        14
-              Arythmie cardiaque       0.94      0.94      0.94        16
-                          Asthme       0.80      0.91      0.85        22
-                    Astigmatisme       1.00      1.00      1.00        16
-                  Athérosclérose       0.89      0.94      0.91        17
-                            BPCO       0.86      0.80      0.83        15
-                       Bronchite       0.80      0.92      0.86        13
-                        COVID-19       1.00      0.87      0.93        15
-                       Cataracte       1.00      1.00      1.00        16
-                       Chlamydia       1.00      1.00      1.00        18
-                      Cholangite       1.00      1.00      1.00        15
-                    Cholécystite       0.82      0.93      0.88        15
-                        Cirrhose       1.00      1.00      1.00        16
-                Colite ulcéreuse       0.89      0.89      0.89        18
-                      Condylomes       0.94      1.00      0.97        16
-                   Conjonctivite       0.94      1.00      0.97        16
-          Constipation chronique       1.00      1.00      1.00        20
-                           Crohn       0.76      0.87      0.81        15
-                         Cystite       0.92      1.00      0.96        12
-             Céphalée de tension       1.00      1.00      1.00        18
-                          Dengue       1.00      0.93      0.97        15
-              Dermatite atopique       1.00      1.00      1.00        18
-                  Diabète Type 1       0.90      1.00      0.95        19
-                  Diabète Type 2       1.00      1.00      1.00        18
-            Diabète gestationnel       0.93      1.00      0.96        13
-        Dégénérescence maculaire       0.95      1.00      0.97        18
-                          Eczéma       0.94      1.00      0.97        17
-              Embolie pulmonaire       0.95      1.00      0.97        18
-                       Emphysème       1.00      0.85      0.92        13
+              Arythmie cardiaque       0.92      0.75      0.83        16
+                          Asthme       0.60      0.79      0.68        19
+                    Astigmatisme       0.93      0.88      0.90        16
+                  Athérosclérose       0.77      1.00      0.87        17
+                            BPCO       0.85      0.79      0.81        14
+                       Bronchite       0.86      0.60      0.71        20
+                        COVID-19       0.65      0.93      0.76        14
+                       Cataracte       0.83      0.94      0.88        16
+                       Chlamydia       0.89      0.94      0.92        18
+                      Cholangite       0.88      1.00      0.94        15
+                    Cholécystite       0.75      0.80      0.77        15
+                        Cirrhose       1.00      0.94      0.97        16
+                Colite ulcéreuse       0.94      0.89      0.91        18
+                      Condylomes       0.89      1.00      0.94        16
+                   Conjonctivite       1.00      0.94      0.97        16
+          Constipation chronique       0.95      1.00      0.98        20
+                           Crohn       0.86      0.80      0.83        15
+                         Cystite       0.91      0.83      0.87        12
+             Céphalée de tension       0.86      0.67      0.75        18
+                          Dengue       0.92      0.80      0.86        15
+              Dermatite atopique       0.95      1.00      0.97        18
+                  Diabète Type 1       0.81      0.89      0.85        19
+                  Diabète Type 2       0.94      0.94      0.94        18
+            Diabète gestationnel       0.86      0.92      0.89        13
+        Dégénérescence maculaire       0.78      1.00      0.88        18
+                          Eczéma       1.00      1.00      1.00        17
+              Embolie pulmonaire       0.94      0.83      0.88        18
+                       Emphysème       0.82      0.60      0.69        15
                     Fibromyalgie       1.00      1.00      1.00        17
-                        Gastrite       0.93      0.76      0.84        17
-                  Gastroentérite       0.82      0.74      0.78        19
-                        Glaucome       1.00      1.00      1.00        16
-               Glomérulonéphrite       0.94      0.94      0.94        18
-                       Gonorrhée       0.89      1.00      0.94        16
-                          Goutte       1.00      0.94      0.97        17
-                          Grippe       0.69      0.90      0.78        20
-                  Hernie hiatale       1.00      1.00      1.00        17
-                  Herpès génital       1.00      0.94      0.97        16
-            Hypercholestérolémie       1.00      1.00      1.00        16
-                   Hypermétropie       0.94      1.00      0.97        17
-                    Hypertension       0.95      1.00      0.97        18
-                  Hyperthyroïdie       1.00      0.87      0.93        15
-Hypertrophie bénigne de prostate       0.84      1.00      0.91        16
-                     Hypotension       1.00      1.00      1.00        17
-                   Hypothyroïdie       1.00      1.00      1.00        15
-                      Hépatite A       0.94      0.94      0.94        18
-                      Hépatite B       1.00      1.00      1.00        15
-                      Hépatite C       1.00      0.89      0.94        19
-           Infarctus du myocarde       1.00      0.86      0.92        14
-                   Influenza A/B       0.92      0.71      0.80        17
-          Insuffisance cardiaque       1.00      0.94      0.97        17
-       Insuffisance rénale aiguë       1.00      1.00      1.00        17
-   Insuffisance rénale chronique       1.00      0.88      0.93        16
-                        Kératite       0.94      1.00      0.97        17
+                        Gastrite       0.80      0.47      0.59        17
+                  Gastroentérite       0.65      0.65      0.65        17
+                        Glaucome       0.89      1.00      0.94        16
+               Glomérulonéphrite       0.68      0.71      0.70        21
+                       Gonorrhée       0.88      0.94      0.91        16
+                          Goutte       1.00      1.00      1.00        17
+                          Grippe       0.80      0.67      0.73        18
+                  Hernie hiatale       0.83      0.79      0.81        19
+                  Herpès génital       0.94      1.00      0.97        16
+            Hypercholestérolémie       0.80      1.00      0.89        16
+                   Hypermétropie       0.84      0.94      0.89        17
+                    Hypertension       0.88      0.78      0.82        18
+                  Hyperthyroïdie       0.81      1.00      0.90        13
+Hypertrophie bénigne de prostate       1.00      1.00      1.00        16
+                     Hypotension       1.00      0.82      0.90        17
+                   Hypothyroïdie       0.86      1.00      0.92        12
+                      Hépatite A       0.71      0.67      0.69        18
+                      Hépatite B       1.00      0.67      0.80        15
+                      Hépatite C       0.59      0.68      0.63        19
+           Infarctus du myocarde       0.71      0.77      0.74        13
+                   Influenza A/B       0.85      0.69      0.76        16
+          Insuffisance cardiaque       0.94      0.88      0.91        17
+       Insuffisance rénale aiguë       0.57      0.81      0.67        16
+   Insuffisance rénale chronique       0.82      0.64      0.72        14
+                        Kératite       1.00      1.00      1.00        17
                        Laryngite       1.00      1.00      1.00        15
-                        Leucémie       0.95      1.00      0.97        18
-                 Lithiase rénale       0.94      1.00      0.97        17
-   Lupus érythémateux systémique       0.94      1.00      0.97        16
-                        Lymphome       0.93      0.93      0.93        15
-               Maladie d'Addison       0.93      0.93      0.93        15
-                         Malaria       1.00      0.71      0.83        14
-                        Migraine       1.00      1.00      1.00        21
-           Molluscum contagiosum       0.95      1.00      0.97        19
-                    Mononucléose       0.90      0.95      0.92        19
-                      Myocardite       0.89      1.00      0.94        17
-                          Myopie       1.00      1.00      1.00        12
-          Neuropathie diabétique       1.00      1.00      1.00        16
-                     Néphrotique       1.00      0.93      0.97        15
-                           Otite       0.94      1.00      0.97        16
-                     Pancréatite       0.94      0.94      0.94        17
-                       Parkinson       1.00      1.00      1.00        14
-                       Pemphigus       1.00      1.00      1.00        20
-                       Pneumonie       0.91      0.71      0.80        14
-                    Polyglobulie       0.89      1.00      0.94        17
-      Polymyosite/Dermatomyosite       1.00      1.00      1.00        17
-                       Presbytie       1.00      1.00      1.00        14
-                      Prostatite       1.00      1.00      1.00        17
-                       Psoriasis       1.00      1.00      1.00        16
-                   Pyélonéphrite       1.00      0.77      0.87        13
-                     Péricardite       0.88      0.88      0.88        16
-              Rhinite allergique       0.92      0.92      0.92        13
-                        Rougeole       1.00      1.00      1.00        18
-         Rétinopathie diabétique       1.00      1.00      1.00        21
-                    Salmonellose       0.74      0.85      0.79        20
-                   Scléroderomie       1.00      1.00      1.00        17
-             Sclérose en plaques       0.94      1.00      0.97        15
- Sclérose latérale amyotrophique       1.00      1.00      1.00        18
-                        Sinusite       1.00      0.81      0.90        16
+                        Leucémie       0.89      0.89      0.89        18
+                 Lithiase rénale       1.00      0.65      0.79        17
+   Lupus érythémateux systémique       0.82      0.88      0.85        16
+                        Lymphome       0.72      0.87      0.79        15
+               Maladie d'Addison       1.00      0.93      0.97        15
+                         Malaria       0.89      0.57      0.70        14
+                        Migraine       0.78      0.86      0.82        21
+           Molluscum contagiosum       1.00      1.00      1.00        19
+                    Mononucléose       0.89      0.84      0.86        19
+                      Myocardite       0.86      0.63      0.73        19
+                          Myopie       0.92      0.92      0.92        12
+          Neuropathie diabétique       0.71      0.94      0.81        16
+                     Néphrotique       0.94      1.00      0.97        15
+                           Otite       0.89      1.00      0.94        16
+                     Pancréatite       0.81      0.76      0.79        17
+                       Parkinson       1.00      0.93      0.96        14
+                       Pemphigus       0.95      0.90      0.92        20
+                       Pneumonie       0.60      0.64      0.62        14
+                    Polyglobulie       0.94      0.88      0.91        17
+      Polymyosite/Dermatomyosite       0.94      0.89      0.91        18
+                       Presbytie       0.88      1.00      0.93        14
+                      Prostatite       0.88      0.88      0.88        17
+                       Psoriasis       0.89      1.00      0.94        16
+                   Pyélonéphrite       1.00      0.42      0.59        12
+                     Péricardite       0.81      0.72      0.76        18
+                             RGO       0.00      0.00      0.00         1
+              Rhinite allergique       0.92      0.86      0.89        14
+                        Rougeole       1.00      0.89      0.94        18
+         Rétinopathie diabétique       0.83      1.00      0.91        20
+                    Salmonellose       0.60      0.90      0.72        20
+                   Scléroderomie       0.85      1.00      0.92        17
+             Sclérose en plaques       1.00      0.93      0.97        15
+ Sclérose latérale amyotrophique       0.90      1.00      0.95        18
+                        Sinusite       0.94      0.94      0.94        16
      Spondylarthrite ankylosante       1.00      1.00      1.00        17
-              Stéatose hépatique       1.00      1.00      1.00        16
-             Syndrome de Cushing       1.00      1.00      1.00        17
+              Stéatose hépatique       1.00      0.94      0.97        16
+             Syndrome de Cushing       0.94      1.00      0.97        17
       Syndrome de Guillain-Barré       1.00      1.00      1.00        12
-             Syndrome de Sjögren       1.00      1.00      1.00        17
-     Syndrome du côlon irritable       0.85      0.94      0.89        18
+             Syndrome de Sjögren       0.84      0.94      0.89        17
+     Syndrome du côlon irritable       1.00      0.95      0.97        19
                         Syphilis       1.00      1.00      1.00        13
-                  Thrombocytémie       0.90      1.00      0.95        18
-              Thrombose veineuse       1.00      1.00      1.00        17
-                      Thyroïdite       1.00      0.77      0.87        13
-                       Trachéite       1.00      1.00      1.00        20
+                  Thrombocytémie       0.95      1.00      0.97        18
+              Thrombose veineuse       1.00      0.94      0.97        17
+                      Thyroïdite       0.80      0.44      0.57        18
+                       Trachéite       0.95      0.95      0.95        20
           Trouble de coagulation       1.00      1.00      1.00        17
-                     Tuberculose       0.94      0.88      0.91        17
-                        Typhoïde       1.00      0.94      0.97        17
-          Ulcère gastro-duodénal       0.88      0.88      0.88        16
-                       Urticaire       0.94      1.00      0.97        17
-                        Urétrite       1.00      1.00      1.00        15
-                        VIH/SIDA       1.00      0.79      0.88        19
+                     Tuberculose       0.73      0.53      0.62        15
+                        Typhoïde       1.00      0.94      0.97        16
+          Ulcère gastro-duodénal       0.56      0.56      0.56        16
+                       Urticaire       0.85      1.00      0.92        17
+                        Urétrite       0.93      0.93      0.93        15
+                        VIH/SIDA       0.94      0.79      0.86        19
                        Varicelle       1.00      0.95      0.97        19
-                          Verrue       0.90      1.00      0.95        18
-                        Vitiligo       1.00      1.00      1.00        16
-                       Épilepsie       1.00      1.00      1.00        16
+                          Verrue       0.82      1.00      0.90        18
+                        Vitiligo       0.84      1.00      0.91        16
+                       Épilepsie       1.00      0.81      0.90        16
 
-                        accuracy                           0.95      2000
-                       macro avg       0.96      0.95      0.95      2000
-                    weighted avg       0.96      0.95      0.95      2000
+                        accuracy                           0.87      2000
+                       macro avg       0.87      0.86      0.86      2000
+                    weighted avg       0.88      0.87      0.87      2000
