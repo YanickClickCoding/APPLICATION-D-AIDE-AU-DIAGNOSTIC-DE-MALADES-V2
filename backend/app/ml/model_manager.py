@@ -3,6 +3,7 @@ Model Manager Module - Singleton pour gérer le cycle de vie du modèle
 Gère le chargement, l'entraînement et les prédictions
 """
 import os
+import json
 import logging
 from typing import Optional, Dict, List
 from datetime import datetime
@@ -98,7 +99,23 @@ class ModelManager:
 
             self.model_loaded = True
             self.model_version = model_files[0]
-            self.model_metadata = self.trainer.training_history
+            self.model_metadata = dict(self.trainer.training_history)
+
+            # Compléter les métriques manquantes depuis le fichier _metadata.json
+            missing = [k for k in ("precision", "recall", "f1_score") if k not in self.model_metadata]
+            if missing:
+                json_path = latest_model.replace(".joblib", "_metadata.json")
+                if os.path.exists(json_path):
+                    try:
+                        with open(json_path, "r", encoding="utf-8") as f:
+                            saved = json.load(f)
+                        hist = saved.get("training_history", {})
+                        for k in missing:
+                            if k in hist:
+                                self.model_metadata[k] = hist[k]
+                        logger.info(f"Metriques supplementaires chargees depuis {os.path.basename(json_path)}")
+                    except Exception as e:
+                        logger.warning(f"Impossible de lire {json_path}: {e}")
 
             # Récupérer les params de normalisation sauvegardés avec le modèle
             self.normalization_params = self.trainer.normalization_params
