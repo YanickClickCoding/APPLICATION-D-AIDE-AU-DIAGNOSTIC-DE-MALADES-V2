@@ -358,7 +358,7 @@ print("\n[6/8] Entraînement du modele Random Forest...")
 
 rf_model = RandomForestClassifier(
     n_estimators=200,
-    max_depth=None,
+    max_depth=30,
     min_samples_split=5,
     min_samples_leaf=2,
     max_features='sqrt',
