@@ -107,15 +107,21 @@ class ModelTrainer:
         
         # Évaluer sur le jeu de test
         y_pred = self.model.predict(X_test)
-        accuracy = accuracy_score(y_test, y_pred)
-        
-        logger.info(f"✅ Modèle entraîné avec succès!")
-        logger.info(f"   Précision: {accuracy * 100:.2f}%")
-        logger.info(f"   Durée: {training_duration:.2f} secondes")
-        
+        accuracy  = accuracy_score(y_test, y_pred)
+        precision = precision_score(y_test, y_pred, average='weighted', zero_division=0)
+        recall    = recall_score(y_test, y_pred, average='weighted', zero_division=0)
+        f1        = f1_score(y_test, y_pred, average='weighted', zero_division=0)
+
+        logger.info(f"Modele entraine avec succes!")
+        logger.info(f"   Accuracy  : {accuracy * 100:.2f}%")
+        logger.info(f"   Precision : {precision * 100:.2f}%")
+        logger.info(f"   Recall    : {recall * 100:.2f}%")
+        logger.info(f"   F1-Score  : {f1 * 100:.2f}%")
+        logger.info(f"   Duree     : {training_duration:.2f} secondes")
+
         # Sauvegarder les feature names
         self.feature_names = X.columns.tolist()
-        
+
         # Historique d'entraînement
         self.training_history = {
             "date": datetime.now().isoformat(),
@@ -126,6 +132,9 @@ class ModelTrainer:
             "max_depth": max_depth,
             "test_size": test_size,
             "accuracy": float(accuracy),
+            "precision": float(precision),
+            "recall": float(recall),
+            "f1_score": float(f1),
             "training_duration_seconds": training_duration
         }
         

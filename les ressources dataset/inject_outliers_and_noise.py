@@ -211,6 +211,137 @@ def main():
                 
     print(f"  -> {swap_count} diagnostics inter-maladies modifies (Label Noise a 18%).")
 
+    # 7. Injection de valeurs pathologiques extrêmes réelles (demande Maître Mémoire)
+    # Ces valeurs représentent de vraies présentations cliniques sévères absentes du dataset initial.
+    print("\n[INFO] 6-bis. Injection de valeurs pathologiques extremes reelles...")
+
+    # A. IMC extrêmes ─ obésité morbide (ex. 2m20, 160 kg → IMC 33; 1m65, 120 kg → IMC 44)
+    # Plage initiale : 15.91–27.6 (trop étroite, aucun patient obèse ou dénutri sévère)
+    imc_col = 'Vital_IMC (kg/m²)'
+    imc_obese_idx = np.random.choice(df.index, size=220, replace=False)
+    df.loc[imc_obese_idx[:110], imc_col] = np.round(np.random.uniform(40.0, 58.5, 110), 1)   # Obésité morbide (classe III)
+    df.loc[imc_obese_idx[110:], imc_col] = np.round(np.random.uniform(10.5, 15.0, 110), 1)   # Dénutrition sévère / cachexie
+    print(f"  -> IMC : {220} valeurs extremes (obesite morbide + denutrition severe)")
+
+    # B. Créatinine extrêmes ─ insuffisance rénale
+    # Plage initiale : 0.33–1.47 mg/dL (tout normal — insuffisance rénale jamais représentée !)
+    renal_diseases = ['Insuffisance rénale aiguë', 'Insuffisance rénale chronique',
+                      'Pyélonéphrite', 'Glomérulonéphrite', 'Néphrotique']
+    renal_idx = df[df['Maladie_Diagnostic'].isin(renal_diseases)].index.tolist()
+    extra_renal = np.random.choice(df.index, size=120, replace=False).tolist()
+    all_renal = list(set(renal_idx + extra_renal))[:250]
+    df.loc[all_renal, 'Lab_Créatinine (mg/dL)'] = np.round(np.random.uniform(3.5, 16.8, len(all_renal)), 2)
+    df.loc[all_renal, 'Lab_Urée (mg/dL)'] = np.round(np.random.uniform(80.0, 320.0, len(all_renal)), 1)
+    df.loc[all_renal, 'Lab_TFG (mL/min/1.73m²)'] = np.round(np.random.uniform(3.0, 18.0, len(all_renal)), 1)
+    print(f"  -> Creatinine/Uree/TFG : {len(all_renal)} valeurs d'insuffisance renale severe")
+
+    # C. Troponine extrêmes ─ infarctus du myocarde / myocardite
+    # Plage initiale : 0–0.06 ng/mL (quasi-normal — infarctus jamais visible !)
+    cardiac_diseases = ['Infarctus du myocarde', 'Myocardite', 'Angine de poitrine',
+                        'Arythmie cardiaque', 'Insuffisance cardiaque']
+    cardiac_idx = df[df['Maladie_Diagnostic'].isin(cardiac_diseases)].index.tolist()
+    extra_cardiac = np.random.choice(df.index, size=80, replace=False).tolist()
+    all_cardiac = list(set(cardiac_idx + extra_cardiac))
+    df.loc[all_cardiac, 'Lab_Troponine (ng/mL)'] = np.round(np.random.uniform(0.5, 9.8, len(all_cardiac)), 3)
+    df.loc[all_cardiac, 'Lab_BNP (pg/mL)'] = np.round(np.random.uniform(800.0, 9500.0, len(all_cardiac)), 1)
+    df.loc[all_cardiac, 'Lab_ProBNP (pg/mL)'] = np.round(np.random.uniform(1500.0, 22000.0, len(all_cardiac)), 1)
+    df.loc[all_cardiac, 'Lab_CK (U/L)'] = np.round(np.random.uniform(500.0, 4500.0, len(all_cardiac)), 1)
+    df.loc[all_cardiac, 'Lab_Myoglobine (ng/mL)'] = np.round(np.random.uniform(300.0, 2000.0, len(all_cardiac)), 1)
+    print(f"  -> Troponine/BNP/CK : {len(all_cardiac)} valeurs d'atteinte cardiaque severe")
+
+    # D. Bilirubine extrêmes ─ ictère sévère, hépatite, cholestase
+    # Plage initiale : 0–1.69 mg/dL (tout normal — ictère jamais représenté !)
+    liver_diseases = ['Hépatite A', 'Hépatite B', 'Hépatite C', 'Cirrhose',
+                      'Cholécystite', 'Cholangite', 'Pancréatite', 'Stéatose hépatique']
+    liver_idx = df[df['Maladie_Diagnostic'].isin(liver_diseases)].index.tolist()
+    extra_liver = np.random.choice(df.index, size=100, replace=False).tolist()
+    all_liver = list(set(liver_idx + extra_liver))[:280]
+    df.loc[all_liver, 'Lab_Bilirubine totale (mg/dL)'] = np.round(np.random.uniform(3.5, 45.0, len(all_liver)), 1)
+    df.loc[all_liver, 'Lab_Bilirubine conjuguée (mg/dL)'] = np.round(np.random.uniform(1.5, 30.0, len(all_liver)), 1)
+    df.loc[all_liver, 'Lab_ALT/SGPT (U/L)'] = np.round(np.random.uniform(150.0, 3200.0, len(all_liver)), 1)
+    df.loc[all_liver, 'Lab_AST/SGOT (U/L)'] = np.round(np.random.uniform(120.0, 2800.0, len(all_liver)), 1)
+    df.loc[all_liver, 'Lab_Phosphatase alcaline (U/L)'] = np.round(np.random.uniform(200.0, 1200.0, len(all_liver)), 1)
+    df.loc[all_liver, 'Lab_GGT (U/L)'] = np.round(np.random.uniform(80.0, 600.0, len(all_liver)), 1)
+    print(f"  -> Bilirubine/ALT/AST/PAL : {len(all_liver)} valeurs d'atteinte hepatique severe")
+
+    # E. CRP extrêmes ─ sepsis, inflammation sévère
+    # Plage initiale : 0–4.3 mg/L (quasi-normal — sepsis ou infection sévère jamais visible !)
+    inflam_diseases = ['Pneumonie', 'Tuberculose', 'COVID-19', 'Méningite', 'Malaria',
+                       'Typhoïde', 'Salmonellose', 'Arthrite rhumatoïde', 'Dengue',
+                       'Lupus érythémateux systémique', 'Spondylarthrite ankylosante',
+                       'Polymyosite/Dermatomyosite', 'Crohn', 'Colite ulcéreuse']
+    inflam_idx = df[df['Maladie_Diagnostic'].isin(inflam_diseases)].index.tolist()
+    extra_crp = np.random.choice(df.index, size=150, replace=False).tolist()
+    all_inflam = list(set(inflam_idx + extra_crp))[:400]
+    df.loc[all_inflam, 'Lab_CRP (mg/L)'] = np.round(np.random.uniform(20.0, 380.0, len(all_inflam)), 1)
+    df.loc[all_inflam, 'Lab_ESR (mm/h)'] = np.round(np.random.uniform(45.0, 148.0, len(all_inflam)), 1)
+    print(f"  -> CRP/ESR : {len(all_inflam)} valeurs d'inflammation/infection severe")
+
+    # F. Plaquettes extrêmes ─ thrombocytopénie & thrombocytose
+    # Plage initiale : 37–516 K/µL (thrombocytopénie sévère et thrombocytose absentes)
+    plt_low_diseases = ['Leucémie', 'Anémie aplasique', 'VIH/SIDA', 'Dengue',
+                        'Trouble de coagulation', 'Lymphome']
+    plt_high_diseases = ['Thrombocytémie', 'Polyglobulie', 'Athérosclérose']
+    plt_low_idx = df[df['Maladie_Diagnostic'].isin(plt_low_diseases)].index.tolist()
+    plt_high_idx = df[df['Maladie_Diagnostic'].isin(plt_high_diseases)].index.tolist()
+    extra_plt_low = np.random.choice(df.index, size=80, replace=False).tolist()
+    extra_plt_high = np.random.choice(df.index, size=60, replace=False).tolist()
+    all_plt_low = list(set(plt_low_idx + extra_plt_low))[:160]
+    all_plt_high = list(set(plt_high_idx + extra_plt_high))[:100]
+    df.loc[all_plt_low, 'Lab_Plaquettes (K/µL)'] = np.round(np.random.uniform(4.0, 18.0, len(all_plt_low)), 1)
+    df.loc[all_plt_high, 'Lab_Plaquettes (K/µL)'] = np.round(np.random.uniform(900.0, 1850.0, len(all_plt_high)), 1)
+    print(f"  -> Plaquettes : {len(all_plt_low)} thrombocytopenies + {len(all_plt_high)} thrombocytoses")
+
+    # G. Hémoglobine/Hématocrite extrêmes ─ anémies très sévères & polyglobulie
+    anemia_diseases = ['Anémie ferriprive', 'Anémie aplasique', 'Anémie hemolytique',
+                       'Leucémie', 'VIH/SIDA', 'Insuffisance rénale chronique']
+    poly_diseases = ['Polyglobulie', 'BPCO', 'Emphysème']
+    anemia_idx = df[df['Maladie_Diagnostic'].isin(anemia_diseases)].index.tolist()
+    poly_idx = df[df['Maladie_Diagnostic'].isin(poly_diseases)].index.tolist()
+    extra_anemia = np.random.choice(df.index, size=80, replace=False).tolist()
+    all_anemia = list(set(anemia_idx + extra_anemia))[:200]
+    df.loc[all_anemia, 'Lab_Hémoglobine (g/dL)'] = np.round(np.random.uniform(2.0, 6.5, len(all_anemia)), 1)
+    df.loc[all_anemia, 'Lab_Hématocrite (%)'] = np.round(np.random.uniform(6.0, 20.0, len(all_anemia)), 1)
+    if len(poly_idx) > 0:
+        df.loc[poly_idx, 'Lab_Hémoglobine (g/dL)'] = np.round(np.random.uniform(19.0, 24.0, len(poly_idx)), 1)
+        df.loc[poly_idx, 'Lab_Hématocrite (%)'] = np.round(np.random.uniform(58.0, 72.0, len(poly_idx)), 1)
+    print(f"  -> Hb/Hematocrite : {len(all_anemia)} anemies severes + {len(poly_idx)} polyglobulies")
+
+    # H. Globules Blancs extrêmes ─ leucémie, sepsis sévère & leucopénie
+    leuco_diseases = ['Leucémie', 'Lymphome']
+    neutro_diseases = ['Pneumonie', 'Tuberculose', 'COVID-19', 'Méningite']
+    leucopenie_diseases = ['VIH/SIDA', 'Lupus érythémateux systémique', 'Anémie aplasique']
+    leuco_idx = df[df['Maladie_Diagnostic'].isin(leuco_diseases)].index.tolist()
+    leucopenie_idx = df[df['Maladie_Diagnostic'].isin(leucopenie_diseases)].index.tolist()
+    if len(leuco_idx) > 0:
+        df.loc[leuco_idx, 'Lab_Globules Blancs (K/µL)'] = np.round(np.random.uniform(50.0, 200.0, len(leuco_idx)), 1)
+    if len(leucopenie_idx) > 0:
+        df.loc[leucopenie_idx, 'Lab_Globules Blancs (K/µL)'] = np.round(np.random.uniform(0.5, 2.2, len(leucopenie_idx)), 1)
+    print(f"  -> GB : {len(leuco_idx)} hyperleucocytoses (leucemie) + {len(leucopenie_idx)} leucopenies")
+
+    # I. PT/INR et Fibrinogène extrêmes ─ troubles de coagulation
+    coag_diseases = ['Trouble de coagulation', 'Cirrhose', 'Hépatite B', 'Hépatite C',
+                     'Leucémie', 'Thrombose veineuse']
+    coag_idx = df[df['Maladie_Diagnostic'].isin(coag_diseases)].index.tolist()
+    extra_coag = np.random.choice(df.index, size=80, replace=False).tolist()
+    all_coag = list(set(coag_idx + extra_coag))[:180]
+    df.loc[all_coag, 'Lab_PT/INR'] = np.round(np.random.uniform(2.5, 6.8, len(all_coag)), 2)
+    df.loc[all_coag, 'Lab_aPTT (sec)'] = np.round(np.random.uniform(55.0, 120.0, len(all_coag)), 1)
+    df.loc[all_coag, 'Lab_Fibrinogène (mg/dL)'] = np.round(np.random.uniform(60.0, 95.0, len(all_coag)), 1)
+    print(f"  -> Coagulation : {len(all_coag)} troubles (INR eleve, Fibrinogene bas)")
+
+    # J. Sodium extrêmes ─ hypo/hypernatrémie
+    hyponat_diseases = ['Insuffisance cardiaque', 'Cirrhose', 'Insuffisance rénale chronique',
+                        "Maladie d'Addison"]
+    hypernat_diseases = ['Diabète insipide', 'Syndrome de Cushing']
+    hyponat_idx = df[df['Maladie_Diagnostic'].isin(hyponat_diseases)].index.tolist()
+    extra_na = np.random.choice(df.index, size=100, replace=False).tolist()
+    all_hyponat = list(set(hyponat_idx + extra_na))[:180]
+    df.loc[all_hyponat, 'Lab_Sodium (mEq/L)'] = np.round(np.random.uniform(108.0, 124.0, len(all_hyponat)), 1)
+    print(f"  -> Sodium : {len(all_hyponat)} hyponatremies severes")
+
+    print("  -> Injection de valeurs pathologiques extremes terminee.\n")
+
     # 8. Injection de bruit gaussien statistique général
     # Nous ajoutons du bruit gaussien sur 55% des lignes pour toutes les colonnes biologiques
     print("\n[INFO] 5. Injection de bruit gaussien clinique global...")

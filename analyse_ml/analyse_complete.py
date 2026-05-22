@@ -496,11 +496,18 @@ print("  -> figures/09_feature_importance.png")
 # ---- 7c. Courbe d'apprentissage -----------------------------------------
 print("  -> Courbe d'apprentissage (peut prendre quelques minutes)...")
 
-train_sizes_rel = np.linspace(0.1, 1.0, 8)
+train_sizes_rel = np.linspace(0.1, 1.0, 9)
+# Regularisation explicite pour éviter un score d'entraînement artificiellement parfait (=1.0)
 train_sizes_abs, train_scores, val_scores = learning_curve(
     RandomForestClassifier(
-        n_estimators=100, max_features='sqrt',
-        class_weight='balanced', random_state=42, n_jobs=-1
+        n_estimators=100,
+        max_depth=18,           # Limite la profondeur → évite la mémorisation parfaite
+        min_samples_leaf=4,     # Au moins 4 obs par feuille → généralisation
+        min_samples_split=10,   # Seuil de division plus strict
+        max_features='sqrt',
+        class_weight='balanced',
+        random_state=42,
+        n_jobs=-1
     ),
     X_train, y_train,
     train_sizes=train_sizes_rel,
@@ -516,7 +523,7 @@ tr_std  = np.std(train_scores, axis=1)
 vl_mean = np.mean(val_scores, axis=1)
 vl_std  = np.std(val_scores, axis=1)
 
-fig, ax = plt.subplots(figsize=(12, 7))
+fig, ax = plt.subplots(figsize=(13, 7))
 ax.plot(train_sizes_abs, tr_mean, 'o-', color='#2980B9',
         label='Score Entraînement', linewidth=2.5, markersize=8)
 ax.fill_between(train_sizes_abs, tr_mean - tr_std, tr_mean + tr_std,
@@ -526,20 +533,25 @@ ax.plot(train_sizes_abs, vl_mean, 's-', color='#27AE60',
 ax.fill_between(train_sizes_abs, vl_mean - vl_std, vl_mean + vl_std,
                 alpha=0.15, color='#27AE60')
 
-for x, yv in zip(train_sizes_abs, vl_mean):
+for x, yt, yv in zip(train_sizes_abs, tr_mean, vl_mean):
+    ax.annotate(f'{yt:.3f}', (x, yt),
+                textcoords='offset points', xytext=(0, 8),
+                fontsize=8.5, color='#2980B9', fontweight='bold')
     ax.annotate(f'{yv:.3f}', (x, yv),
-                textcoords='offset points', xytext=(0, 10),
-                fontsize=9, color='#27AE60', fontweight='bold')
+                textcoords='offset points', xytext=(0, -16),
+                fontsize=8.5, color='#27AE60', fontweight='bold')
 
+gap_final = tr_mean[-1] - vl_mean[-1]
 ax.set_xlabel("Nombre d'exemples d'entraînement", fontsize=12, fontweight='bold')
 ax.set_ylabel("Score (Accuracy)", fontsize=12, fontweight='bold')
 ax.set_title(
     "Courbe d'Apprentissage – Random Forest\n"
-    "Evolution de la performance selon la taille du dataset",
+    f"Evolution de la performance selon la taille du dataset  |  Ecart train/val final : {gap_final:.3f}",
     fontsize=13, fontweight='bold'
 )
 ax.legend(loc='lower right', fontsize=11)
-ax.set_ylim([0, 1.08])
+y_min = max(0.5, min(vl_mean) - 0.08)
+ax.set_ylim([y_min, min(1.0, max(tr_mean)) + 0.06])
 ax.grid(True, alpha=0.3)
 ax.set_xticks(train_sizes_abs)
 ax.set_xticklabels([f'{int(s):,}' for s in train_sizes_abs], rotation=25)
@@ -582,40 +594,96 @@ plt.savefig('figures/11_metriques_globales.png', bbox_inches='tight')
 plt.close()
 print("  -> figures/11_metriques_globales.png")
 
-# ---- 7e. Centrage / Reduction (impact des quartiles) --------------------
-print("  -> Centrage / reduction par quartiles...")
+# ---- 7e. Centrage / Reduction par GROUPES CLINIQUES ----------------------
+print("  -> Centrage / reduction par groupes cliniques...")
 
-# Selectionner les 15 features les plus importantes
-top15_idx  = sorted_idx[:15]
-top15_feat = [feature_cols[i] for i in top15_idx]
-top15_data = X[top15_feat].copy()
+GROUPES_CLINIQUES = {
+    'Signes Vitaux': {
+        'cols': [c for c in numerical_cols if c.startswith('Vital_')],
+        'color': '#2980B9', 'facecolor': '#AED6F1'
+    },
+    'Hématologie (NFS)': {
+        'cols': [c for c in numerical_cols if c.startswith('Lab_') and any(k in c for k in [
+            'moglobine', 'matocrite', 'Globules', 'Plaquettes',
+            'Neutrophiles', 'Lymphocytes', 'Monocytes', 'Eosinophiles', 'Basophiles', 'VGM', 'CCMH'
+        ])],
+        'color': '#8E44AD', 'facecolor': '#D7BDE2'
+    },
+    'Bilan Métabolique': {
+        'cols': [c for c in numerical_cols if c.startswith('Lab_') and any(k in c for k in [
+            'Glucose', 'HbA1c', 'Cholest', 'Triglyc', 'Acide urique'
+        ])],
+        'color': '#D35400', 'facecolor': '#FAD7A0'
+    },
+    'Bilan Rénal & Ionogramme': {
+        'cols': [c for c in numerical_cols if c.startswith('Lab_') and any(k in c for k in [
+            'atinine', 'Ur', 'TFG', 'Sodium', 'Potassium', 'Chlore', 'Calcium', 'Phosphore', 'agn'
+        ])],
+        'color': '#1A8A4A', 'facecolor': '#A9DFBF'
+    },
+    'Bilan Hépatique': {
+        'cols': [c for c in numerical_cols if c.startswith('Lab_') and any(k in c for k in [
+            'ALT', 'AST', 'Bilirubine', 'Phosphatase', 'GGT', 'Albumine', 'ot', 'Globulines', 'Ratio'
+        ])],
+        'color': '#B7950B', 'facecolor': '#F9E79F'
+    },
+    'Marqueurs Cardiaques & Coagulation': {
+        'cols': [c for c in numerical_cols if c.startswith('Lab_') and any(k in c for k in [
+            'CK', 'Myoglobine', 'Troponine', 'BNP', 'ProBNP',
+            'PT', 'aPTT', 'TT', 'Fibrin', 'CRP', 'ESR', 'PSA'
+        ])],
+        'color': '#C0392B', 'facecolor': '#F5B7B1'
+    },
+}
 
-# Centrage / reduction (z-score)
-means  = top15_data.mean()
-stds   = top15_data.std().replace(0, 1)
-top15_z = (top15_data - means) / stds
+# Filtrer les groupes qui ont au moins 1 colonne présente dans X
+GROUPES_CLINIQUES = {
+    nom: g for nom, g in GROUPES_CLINIQUES.items()
+    if any(c in X.columns for c in g['cols'])
+}
 
-fig, ax = plt.subplots(figsize=(18, 8))
-bp = ax.boxplot(
-    [top15_z[c].dropna() for c in top15_feat],
-    vert=True, patch_artist=True, widths=0.5,
-    boxprops=dict(facecolor='#AED6F1', color='#1A5276'),
-    medianprops=dict(color='#C0392B', linewidth=2),
-    whiskerprops=dict(color='#1A5276', linewidth=1.2),
-    capprops=dict(color='#1A5276', linewidth=1.5),
-    flierprops=dict(marker='o', color='#7F8C8D', alpha=0.3, markersize=3)
+n_groupes = len(GROUPES_CLINIQUES)
+fig, axes = plt.subplots(n_groupes, 1, figsize=(20, 5 * n_groupes))
+if n_groupes == 1:
+    axes = [axes]
+
+for ax, (nom_groupe, ginfo) in zip(axes, GROUPES_CLINIQUES.items()):
+    cols_g = [c for c in ginfo['cols'] if c in X.columns]
+    if not cols_g:
+        ax.set_visible(False)
+        continue
+
+    data_g  = X[cols_g].copy()
+    means_g = data_g.mean()
+    stds_g  = data_g.std().replace(0, 1)
+    data_z  = (data_g - means_g) / stds_g
+
+    ax.boxplot(
+        [data_z[c].dropna() for c in cols_g],
+        vert=True, patch_artist=True, widths=0.55,
+        boxprops=dict(facecolor=ginfo['facecolor'], color=ginfo['color']),
+        medianprops=dict(color='#C0392B', linewidth=2),
+        whiskerprops=dict(color=ginfo['color'], linewidth=1.2),
+        capprops=dict(color=ginfo['color'], linewidth=1.5),
+        flierprops=dict(marker='o', color='#7F8C8D', alpha=0.25, markersize=3)
+    )
+
+    short_lbl = [c.replace('Lab_', '').replace('Vital_', '')[:28] for c in cols_g]
+    ax.set_xticks(range(1, len(cols_g) + 1))
+    ax.set_xticklabels(short_lbl, rotation=35, ha='right', fontsize=8.5)
+    ax.set_ylabel('z-score', fontsize=9, fontweight='bold')
+    ax.set_title(f'{nom_groupe}  ({len(cols_g)} attributs)', fontsize=11,
+                 fontweight='bold', color=ginfo['color'], pad=6)
+    ax.axhline(y=0,  color='red',    linestyle='--', alpha=0.45, linewidth=1)
+    ax.axhline(y=1,  color='orange', linestyle=':',  alpha=0.35, linewidth=1)
+    ax.axhline(y=-1, color='orange', linestyle=':',  alpha=0.35, linewidth=1)
+    ax.grid(axis='y', alpha=0.25)
+
+fig.suptitle(
+    'Centrage / Réduction (z-score) par Groupes Cliniques\n'
+    'Variabilité et dispersion des attributs biologiques après standardisation',
+    fontsize=14, fontweight='bold', y=1.002
 )
-short15 = [f.replace('Lab_', '').replace('Vital_', '')[:25] for f in top15_feat]
-ax.set_xticklabels(short15, rotation=40, ha='right', fontsize=9)
-ax.set_ylabel('Valeur centree-reduite (z-score)', fontsize=11, fontweight='bold')
-ax.set_title(
-    'Centrage / Reduction – Top 15 Features (z-score)\n'
-    'Comparaison de l\'echelle et de la variabilite des attributs les plus importants',
-    fontsize=13, fontweight='bold'
-)
-ax.axhline(y=0, color='red', linestyle='--', alpha=0.5, linewidth=1)
-ax.axhline(y=1, color='orange', linestyle=':', alpha=0.4, linewidth=1)
-ax.axhline(y=-1, color='orange', linestyle=':', alpha=0.4, linewidth=1)
 plt.tight_layout()
 plt.savefig('figures/12_centrage_reduction_quartiles.png', bbox_inches='tight')
 plt.close()

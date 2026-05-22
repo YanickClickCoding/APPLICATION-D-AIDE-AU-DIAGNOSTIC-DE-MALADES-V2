@@ -1,5 +1,5 @@
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,15 +7,39 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Dépendances
+node_modules/
+dist/
+dist-ssr/
 *.local
+
+# Variables d'environnement (ne jamais versionner)
+.env
+.env.local
+.env.*.local
+# Les fichiers .env.example SONT versionnés (ils ne contiennent pas de secrets)
+
+# Python
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.pytest_cache/
+
+# Modèles ML volumineux (>100MB — limite GitHub)
+*.pkl
+backend/ml_models/*.joblib
+analyse_ml/model/
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
@@ -32,13 +56,15 @@ dist-ssr
 !backend/README.md
 !frontend/README.md
 
-# Fichiers de backup
+# Fichiers de backup et diagrammes
 *.bkp
 *.drawio
 
 # Scripts temporaires
 server/ai_engine.py
 
-# Modèles ML volumineux (>100MB — limite GitHub)
-*.pkl
-analyse_ml/model/
+# Docker
+.dockerignore
+
+# Fichiers Office temporaires
+~$*

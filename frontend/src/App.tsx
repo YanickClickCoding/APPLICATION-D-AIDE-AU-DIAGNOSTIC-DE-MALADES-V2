@@ -227,7 +227,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     if (path === '/utilisateurs') return 'Utilisateurs';
     if (path === '/identifiants') return 'Identifiants';
     if (path === '/admin/systeme') return 'Administration Système';
-    if (path.startsWith('/dossier-patient')) return 'Dossier Patient';
+if (path.startsWith('/dossier-patient')) return 'Dossier Patient';
     return 'Accueil';
   };
   
