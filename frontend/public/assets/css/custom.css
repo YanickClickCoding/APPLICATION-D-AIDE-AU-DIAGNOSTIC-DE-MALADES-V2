@@ -54,12 +54,12 @@ body.sp-body {
 /* ---- SIDEBAR ---- */
 .sp-sidebar {
     width: var(--sp-sidebar-w);
-    min-height: 100vh;
     background: linear-gradient(165deg, var(--sp-primary-dark) 0%, var(--sp-primary) 50%, #0d5fa8 100%);
     display: flex;
     flex-direction: column;
     position: fixed;
-    top: 0; left: 0; bottom: 0;
+    top: 16px; left: 16px; bottom: 16px;
+    border-radius: var(--sp-radius);
     z-index: 100;
     transition: transform 0.3s cubic-bezier(.4,0,.2,1), width 0.3s;
     overflow: hidden;
@@ -230,27 +230,29 @@ body.sp-body {
 
 /* ---- MAIN ---- */
 .sp-main {
-    margin-left: var(--sp-sidebar-w);
+    margin-left: calc(var(--sp-sidebar-w) + 16px);
     flex: 1;
     display: flex;
     flex-direction: column;
     min-height: 100vh;
     transition: margin-left 0.3s;
-    width: calc(100% - var(--sp-sidebar-w));
+    width: calc(100% - var(--sp-sidebar-w) - 16px);
 }
 
 /* ---- TOPBAR ---- */
 .sp-topbar {
     height: var(--sp-topbar-h);
     background: #fff;
-    border-bottom: 1px solid var(--sp-gray-200);
+    border: 1px solid var(--sp-gray-200);
+    border-radius: var(--sp-radius);
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 28px;
-    position: sticky; top: 0;
+    position: relative;
+    margin: 16px 32px 0 32px;
     z-index: 50;
-    box-shadow: 0 1px 8px rgba(10,75,140,0.05);
+    box-shadow: 0 4px 12px rgba(10,75,140,0.08);
 }
 
 .sp-topbar-left { display: flex; align-items: center; gap: 16px; }
@@ -890,36 +892,46 @@ body.sp-auth {
     font-family: 'DM Sans', sans-serif;
     background: linear-gradient(135deg, var(--sp-primary-dark) 0%, var(--sp-primary) 45%, #1565C0 100%);
     min-height: 100vh;
-    height: auto !important;
-    display: block !important;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
     position: relative;
-    overflow-y: auto !important;
-    padding: 30px 20px 60px !important;
+    overflow: hidden;
+    padding: 16px 20px;
 }
 
 body.sp-auth #root {
     width: 100%;
-    height: auto !important;
-    min-height: auto !important;
-    display: block !important;
-    margin: 0 auto;
 }
 
 body.sp-auth::before {
     content: '';
     position: fixed;
-    top: -100px; right: -100px;
+    bottom: -130px; left: -130px;
     width: 500px; height: 500px;
     border-radius: 50%;
-    background: rgba(0,180,216,0.08);
+    background: rgba(255,255,255,0.08);
+    z-index: 1;
 }
 body.sp-auth::after {
     content: '';
     position: fixed;
-    bottom: -150px; left: -150px;
-    width: 600px; height: 600px;
+    top: -100px; right: -100px;
+    width: 360px; height: 360px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.04);
+    background: rgba(255,255,255,0.08);
+    z-index: 1;
+}
+
+.sp-auth-bg-image {
+    position: fixed;
+    inset: 0;
+    background-image: url('https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1920&q=80');
+    background-size: cover;
+    background-position: center;
+    filter: blur(12px) brightness(0.28);
+    transform: scale(1.08);
+    z-index: 0;
 }
 
 .sp-auth-container {
@@ -927,7 +939,7 @@ body.sp-auth::after {
     max-width: 440px;
     padding: 20px;
     position: relative; z-index: 1;
-    margin: 0 auto 60px;
+    margin: 0 auto;
 }
 
 .sp-auth-logo {
@@ -1032,7 +1044,7 @@ body.sp-auth::after {
     .sp-main { margin-left: 0; }
     .sp-menu-toggle { display: flex; }
     .sp-content { padding: 18px 16px; }
-    .sp-topbar { padding: 0 16px; }
+    .sp-topbar { padding: 0 16px; margin: 16px 16px 0 16px; }
     .sp-date-display { display: none; }
     .sp-page-header { flex-direction: column; align-items: flex-start; }
 }
@@ -1078,18 +1090,20 @@ body.sp-auth {
 body.sp-auth::before {
     content: '';
     position: fixed;
-    top: -100px; right: -100px;
+    bottom: -130px; left: -130px;
     width: 500px; height: 500px;
     border-radius: 50%;
-    background: rgba(0,180,216,0.08);
+    background: rgba(255,255,255,0.08);
+    z-index: 1;
 }
 body.sp-auth::after {
     content: '';
     position: fixed;
-    bottom: -150px; left: -150px;
-    width: 600px; height: 600px;
+    top: -100px; right: -100px;
+    width: 360px; height: 360px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.04);
+    background: rgba(255,255,255,0.08);
+    z-index: 1;
 }
 
 .sp-auth-container {

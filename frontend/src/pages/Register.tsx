@@ -77,6 +77,8 @@ const Register = () => {
   };
 
   return (
+    <>
+    <div className="sp-auth-bg-image" />
     <div className="sp-auth-container" style={{ maxWidth: '500px' }}>
       <div className="sp-auth-logo">
         <div className="sp-auth-logo-icon">
@@ -148,48 +150,50 @@ const Register = () => {
             </div>
           </div>
 
-          <div className="sp-form-group" style={{ marginBottom: '14px' }}>
-            <label className="sp-form-label">Rôle <span className="required">*</span></label>
-            <div className="sp-input-icon-wrap">
-              <Briefcase className="sp-input-icon" />
-              <select
-                className="sp-form-input"
-                value={formData.role}
-                onChange={e => setFormData({...formData, role: e.target.value, specialite: ''})}
-                required
-                disabled={isLoading}
-                style={{ paddingLeft: '40px' }}
-              >
-                <option value="medecin">Médecin</option>
-                <option value="infirmier">Infirmier</option>
-              </select>
-            </div>
-            <small style={{ fontSize: '11px', color: 'var(--sp-gray-400)', marginTop: '4px', display: 'block' }}>
-              Votre compte sera activé par un administrateur
-            </small>
-          </div>
-
-          {formData.role === 'medecin' && (
-            <div className="sp-form-group" style={{ marginBottom: '14px' }}>
-              <label className="sp-form-label">Spécialité <span className="required">*</span></label>
+          <div style={{ display: 'grid', gridTemplateColumns: formData.role === 'medecin' ? '1fr 1fr' : '1fr', gap: '14px', marginBottom: '14px' }}>
+            <div className="sp-form-group">
+              <label className="sp-form-label">Rôle <span className="required">*</span></label>
               <div className="sp-input-icon-wrap">
-                <Stethoscope className="sp-input-icon" />
+                <Briefcase className="sp-input-icon" />
                 <select
                   className="sp-form-input"
-                  value={formData.specialite}
-                  onChange={e => setFormData({...formData, specialite: e.target.value})}
+                  value={formData.role}
+                  onChange={e => setFormData({...formData, role: e.target.value, specialite: ''})}
                   required
                   disabled={isLoading}
                   style={{ paddingLeft: '40px' }}
                 >
-                  <option value="" disabled>Sélectionnez votre spécialité</option>
-                  {SPECIALITES.map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
+                  <option value="medecin">Médecin</option>
+                  <option value="infirmier">Infirmier</option>
                 </select>
               </div>
+              <small style={{ fontSize: '11px', color: 'var(--sp-gray-400)', marginTop: '4px', display: 'block' }}>
+                Votre compte sera activé par un administrateur
+              </small>
             </div>
-          )}
+
+            {formData.role === 'medecin' && (
+              <div className="sp-form-group">
+                <label className="sp-form-label">Spécialité <span className="required">*</span></label>
+                <div className="sp-input-icon-wrap">
+                  <Stethoscope className="sp-input-icon" />
+                  <select
+                    className="sp-form-input"
+                    value={formData.specialite}
+                    onChange={e => setFormData({...formData, specialite: e.target.value})}
+                    required
+                    disabled={isLoading}
+                    style={{ paddingLeft: '40px' }}
+                  >
+                    <option value="" disabled>Sélectionnez votre spécialité</option>
+                    {SPECIALITES.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '22px' }}>
             <div className="sp-form-group">
@@ -258,6 +262,7 @@ const Register = () => {
         © {new Date().getFullYear()} GASA SAD · Tous droits réservés
       </div>
     </div>
+    </>
   );
 };
 
