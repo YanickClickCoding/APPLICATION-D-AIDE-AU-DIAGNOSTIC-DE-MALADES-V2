@@ -330,19 +330,23 @@ class DataPreprocessor:
     
     def prepare_xy(self, df: pd.DataFrame, target_column: str = 'diagnostic') -> Tuple[pd.DataFrame, pd.Series]:
         """
-        Prépare les features (X) et la target (y)
+        Prépare les features (X) et la target (y).
+        Inclut les symptômes binaires (symptom_*), features dérivées et colonnes numériques.
         """
         if target_column not in df.columns:
             raise ValueError(f"Colonne target '{target_column}' introuvable")
-        
+
         y = df[target_column]
         X = df.drop(columns=[target_column])
-        
-        # Garder seulement les colonnes numériques
+
+        # Créer les features symptômes + dérivées (ratio_fc_o2, score_risque, etc.)
+        X = self.create_features(X)
+
+        # Garder seulement les colonnes numériques (symptom_* sont déjà binaires = numériques)
         X = X.select_dtypes(include=[np.number])
-        
+
         self.feature_names = X.columns.tolist()
-        
+
         logger.info(f"Données préparées: X={X.shape}, y={y.shape}")
         return X, y
     

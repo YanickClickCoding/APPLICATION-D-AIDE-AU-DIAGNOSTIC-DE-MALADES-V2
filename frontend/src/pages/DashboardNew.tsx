@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Activity, CheckCircle, UserCheck, Sun, List, PlusCircle, Inbox, UserX, PieChart, Brain, TrendingUp, AlertCircle, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Doughnut } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { Doughnut, Line } from 'react-chartjs-2';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler } from 'chart.js';
 import { analyticsAPI, healthAPI, mlAPI } from '../services/api';
 import type { DashboardStats, Consultation } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { MedicalDisclaimerBanner } from '../components/MedicalDisclaimerBanner';
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler);
 
 // Custom hook for counter animation
 const useCounter = (target: number, duration: number = 1500) => {
@@ -56,7 +56,7 @@ const StatCard = ({ label, value, total, icon: Icon, accent, bgIcon, colorIcon }
                   </span>
                 )}
             </div>
-            <div className="sp-stat-label" style={{ fontWeight: 700, fontSize: '11px', letterSpacing: '0.08em', marginTop: '6px' }}>{label}</div>
+            <div className="sp-stat-label" style={{ fontWeight: 700, fontSize: '10px', letterSpacing: '0.08em', marginTop: '1px' }}>{label}</div>
         </div>
     </div>
   );
@@ -84,6 +84,7 @@ const Dashboard = () => {
     n_classes?: number;
     metadata?: { accuracy?: number; precision?: number; recall?: number; f1_score?: number; n_samples?: number };
   } | null>(null);
+  const [activeMetrics, setActiveMetrics] = useState([true, true, true, true]);
 
   const fetchData = async () => {
     try {
@@ -257,8 +258,6 @@ const Dashboard = () => {
           </div>
       </div>
 
-      <MedicalDisclaimerBanner compact />
-
       {/* Stats Grid */}
       <div className="sp-stats-grid sp-fade-in" style={{ marginBottom: '20px' }}>
           <StatCard label="Total Patients" value={statsData.totalPatients} icon={UserCheck} accent="#8B5CF6" bgIcon="#ede9fe" colorIcon="#7C3AED" />
@@ -296,72 +295,102 @@ const Dashboard = () => {
                   const rec  = toP(meta?.recall)    ?? 95.35;
                   const f1   = toP(meta?.f1_score)  ?? 95.32;
 
-                  const metrics = [
+                  const metricDefs = [
                     { label: 'Accuracy',  val: acc,  color: '#4F46E5' },
                     { label: 'Précision', val: prec, color: '#059669' },
                     { label: 'Rappel',    val: rec,  color: '#D97706' },
                     { label: 'F1-Score',  val: f1,   color: '#DB2777' },
                   ];
 
-                  const svgW = 280, svgH = 160;
-                  const padL = 38, padB = 32, padT = 12, padR = 12;
-                  const chartW = svgW - padL - padR;
-                  const chartH = svgH - padT - padB;
-                  const yMin = 80, yMax = 100;
-                  const yTicks = [80, 85, 90, 95, 100];
-                  const barW = chartW / metrics.length;
-                  const toY = (v: number) => padT + chartH - ((v - yMin) / (yMax - yMin)) * chartH;
+                  const lineData = {
+                    labels: metricDefs.map(m => m.label),
+                    datasets: [{
+                      label: 'Performance (%)',
+                      data: metricDefs.map((m, i) => activeMetrics[i] ? m.val : null),
+                      borderColor: '#4F46E5',
+                      backgroundColor: (ctx: any) => {
+                        const chart = ctx.chart;
+                        const { chartArea } = chart;
+                        if (!chartArea) return 'rgba(79,70,229,0.15)';
+                        const grad = chart.ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                        grad.addColorStop(0, 'rgba(79,70,229,0.28)');
+                        grad.addColorStop(1, 'rgba(79,70,229,0.01)');
+                        return grad;
+                      },
+                      borderWidth: 2.5,
+                      pointBackgroundColor: metricDefs.map((m, i) => activeMetrics[i] ? m.color : 'transparent'),
+                      pointBorderColor: metricDefs.map((m, i) => activeMetrics[i] ? '#fff' : 'transparent'),
+                      pointBorderWidth: 2,
+                      pointRadius: metricDefs.map((_: any, i: number) => activeMetrics[i] ? 6 : 0),
+                      pointHoverRadius: metricDefs.map((_: any, i: number) => activeMetrics[i] ? 8 : 0),
+                      tension: 0.42,
+                      fill: true,
+                      spanGaps: true,
+                    }],
+                  };
+
+                  const lineOptions: any = {
+                    animation: { duration: 800, easing: 'easeInOutQuart' },
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    layout: { padding: { left: 6, right: 6 } },
+                    plugins: {
+                      legend: { display: false },
+                      tooltip: {
+                        filter: (item: any) => item.raw !== null,
+                        callbacks: {
+                          label: (item: any) => ` ${(item.raw as number).toFixed(1)} %`,
+                        },
+                        backgroundColor: '#1e1b4b',
+                        titleColor: '#c7d2fe',
+                        bodyColor: '#fff',
+                        padding: 8,
+                        cornerRadius: 8,
+                      },
+                    },
+                    scales: {
+                      y: {
+                        min: Math.floor(Math.min(acc, prec, rec, f1)) - 2,
+                        max: Math.ceil(Math.max(acc, prec, rec, f1)) + 1,
+                        ticks: { font: { size: 9 }, color: '#9CA3AF', callback: (v: any) => `${v}%` },
+                        grid: { color: '#E5E7EB', drawBorder: false },
+                      },
+                      x: {
+                        offset: false,
+                        ticks: { font: { size: 9, weight: '700' }, color: '#374151' },
+                        grid: { display: false },
+                      },
+                    },
+                  };
 
                   return (
                     <>
-                      {/* Graphique à barres XY */}
+                      {/* Line chart dynamique */}
                       <div style={{ marginBottom: '14px', background: '#F9FAFB', borderRadius: 12, padding: '10px 8px 6px', border: '1px solid #E5E7EB' }}>
-                        <svg width="100%" viewBox={`0 0 ${svgW} ${svgH}`} style={{ display: 'block' }}>
-                          {/* Grille horizontale + axe Y */}
-                          {yTicks.map(tick => {
-                            const y = toY(tick);
-                            return (
-                              <g key={tick}>
-                                <line x1={padL} x2={svgW - padR} y1={y} y2={y} stroke="#E5E7EB" strokeWidth="1" strokeDasharray={tick === yMin ? '0' : '3 3'} />
-                                <text x={padL - 4} y={y + 4} textAnchor="end" fontSize="9" fill="#9CA3AF" fontWeight="600">{tick}</text>
-                              </g>
-                            );
-                          })}
-                          {/* Axe X */}
-                          <line x1={padL} x2={svgW - padR} y1={svgH - padB} y2={svgH - padB} stroke="#D1D5DB" strokeWidth="1.5" />
-                          {/* Axe Y */}
-                          <line x1={padL} x2={padL} y1={padT} y2={svgH - padB} stroke="#D1D5DB" strokeWidth="1.5" />
-                          {/* Label axe Y */}
-                          <text x={10} y={svgH / 2} textAnchor="middle" fontSize="9" fill="#6B7280" fontWeight="700" transform={`rotate(-90,10,${svgH/2})`}>%</text>
-                          {/* Barres */}
-                          {metrics.map(({ label, val, color }, i) => {
-                            const x = padL + i * barW + barW * 0.2;
-                            const bw = barW * 0.6;
-                            const yTop = toY(val);
-                            const yBase = toY(yMin);
-                            return (
-                              <g key={label}>
-                                <rect x={x} y={yTop} width={bw} height={yBase - yTop} rx="4" fill={color} opacity="0.85" />
-                                {/* Valeur au-dessus */}
-                                <text x={x + bw / 2} y={yTop - 4} textAnchor="middle" fontSize="9.5" fill={color} fontWeight="800">{val.toFixed(1)}</text>
-                                {/* Label axe X */}
-                                <text x={x + bw / 2} y={svgH - padB + 14} textAnchor="middle" fontSize="9" fill="#374151" fontWeight="700">{label}</text>
-                              </g>
-                            );
-                          })}
-                        </svg>
+                        <Line data={lineData} options={lineOptions} />
                       </div>
 
-                      {/* Badges info */}
+                      {/* Badges métriques cliquables */}
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {[
-                          [`🧬 ${modelInfo.n_classes ?? 121} maladies`, '#EDE9FE', '#6D28D9'],
-                          [`⚙️ ${modelInfo.n_features ?? 397} features`, '#ECFDF5', '#065F46'],
-                          ['🌲 Random Forest', '#EEF2FF', '#4338CA'],
-                          ['🎯 200 arbres', '#FFF7ED', '#C2410C'],
-                        ].map(([txt, bg, clr]) => (
-                          <span key={txt as string} style={{ fontSize: 10, fontWeight: 700, background: bg as string, color: clr as string, padding: '3px 8px', borderRadius: 6 }}>
-                            {txt}
+                        {metricDefs.map(({ label, color }, i) => (
+                          <span
+                            key={label}
+                            onClick={() => setActiveMetrics(prev => prev.map((v, j) => j === i ? !v : v))}
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              background: activeMetrics[i] ? `${color}18` : '#F3F4F6',
+                              color: activeMetrics[i] ? color : '#9CA3AF',
+                              padding: '3px 10px',
+                              borderRadius: 6,
+                              border: `1.5px solid ${activeMetrics[i] ? color : '#E5E7EB'}`,
+                              cursor: 'pointer',
+                              textDecoration: activeMetrics[i] ? 'none' : 'line-through',
+                              transition: 'all 0.2s',
+                              userSelect: 'none',
+                            }}
+                          >
+                            {label}
                           </span>
                         ))}
                       </div>
