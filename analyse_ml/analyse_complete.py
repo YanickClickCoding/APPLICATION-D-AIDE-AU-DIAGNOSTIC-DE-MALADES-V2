@@ -94,7 +94,7 @@ print("=" * 70)
 # ==========================================================================
 print("\n[1/8] Chargement du dataset...")
 
-DATASET_PATH = "../les ressources dataset/dataset_medical_robust_10000_cas.csv"
+DATASET_PATH = "../les ressources dataset/dataset_medical_robust_enhanced.csv"
 df = pd.read_csv(DATASET_PATH, encoding='utf-8')
 
 n_obs = df.shape[0]
@@ -357,12 +357,14 @@ print(f"  Test          : {len(X_test):,} observations (20 %)")
 print("\n[6/8] Entraînement du modele Random Forest...")
 
 rf_model = RandomForestClassifier(
-    n_estimators=200,
-    max_depth=30,
-    min_samples_split=5,
-    min_samples_leaf=2,
+    n_estimators=300,
+    max_depth=None,
+    min_samples_split=8,
+    min_samples_leaf=4,
     max_features='sqrt',
     class_weight='balanced',
+    criterion='entropy',
+    oob_score=True,
     n_jobs=-1,
     random_state=42
 )
@@ -376,10 +378,12 @@ precision = precision_score(y_test, y_pred, average='weighted', zero_division=0)
 recall    = recall_score(y_test, y_pred, average='weighted', zero_division=0)
 f1        = f1_score(y_test, y_pred, average='weighted', zero_division=0)
 
+oob = rf_model.oob_score_ if hasattr(rf_model, 'oob_score_') else None
 print(f"\n  Accuracy   : {accuracy*100:.2f} %")
 print(f"  Precision  : {precision*100:.2f} %")
 print(f"  Rappel     : {recall*100:.2f} %")
 print(f"  F1-Score   : {f1*100:.2f} %")
+if oob: print(f"  OOB Score  : {oob*100:.2f} %")
 
 # Rapport de classification complet
 report = classification_report(
@@ -388,13 +392,14 @@ report = classification_report(
     zero_division=0
 )
 with open('figures/rapport_classification.txt', 'w', encoding='utf-8') as f:
-    f.write("RAPPORT DE CLASSIFICATION – RANDOM FOREST\n")
+    f.write("RAPPORT DE CLASSIFICATION – RANDOM FOREST v2\n")
     f.write("=" * 70 + "\n")
     f.write(f"Observations test     : {len(X_test):,}\n")
     f.write(f"Accuracy globale      : {accuracy:.4f}  ({accuracy*100:.2f} %)\n")
     f.write(f"Precision (weighted)  : {precision:.4f}  ({precision*100:.2f} %)\n")
     f.write(f"Rappel    (weighted)  : {recall:.4f}  ({recall*100:.2f} %)\n")
     f.write(f"F1-Score  (weighted)  : {f1:.4f}  ({f1*100:.2f} %)\n")
+    if oob: f.write(f"OOB Score             : {oob:.4f}  ({oob*100:.2f} %)\n")
     f.write("=" * 70 + "\n\n")
     f.write(report)
 print("  -> figures/rapport_classification.txt")
@@ -568,18 +573,23 @@ metrics_labels = ['Accuracy', 'Precision\n(weighted)', 'Rappel\n(weighted)', 'F1
 metrics_values = [accuracy, precision, recall, f1]
 colors_metrics = ['#2196F3', '#4CAF50', '#FF9800', '#E91E63']
 
-fig, ax = plt.subplots(figsize=(10, 6))
+if oob:
+    metrics_labels.append('OOB\nScore')
+    metrics_values.append(oob)
+    colors_metrics.append('#9C27B0')
+
+fig, ax = plt.subplots(figsize=(12 if oob else 10, 6))
 bars = ax.bar(metrics_labels, metrics_values,
               color=colors_metrics, edgecolor='white', linewidth=1.5, width=0.5)
 ax.set_ylim([0, 1.18])
 ax.set_ylabel('Score', fontsize=12, fontweight='bold')
 ax.set_title(
-    'Metriques d\'Evaluation – Random Forest\n'
-    f'({n_classes} classes  |  {n_obs:,} observations  |  200 arbres)',
+    'Metriques d\'Evaluation – Random Forest v2\n'
+    f'({n_classes} classes  |  {n_obs:,} observations  |  300 arbres  |  class_weight=balanced)',
     fontsize=13, fontweight='bold'
 )
 ax.axhline(y=1.0, color='gray', linestyle='--', alpha=0.4, linewidth=1)
-for bar, val, lbl in zip(bars, metrics_values, metrics_labels):
+for bar, val in zip(bars, metrics_values):
     ax.text(
         bar.get_x() + bar.get_width() / 2,
         bar.get_height() + 0.015,
@@ -720,7 +730,7 @@ print(f"  Observations entraînement    : {len(X_train):,}  (80 %)")
 print(f"  Observations test            : {len(X_test):,}  (20 %)")
 print(f"  Nombre de classes (maladies) : {n_classes}")
 print(f"  Features utilisees           : {len(feature_cols)}")
-print(f"  Nombre d'arbres (RF)         : 200")
+print(f"  Nombre d'arbres (RF)         : 300")
 print()
 print(f"  Accuracy   : {accuracy*100:.2f} %")
 print(f"  Precision  : {precision*100:.2f} %  (weighted)")
