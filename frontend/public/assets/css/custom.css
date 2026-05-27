@@ -893,15 +893,18 @@ body.sp-auth {
     background: linear-gradient(135deg, var(--sp-primary-dark) 0%, var(--sp-primary) 45%, #1565C0 100%);
     min-height: 100vh;
     display: flex;
-    align-items: flex-start;
-    justify-content: center;
+    flex-direction: column;
     position: relative;
-    overflow: hidden;
-    padding: 16px 20px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px;
 }
 
 body.sp-auth #root {
     width: 100%;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
 }
 
 body.sp-auth::before {
@@ -939,7 +942,7 @@ body.sp-auth::after {
     max-width: 440px;
     padding: 20px;
     position: relative; z-index: 1;
-    margin: 0 auto;
+    margin: auto;
 }
 
 .sp-auth-logo {
@@ -1081,10 +1084,11 @@ body.sp-auth {
     background: linear-gradient(135deg, var(--sp-primary-dark) 0%, var(--sp-primary) 45%, #1565C0 100%);
     min-height: 100vh;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
     position: relative;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px;
 }
 
 body.sp-auth::before {
@@ -1111,6 +1115,7 @@ body.sp-auth::after {
     max-width: 440px;
     padding: 20px;
     position: relative; z-index: 1;
+    margin: auto;
 }
 
 .sp-auth-logo {

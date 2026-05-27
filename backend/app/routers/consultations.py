@@ -13,8 +13,13 @@ from ..models import (
 )
 from ..models.prediction_history import PredictionHistory
 from ..schemas.consultation_schema import ConsultationCreate, ConsultationResponse
+from .auth import get_current_non_admin
 
-router = APIRouter(prefix="/consultations", tags=["Consultations"])
+router = APIRouter(
+    prefix="/consultations",
+    tags=["Consultations"],
+    dependencies=[Depends(get_current_non_admin)],
+)
 
 # Symptômes réservés à un seul sexe — utilisés pour bloquer les incohérences cliniques
 _SYMPTOMES_HOMME_SEULEMENT = {
@@ -112,7 +117,7 @@ def list_consultations(skip: int = 0, limit: int = 100, db: Session = Depends(ge
 
 
 @router.get("/en-attente")
-def get_consultations_en_attente(medecin_id: int = None, db: Session = Depends(get_db)):
+def get_consultations_en_attente(medecin_id: int = None, db: Session = Depends(get_db), current_user=Depends(get_current_non_admin)):
     """
     Retourne les consultations en attente. Si medecin_id est fourni, filtre uniquement
     celles assignées à ce médecin.
@@ -131,6 +136,120 @@ def get_consultations_en_attente(medecin_id: int = None, db: Session = Depends(g
         }
         for c in consultations
     ]
+
+
+@router.get("/catalogue-medicaments")
+def get_catalogue_medicaments(maladie: str, db: Session = Depends(get_db)):
+    """
+    Retourne les médicaments du catalogue de référence pour une maladie.
+    Recherche exacte puis partielle pour couvrir les variations de noms entre
+    les prédictions IA et le catalogue (ex: "Paludisme" → "Malaria").
+    """
+    from ..models.catalogue_medicament import CatalogueMedicament
+    from sqlalchemy import func
+
+    # Aliases courants ML → catalogue
+    ALIASES: dict[str, str] = {
+        "paludisme": "Malaria",
+        "malaria": "Malaria",
+        "hypertension artérielle": "Hypertension",
+        "hypertension essentielle": "Hypertension",
+        "diabète de type 2": "Diabète Type 2",
+        "diabète type ii": "Diabète Type 2",
+        "diabète de type 1": "Diabète Type 1",
+        "diabète type i": "Diabète Type 1",
+        "avc": "Accident vasculaire cérébral",
+        "accident vasculaire cérébral": "Accident vasculaire cérébral",
+        "infarctus": "Infarctus du myocarde",
+        "typhoïde": "Typhoïde",
+        "fièvre typhoïde": "Typhoïde",
+        "tuberculose": "Tuberculose",
+        "grippe": "Grippe",
+        "influenza": "Influenza A/B",
+        "covid": "COVID-19",
+        "covid-19": "COVID-19",
+        "hépatite b": "Hépatite B",
+        "hépatite c": "Hépatite C",
+        "hépatite a": "Hépatite A",
+        "vih": "VIH/SIDA",
+        "sida": "VIH/SIDA",
+        "asthme": "Asthme",
+        "pneumonie": "Pneumonie",
+        "insuffisance cardiaque": "Insuffisance cardiaque",
+        "lupus": "Lupus érythémateux systémique",
+        "migraine": "Migraine",
+        "epilepsie": "Épilepsie",
+        "épilepsie": "Épilepsie",
+        "parkinson": "Parkinson",
+        "alzheimer": "Alzheimer",
+        "acromégalie": "Acromégalie",
+        "goutte": "Goutte",
+        "cholera": "Gastroentérite",
+        "choléra": "Gastroentérite",
+    }
+
+    # 1. Recherche exacte
+    resultats = (
+        db.query(CatalogueMedicament)
+        .filter(CatalogueMedicament.maladie == maladie)
+        .order_by(CatalogueMedicament.categorie, CatalogueMedicament.nom_commercial)
+        .all()
+    )
+
+    # 2. Si vide, tenter via alias
+    if not resultats:
+        maladie_norm = maladie.lower().strip()
+        maladie_cible = ALIASES.get(maladie_norm)
+        if maladie_cible:
+            resultats = (
+                db.query(CatalogueMedicament)
+                .filter(CatalogueMedicament.maladie == maladie_cible)
+                .order_by(CatalogueMedicament.categorie, CatalogueMedicament.nom_commercial)
+                .all()
+            )
+
+    # 3. Si toujours vide, recherche partielle (LIKE) sur le premier mot significatif
+    if not resultats:
+        mots = [m for m in maladie.split() if len(m) > 3]
+        for mot in mots[:2]:
+            resultats = (
+                db.query(CatalogueMedicament)
+                .filter(func.lower(CatalogueMedicament.maladie).like(f"%{mot.lower()}%"))
+                .order_by(CatalogueMedicament.categorie, CatalogueMedicament.nom_commercial)
+                .all()
+            )
+            if resultats:
+                break
+
+    return [
+        {
+            "id": r.id,
+            "nom_commercial": r.nom_commercial,
+            "denomination_commune": r.denomination_commune,
+            "dosage": r.dosage_standard,
+            "forme": r.forme,
+            "voie_administration": r.voie_administration,
+            "frequence": r.frequence_habituelle,
+            "duree_jours": r.duree_standard_jours,
+            "categorie": r.categorie,
+            "notes": r.notes,
+            "quantite": 1,
+        }
+        for r in resultats
+    ]
+
+
+@router.get("/catalogue-medicaments/maladies")
+def get_maladies_catalogue(db: Session = Depends(get_db)):
+    """Retourne toutes les maladies disponibles dans le catalogue de référence."""
+    from ..models.catalogue_medicament import CatalogueMedicament
+    from sqlalchemy import distinct as sa_distinct
+    maladies = (
+        db.query(sa_distinct(CatalogueMedicament.maladie))
+        .order_by(CatalogueMedicament.maladie)
+        .all()
+    )
+    return [m[0] for m in maladies]
 
 
 @router.get("/{consultation_id}", response_model=ConsultationResponse)
@@ -417,28 +536,25 @@ def create_consultation_workflow(data: dict, db: Session = Depends(get_db)):
                 db.add(ord_db)
                 db.flush()
 
+                FORMES_VALIDES = {'COMPRIME','INJECTION','SIROP','CREME','COLLYRE','POUDRE','PATCH','SPRAY','CAPSULE','SOLUTION'}
+                VOIES_VALIDES  = {'ORALE','INTRAVEINEUSE','CUTANEE','INTRAMUSCULAIRE','OPHTALMIQUE','NASALE','INHALATION','SOUS-CUTANEE','RECTALE'}
                 for med in meds_valides:
-                    instructions = (med.get('instructions') or '').upper()
-                    forme = 'COMPRIME'
-                    for f in ['INJECTION', 'SIROP', 'CREME']:
-                        if f in instructions:
-                            forme = f
-                            break
-                    voie = 'ORALE'
-                    for v in ['INTRAVEINEUSE', 'CUTANEE', 'INTRAMUSCULAIRE']:
-                        if v in instructions:
-                            voie = v
-                            break
+                    forme = (med.get('forme') or 'COMPRIME').upper()
+                    if forme not in FORMES_VALIDES:
+                        forme = 'COMPRIME'
+                    voie = (med.get('voie_administration') or 'ORALE').upper()
+                    if voie not in VOIES_VALIDES:
+                        voie = 'ORALE'
                     db.add(Medicament(
                         ordonnance_id=ord_db.ordonnance_id,
                         nom_commercial=med['nom'].strip(),
-                        denomination_commune=med.get('nom', '').strip(),
+                        denomination_commune=(med.get('denomination_commune') or med.get('nom', '')).strip(),
                         dosage=med.get('dosage') or '',
                         frequence=med.get('frequence') or '',
                         duree_jours=int(med.get('duree_jours') or 7),
                         forme=forme,
                         voie_administration=voie,
-                        quantite=1,
+                        quantite=int(med.get('quantite') or 1),
                     ))
 
         # ── 11. Suivi ────────────────────────────────────────────────────────────
@@ -1020,28 +1136,25 @@ def complete_consultation_medecin(consultation_id: int, data: dict, db: Session 
                 db.add(ord_db)
                 db.flush()
 
+                FORMES_VALIDES = {'COMPRIME','INJECTION','SIROP','CREME','COLLYRE','POUDRE','PATCH','SPRAY','CAPSULE','SOLUTION'}
+                VOIES_VALIDES  = {'ORALE','INTRAVEINEUSE','CUTANEE','INTRAMUSCULAIRE','OPHTALMIQUE','NASALE','INHALATION','SOUS-CUTANEE','RECTALE'}
                 for med in meds_valides:
-                    instructions = (med.get('instructions') or '').upper()
-                    forme = 'COMPRIME'
-                    for f in ['INJECTION', 'SIROP', 'CREME']:
-                        if f in instructions:
-                            forme = f
-                            break
-                    voie = 'ORALE'
-                    for v in ['INTRAVEINEUSE', 'CUTANEE', 'INTRAMUSCULAIRE']:
-                        if v in instructions:
-                            voie = v
-                            break
+                    forme = (med.get('forme') or 'COMPRIME').upper()
+                    if forme not in FORMES_VALIDES:
+                        forme = 'COMPRIME'
+                    voie = (med.get('voie_administration') or 'ORALE').upper()
+                    if voie not in VOIES_VALIDES:
+                        voie = 'ORALE'
                     db.add(Medicament(
                         ordonnance_id=ord_db.ordonnance_id,
                         nom_commercial=med['nom'].strip(),
-                        denomination_commune=med.get('nom', '').strip(),
+                        denomination_commune=(med.get('denomination_commune') or med.get('nom', '')).strip(),
                         dosage=med.get('dosage') or '',
                         frequence=med.get('frequence') or '',
                         duree_jours=int(med.get('duree_jours') or 7),
                         forme=forme,
                         voie_administration=voie,
-                        quantite=1,
+                        quantite=int(med.get('quantite') or 1),
                     ))
 
         # ── Suivi ────────────────────────────────────────────────────────────
@@ -1288,47 +1401,3 @@ def get_consultation_details_complets(consultation_id: int, db: Session = Depend
         "ordonnance": ordonnance_data,
         "suivi": suivi_data,
     }
-
-
-@router.get("/catalogue-medicaments")
-def get_catalogue_medicaments(maladie: str, db: Session = Depends(get_db)):
-    """
-    Retourne les médicaments du catalogue de référence pour une maladie.
-    Utilisé pour l'autocomplétion dans la section ordonnance du workflow.
-    """
-    from ..models.catalogue_medicament import CatalogueMedicament
-    resultats = (
-        db.query(CatalogueMedicament)
-        .filter(CatalogueMedicament.maladie == maladie)
-        .order_by(CatalogueMedicament.categorie, CatalogueMedicament.nom_commercial)
-        .all()
-    )
-    return [
-        {
-            "id": r.id,
-            "nom_commercial": r.nom_commercial,
-            "denomination_commune": r.denomination_commune,
-            "dosage": r.dosage_standard,
-            "forme": r.forme,
-            "voie_administration": r.voie_administration,
-            "frequence": r.frequence_habituelle,
-            "duree_jours": r.duree_standard_jours,
-            "categorie": r.categorie,
-            "notes": r.notes,
-            "quantite": 1,
-        }
-        for r in resultats
-    ]
-
-
-@router.get("/catalogue-medicaments/maladies")
-def get_maladies_catalogue(db: Session = Depends(get_db)):
-    """Retourne toutes les maladies disponibles dans le catalogue de référence."""
-    from ..models.catalogue_medicament import CatalogueMedicament
-    from sqlalchemy import distinct as sa_distinct
-    maladies = (
-        db.query(sa_distinct(CatalogueMedicament.maladie))
-        .order_by(CatalogueMedicament.maladie)
-        .all()
-    )
-    return [m[0] for m in maladies]

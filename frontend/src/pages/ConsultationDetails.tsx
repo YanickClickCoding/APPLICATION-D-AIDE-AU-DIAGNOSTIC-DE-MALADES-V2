@@ -652,71 +652,80 @@ const VitalCard = ({ icon: Icon, label, value, unit }: any) => (
   </div>
 );
 
-const AnalyseIACard = ({ analyse }: { analyse: AnalyseIA }) => (
-  <div style={{
-    padding: '20px',
-    background: 'linear-gradient(135deg, #EEF2FF, #F5F3FF)',
-    borderRadius: '12px',
-    border: '2px solid #C7D2FE'
-  }}>
-    <div style={{ marginBottom: '16px' }}>
-      <div style={{ fontSize: '12px', fontWeight: 700, color: '#4F46E5', textTransform: 'uppercase', marginBottom: '8px' }}>
-        Diagnostic Principal
-      </div>
-      <div style={{ fontSize: '22px', fontWeight: 800, color: '#3730A3', marginBottom: '12px' }}>
-        {analyse.maladie_predite}
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <span style={{ fontSize: '12px', color: '#6B7280' }}>Confiance:</span>
-        <div style={{ flex: 1, height: '8px', background: '#E5E7EB', borderRadius: '4px', overflow: 'hidden' }}>
-          <div style={{
-            height: '100%',
-            width: `${analyse.confiance}%`,
-            background: analyse.confiance >= 70
-              ? 'linear-gradient(90deg, #10B981, #059669)'
-              : analyse.confiance >= 50
-              ? 'linear-gradient(90deg, #F59E0B, #D97706)'
-              : 'linear-gradient(90deg, #EF4444, #DC2626)',
-            borderRadius: '4px',
-            transition: 'width 0.6s ease'
-          }} />
-        </div>
-        <strong style={{
-          fontSize: '16px',
-          color: analyse.confiance >= 70 ? '#059669' : analyse.confiance >= 50 ? '#D97706' : '#DC2626'
-        }}>
-          {analyse.confiance}%
-        </strong>
-      </div>
-    </div>
+const AnalyseIACard = ({ analyse }: { analyse: AnalyseIA }) => {
+  // Le modèle ML retourne des probabilités en décimal (0–1), normaliser en pourcentage
+  const toPercent = (v: number) => (v <= 1 ? v * 100 : v);
+  const confiance = toPercent(analyse.confiance);
 
-    {analyse.top_predictions && analyse.top_predictions.length > 1 && (
-      <div>
-        <div style={{ fontSize: '12px', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', marginBottom: '10px' }}>
-          Diagnostics Alternatifs
+  return (
+    <div style={{
+      padding: '20px',
+      background: 'linear-gradient(135deg, #EEF2FF, #F5F3FF)',
+      borderRadius: '12px',
+      border: '2px solid #C7D2FE'
+    }}>
+      <div style={{ marginBottom: '16px' }}>
+        <div style={{ fontSize: '12px', fontWeight: 700, color: '#4F46E5', textTransform: 'uppercase', marginBottom: '8px' }}>
+          Diagnostic Principal
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {analyse.top_predictions.slice(1, 4).map((pred, index) => (
-            <div key={index} style={{
-              padding: '10px 12px',
-              background: 'rgba(255, 255, 255, 0.7)',
-              borderRadius: '8px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              <span style={{ fontSize: '13px', color: '#374151', fontWeight: 500 }}>
-                {pred.maladie}
-              </span>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: '#6B7280' }}>
-                {pred.probabilite}%
-              </span>
-            </div>
-          ))}
+        <div style={{ fontSize: '22px', fontWeight: 800, color: '#3730A3', marginBottom: '12px' }}>
+          {analyse.maladie_predite}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontSize: '12px', color: '#6B7280' }}>Confiance :</span>
+          <div style={{ flex: 1, height: '8px', background: '#E5E7EB', borderRadius: '4px', overflow: 'hidden' }}>
+            <div style={{
+              height: '100%',
+              width: `${confiance}%`,
+              background: confiance >= 70
+                ? 'linear-gradient(90deg, #10B981, #059669)'
+                : confiance >= 50
+                ? 'linear-gradient(90deg, #F59E0B, #D97706)'
+                : 'linear-gradient(90deg, #EF4444, #DC2626)',
+              borderRadius: '4px',
+              transition: 'width 0.6s ease'
+            }} />
+          </div>
+          <strong style={{
+            fontSize: '16px',
+            color: confiance >= 70 ? '#059669' : confiance >= 50 ? '#D97706' : '#DC2626'
+          }}>
+            {confiance.toFixed(1)}%
+          </strong>
         </div>
       </div>
-    )}
-  </div>
-);
+
+      {analyse.top_predictions && analyse.top_predictions.length > 1 && (
+        <div>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', marginBottom: '10px' }}>
+            Diagnostics Alternatifs
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {analyse.top_predictions.slice(1, 4).map((pred, index) => {
+              const prob = toPercent(pred.probabilite);
+              return (
+                <div key={index} style={{
+                  padding: '10px 12px',
+                  background: 'rgba(255, 255, 255, 0.7)',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <span style={{ fontSize: '13px', color: '#374151', fontWeight: 500 }}>
+                    {pred.maladie}
+                  </span>
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#6B7280' }}>
+                    {prob.toFixed(1)}%
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default ConsultationDetails;

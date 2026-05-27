@@ -71,7 +71,7 @@ const CenteredCounter = ({ value }: { value: number }) => {
 };
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentConsultations, setRecentConsultations] = useState<Consultation[]>([]);
   const [personnel, setPersonnel] = useState<any>(null);
@@ -89,7 +89,7 @@ const Dashboard = () => {
       setLoading(true);
       const [dashboardData, consultationsData, healthData, personnelData, mlInfoData] = await Promise.all([
         analyticsAPI.getDashboard(),
-        analyticsAPI.getRecentConsultations(6),
+        isAdmin ? Promise.resolve([]) : analyticsAPI.getRecentConsultations(6),
         healthAPI.check(),
         analyticsAPI.getPersonnelDisponible(),
         mlAPI.getModelInfo().catch(() => null),
@@ -248,7 +248,7 @@ const Dashboard = () => {
                   <RefreshCw size={18} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} /> 
                   Rafraîchir
               </button>
-              {(user?.role === 'admin' || user?.role === 'medecin' || user?.role === 'infirmier') && (
+              {(user?.role === 'medecin' || user?.role === 'infirmier') && (
                 <Link to="/consultation/nouvelle" className="sp-btn sp-btn-primary">
                     <PlusCircle size={18} /> Nouvelle consultation
                 </Link>
@@ -261,7 +261,7 @@ const Dashboard = () => {
           <StatCard label="Total Patients" value={statsData.totalPatients} icon={UserCheck} accent="#8B5CF6" bgIcon="#ede9fe" colorIcon="#7C3AED" />
           <StatCard label="Total Consultations" value={statsData.totalConsultations} icon={Calendar} accent="var(--sp-primary)" bgIcon="#dbeafe" colorIcon="var(--sp-primary)" />
           <StatCard label="Aujourd'hui" value={statsData.consultationsJour} icon={Sun} accent="#EC4899" bgIcon="#fce7f3" colorIcon="#DB2777" />
-          <StatCard label="En Cours" value={statsData.enCours} icon={Activity} accent="#3B82F6" bgIcon="#eff6ff" colorIcon="#2563EB" />
+          <StatCard label="En Attente" value={statsData.enAttente} icon={Activity} accent="#3B82F6" bgIcon="#eff6ff" colorIcon="#2563EB" />
       </div>
 
       <div className="sp-stats-grid sp-fade-in" style={{ marginBottom: '20px' }}>
@@ -491,51 +491,92 @@ const Dashboard = () => {
               </div>
           </div>
 
-          {/* Consultations récentes */}
-          <div className="sp-card">
+          {/* Consultations récentes (non-admin) / Top maladies (admin) */}
+          {isAdmin ? (
+            <div className="sp-card">
               <div className="sp-card-header">
-                  <div className="sp-card-title">
-                      <List size={20} />
-                      Consultations récentes
+                <div className="sp-card-title">
+                  <PieChart size={20} />
+                  Top maladies diagnostiquées
+                </div>
+              </div>
+              <div style={{ padding: '16px 20px 20px' }}>
+                {stats.top_diagnostics.length === 0 ? (
+                  <div className="sp-empty" style={{ padding: '30px' }}>
+                    <Inbox size={32} style={{ color: 'var(--sp-gray-300)', marginBottom: '8px' }} />
+                    <div className="sp-empty-title">Aucun diagnostic enregistré</div>
                   </div>
-                  <Link to="/consultations" className="sp-btn sp-btn-outline sp-btn-sm">Voir tout</Link>
+                ) : (() => {
+                  const maxCount = Math.max(...stats.top_diagnostics.map(d => d.count));
+                  const palette = ['#4F46E5', '#7C3AED', '#DB2777', '#059669', '#D97706'];
+                  return stats.top_diagnostics.slice(0, 5).map((d, i) => (
+                    <div key={d.diagnostic} style={{ marginBottom: i < 4 ? '14px' : 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                        <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '75%' }}>
+                          {d.diagnostic}
+                        </span>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: palette[i % palette.length] }}>
+                          {d.count} cas
+                        </span>
+                      </div>
+                      <div style={{ height: '6px', background: '#F3F4F6', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div style={{
+                          height: '100%',
+                          width: `${maxCount > 0 ? (d.count / maxCount) * 100 : 0}%`,
+                          background: palette[i % palette.length],
+                          borderRadius: '3px',
+                          transition: 'width 0.8s ease',
+                        }} />
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+          ) : (
+            <div className="sp-card">
+              <div className="sp-card-header">
+                <div className="sp-card-title">
+                  <List size={20} />
+                  Consultations récentes
+                </div>
+                <Link to="/consultations" className="sp-btn sp-btn-outline sp-btn-sm">Voir tout</Link>
               </div>
               <div>
-                  {recentConsultations.map(row => {
-                    const sc: Record<string, string> = { 'en attente': 'attente', 'en cours': 'cours', 'terminée': 'terminee', 'en_attente_medecin': 'attente' };
-                    const cls = sc[row.statut] || 'attente';
-                    const statutLabel: Record<string, string> = { 'en attente': 'En attente', 'en cours': 'En cours', 'terminée': 'Terminée', 'en_attente_medecin': 'Att. médecin' };
-                    
-                    const parts = row.nom_patient.trim().split(/\s+/);
-                    const initials = parts.length >= 2
-                      ? `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase()
-                      : row.nom_patient.substring(0, 2).toUpperCase();
-
-                    return (
-                      <div key={row.id} style={{display:'flex', alignItems:'center', gap:'14px', padding:'13px 20px', borderBottom:'1px solid var(--sp-gray-100)'}}>
-                          <div style={{width:'38px', height:'38px', borderRadius:'10px', background:'linear-gradient(135deg,var(--sp-primary),var(--sp-accent))', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontFamily:'Syne, sans-serif', fontWeight:700, fontSize:'13px', color:'#fff'}}>
-                              {initials}
-                          </div>
-                          <div style={{flex:1, minWidth:0}}>
-                              <div style={{fontWeight:600, fontSize:'13.5px', color:'var(--sp-gray-800)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>
-                                  {row.nom_patient}
-                              </div>
-                              <div style={{fontSize:'11.5px', color:'var(--sp-gray-400)'}}>
-                                  {new Date(row.date).toLocaleString('fr-FR')}
-                              </div>
-                          </div>
-                          <span className={`sp-badge ${cls}`} style={{ fontSize: '10px' }}>{statutLabel[row.statut]}</span>
+                {recentConsultations.map(row => {
+                  const sc: Record<string, string> = { 'en attente': 'attente', 'en cours': 'cours', 'terminée': 'terminee', 'en_attente_medecin': 'attente' };
+                  const cls = sc[row.statut] || 'attente';
+                  const statutLabel: Record<string, string> = { 'en attente': 'En attente', 'en cours': 'En cours', 'terminée': 'Terminée', 'en_attente_medecin': 'Att. médecin' };
+                  const parts = row.nom_patient.trim().split(/\s+/);
+                  const initials = parts.length >= 2
+                    ? `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase()
+                    : row.nom_patient.substring(0, 2).toUpperCase();
+                  return (
+                    <div key={row.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '13px 20px', borderBottom: '1px solid var(--sp-gray-100)' }}>
+                      <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'linear-gradient(135deg,var(--sp-primary),var(--sp-accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '13px', color: '#fff' }}>
+                        {initials}
                       </div>
-                    );
-                  })}
-                  {recentConsultations.length === 0 && (
-                  <div className="sp-empty" style={{padding:'30px'}}>
-                      <Inbox size={32} style={{ color: 'var(--sp-gray-300)', marginBottom: '8px' }} />
-                      <div className="sp-empty-title">Aucune consultation</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: '13.5px', color: 'var(--sp-gray-800)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {row.nom_patient}
+                        </div>
+                        <div style={{ fontSize: '11.5px', color: 'var(--sp-gray-400)' }}>
+                          {new Date(row.date).toLocaleString('fr-FR')}
+                        </div>
+                      </div>
+                      <span className={`sp-badge ${cls}`} style={{ fontSize: '10px' }}>{statutLabel[row.statut]}</span>
+                    </div>
+                  );
+                })}
+                {recentConsultations.length === 0 && (
+                  <div className="sp-empty" style={{ padding: '30px' }}>
+                    <Inbox size={32} style={{ color: 'var(--sp-gray-300)', marginBottom: '8px' }} />
+                    <div className="sp-empty-title">Aucune consultation</div>
                   </div>
-                  )}
+                )}
               </div>
-          </div>
+            </div>
+          )}
       </div>
     </>
   );

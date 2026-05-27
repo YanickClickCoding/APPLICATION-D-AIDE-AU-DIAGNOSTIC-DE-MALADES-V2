@@ -14,8 +14,13 @@ from ..models import (
 )
 from ..models.prediction_history import PredictionHistory
 from ..schemas.patient_schema import PatientCreate, PatientResponse, PatientUpdate
+from .auth import get_current_non_admin, get_current_user
 
-router = APIRouter(prefix="/patients", tags=["Patients"])
+router = APIRouter(
+    prefix="/patients",
+    tags=["Patients"],
+    dependencies=[Depends(get_current_non_admin)],
+)
 
 
 @router.get("/search")
@@ -115,10 +120,16 @@ def list_patients(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
 
 
 @router.get("/{patient_id}", response_model=PatientResponse)
-def get_patient(patient_id: int, db: Session = Depends(get_db)):
+def get_patient(patient_id: int, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     """
     Récupère un patient par son ID (INT)
     """
+    if current_user.role == "infirmier":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Les infirmiers n'ont pas accès au dossier médical."
+        )
+        
     patient = (
         db.query(Patient)
         .options(joinedload(Patient.dossier_medical))

@@ -499,6 +499,14 @@ const Consultations = () => {
                                   <Play size={14} /> Continuer
                                 </button>
                               )
+                            ) : c.statut === 'en attente' && isInfirmier ? (
+                                <Link
+                                  to={`/consultation/nouvelle?reprendre=${c.id}`}
+                                  className="sp-btn sp-btn-outline"
+                                  style={{ padding: '6px 14px', fontSize: '12px', height: '34px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
+                                >
+                                  <Play size={14} /> Continuer
+                                </Link>
                             ) : count > 1 ? (
                               <button
                                 className="sp-btn sp-btn-outline"
@@ -513,27 +521,29 @@ const Consultations = () => {
                             )}
 
                             {/* Bouton Dossier */}
-                            {c.patient_id ? (
-                              <Link
-                                to={`/dossier-patient/${c.patient_id}`}
-                                className="sp-btn sp-btn-primary"
-                                style={{
-                                  padding: '6px 16px', fontSize: '12px', height: '34px', borderRadius: '8px',
-                                  textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px'
-                                }}
-                              >
-                                <Clipboard size={14} />
-                                Dossier
-                              </Link>
-                            ) : (
-                              <button
-                                className="sp-btn sp-btn-primary"
-                                style={{ padding: '6px 16px', fontSize: '12px', height: '34px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                                onClick={() => openForm(c)}
-                              >
-                                <Clipboard size={14} />
-                                Dossier
-                              </button>
+                            {!isInfirmier && (
+                              c.patient_id ? (
+                                <Link
+                                  to={`/dossier-patient/${c.patient_id}`}
+                                  className="sp-btn sp-btn-primary"
+                                  style={{
+                                    padding: '6px 16px', fontSize: '12px', height: '34px', borderRadius: '8px',
+                                    textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px'
+                                  }}
+                                >
+                                  <Clipboard size={14} />
+                                  Dossier
+                                </Link>
+                              ) : (
+                                <button
+                                  className="sp-btn sp-btn-primary"
+                                  style={{ padding: '6px 16px', fontSize: '12px', height: '34px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                                  onClick={() => openForm(c)}
+                                >
+                                  <Clipboard size={14} />
+                                  Dossier
+                                </button>
+                              )
                             )}
                           </div>
                         </div>
@@ -594,7 +604,7 @@ const Consultations = () => {
                                     </button>
                                   )
                                 )}
-                                {c.statut === 'en attente' && (
+                                {c.statut === 'en attente' && !isInfirmier && (
                                   <>
                                     <button className="sp-btn sp-btn-outline sp-btn-sm" onClick={() => { setCurrentConsultId(c.id); setSelectedMedecinId(c.medecin_id?.toString() || ''); setAffectModalOpen(true); }}>
                                       <UserPlus size={14} /> {c.medecin_id ? 'Réaffecter' : 'Affecter'}
@@ -609,6 +619,11 @@ const Consultations = () => {
                                       </button>
                                     )}
                                   </>
+                                )}
+                                {c.statut === 'en attente' && isInfirmier && (
+                                  <Link to={`/consultation/nouvelle?reprendre=${c.id}`} className="sp-btn sp-btn-primary sp-btn-sm" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Play size={14} /> Continuer
+                                  </Link>
                                 )}
                                 {c.statut === 'en cours' && (
                                   <>

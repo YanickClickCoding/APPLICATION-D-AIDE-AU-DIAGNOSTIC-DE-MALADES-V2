@@ -5,6 +5,7 @@ Gère la connexion, déconnexion et génération de tokens JWT
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from datetime import datetime, timedelta
 from typing import Optional
 import logging
@@ -219,6 +220,21 @@ async def get_current_admin(current_user: User = Depends(get_current_user)):
     return current_user
 
 
+async def get_current_non_admin(current_user: User = Depends(get_current_user)):
+    """
+    Vérifie que l'utilisateur est authentifié et actif, et n'est PAS administrateur.
+    L'admin n'a aucun accès aux consultations, diagnostics ni données patients.
+    """
+    if not current_user.actif:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Compte inactif")
+    if current_user.role == "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Les administrateurs n'ont pas accès aux consultations et diagnostics",
+        )
+    return current_user
+
+
 # ============================================================================
 # ENDPOINTS
 # ============================================================================
@@ -360,7 +376,7 @@ async def login(
     medecin_id = None
     if user.role == "medecin":
         from ..models.medecin import Medecin
-        med = db.query(Medecin).filter(Medecin.nom == user.nom, Medecin.prenoms == user.prenoms).first()
+        med = db.query(Medecin).filter(func.lower(Medecin.nom) == user.nom.lower(), func.lower(Medecin.prenoms) == user.prenoms.lower()).first()
         if med:
             medecin_id = med.medecin_id
 
@@ -417,7 +433,7 @@ async def login_form(
     medecin_id = None
     if user.role == "medecin":
         from ..models.medecin import Medecin
-        med = db.query(Medecin).filter(Medecin.nom == user.nom, Medecin.prenoms == user.prenoms).first()
+        med = db.query(Medecin).filter(func.lower(Medecin.nom) == user.nom.lower(), func.lower(Medecin.prenoms) == user.prenoms.lower()).first()
         if med:
             medecin_id = med.medecin_id
 
@@ -475,7 +491,7 @@ async def refresh_token(current_user: User = Depends(get_current_active_user)):
     medecin_id = None
     if current_user.role == "medecin":
         from ..models.medecin import Medecin
-        med = db.query(Medecin).filter(Medecin.nom == current_user.nom, Medecin.prenoms == current_user.prenoms).first()
+        med = db.query(Medecin).filter(func.lower(Medecin.nom) == current_user.nom.lower(), func.lower(Medecin.prenoms) == current_user.prenoms.lower()).first()
         if med:
             medecin_id = med.medecin_id
 

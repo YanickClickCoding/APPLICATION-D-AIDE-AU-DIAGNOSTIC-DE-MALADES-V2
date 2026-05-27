@@ -59,6 +59,12 @@ const DossierPatient = () => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    if (user?.role === 'infirmier') {
+      showToast("Accès refusé. Les infirmiers ne peuvent pas consulter le dossier médical.", "error");
+      navigate('/consultations');
+      return;
+    }
+
     const fetchData = async () => {
       if (!token || !patientId) return;
       

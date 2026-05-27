@@ -2,7 +2,7 @@
 Analytics API Router (US-034, US-036, US-044)
 Dashboard et statistiques
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -18,6 +18,7 @@ import numpy as np
 
 from ..database import get_db
 from ..models import Patient, Consultation, Diagnostic, AnalyseIA, Medecin, Infirmier
+from .auth import get_current_user, get_current_non_admin
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
@@ -223,10 +224,15 @@ def get_model_performance(db: Session = Depends(get_db)) -> Dict:
 
 
 @router.get("/consultations/recent")
-def get_recent_consultations(limit: int = 10, db: Session = Depends(get_db)) -> List[Dict]:
+def get_recent_consultations(
+    limit: int = 10,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+) -> List[Dict]:
     """
     Consultations récentes avec patient_id pour accès au dossier.
     Exclut les consultations orphelines (patient supprimé hors API).
+    Accès interdit aux administrateurs (données médicales individuelles).
     """
     consultations = (
         db.query(Consultation)

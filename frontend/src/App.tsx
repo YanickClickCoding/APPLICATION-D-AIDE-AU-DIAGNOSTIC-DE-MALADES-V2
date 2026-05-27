@@ -22,12 +22,27 @@ import DossierPatient from './pages/DossierPatient';
 import MesPatients from './pages/MesPatients';
 import DiagnosticsIA from './pages/DiagnosticsIA';
 
-const PrivateRoute = ({ children, adminOnly = false, medicalOnly = false, noInfirmier = false }: { children: React.ReactNode, adminOnly?: boolean, medicalOnly?: boolean, noInfirmier?: boolean }) => {
+const PrivateRoute = ({
+  children,
+  adminOnly = false,
+  medicalOnly = false,
+  noInfirmier = false,
+  noAdmin = false,
+}: {
+  children: React.ReactNode;
+  adminOnly?: boolean;
+  medicalOnly?: boolean;
+  noInfirmier?: boolean;
+  /** Si true, l'admin est redirigé vers son espace — il n'a pas accès aux données cliniques */
+  noAdmin?: boolean;
+}) => {
   const { isAuthenticated, isAdmin, user } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (adminOnly && !isAdmin) return <Navigate to="/" replace />;
+  // L'admin n'a aucun accès aux pages cliniques (consultations, diagnostics, patients)
+  if (noAdmin && isAdmin) return <Navigate to="/admin/systeme" replace />;
   if (medicalOnly && !isAdmin && user?.role !== 'medecin' && user?.role !== 'infirmier') return <Navigate to="/consultations" replace />;
-  if (noInfirmier && !isAdmin && user?.role !== 'medecin') return <Navigate to="/" replace />;
+  if (noInfirmier && user?.role !== 'medecin') return <Navigate to="/" replace />;
   return <>{children}</>;
 };
 
@@ -69,42 +84,37 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
       <div className="sp-nav-section">
           <div className="sp-nav-label">Navigation</div>
           <nav>
-              {/* Tableau de bord — admin ET médecin */}
+              {/* Tableau de bord */}
               <a href="/" className={`sp-nav-item ${location.pathname === '/' ? 'active' : ''}`} onClick={e => navTo(e, '/')}>
                   <i data-feather="grid"></i>
                   <span>Tableau de bord</span>
               </a>
 
-              <a href="/consultations" className={`sp-nav-item ${location.pathname === '/consultations' ? 'active' : ''}`} onClick={e => navTo(e, '/consultations')}>
-                  <Calendar size={18} />
-                  <span>Consultations</span>
-              </a>
-
-              {/* Nav médecin */}
-              {!isAdmin && user?.role === 'medecin' && (
+              {/* Navigation clinique — médecin et infirmier UNIQUEMENT, admin exclu */}
+              {!isAdmin && (
                 <>
-                  <a href="/mes-patients" className={`sp-nav-item ${location.pathname === '/mes-patients' ? 'active' : ''}`} onClick={e => navTo(e, '/mes-patients')}>
-                      <User size={18} />
-                      <span>Mes Patients</span>
+                  <a href="/consultations" className={`sp-nav-item ${location.pathname === '/consultations' ? 'active' : ''}`} onClick={e => navTo(e, '/consultations')}>
+                      <Calendar size={18} />
+                      <span>Consultations</span>
                   </a>
-                  <a href="/diagnostics" className={`sp-nav-item ${location.pathname === '/diagnostics' ? 'active' : ''}`} onClick={e => navTo(e, '/diagnostics')}>
-                      <Brain size={18} />
-                      <span>Diagnostics IA</span>
-                  </a>
+                  {user?.role === 'medecin' && (
+                    <>
+                      <a href="/mes-patients" className={`sp-nav-item ${location.pathname === '/mes-patients' ? 'active' : ''}`} onClick={e => navTo(e, '/mes-patients')}>
+                          <User size={18} />
+                          <span>Mes Patients</span>
+                      </a>
+                      <a href="/diagnostics" className={`sp-nav-item ${location.pathname === '/diagnostics' ? 'active' : ''}`} onClick={e => navTo(e, '/diagnostics')}>
+                          <Brain size={18} />
+                          <span>Diagnostics IA</span>
+                      </a>
+                    </>
+                  )}
                 </>
               )}
 
-              {/* Nav admin */}
+              {/* Navigation administrative — admin UNIQUEMENT */}
               {isAdmin && (
                 <>
-                  <a href="/mes-patients" className={`sp-nav-item ${location.pathname === '/mes-patients' ? 'active' : ''}`} onClick={e => navTo(e, '/mes-patients')}>
-                      <User size={18} />
-                      <span>Mes Patients</span>
-                  </a>
-                  <a href="/diagnostics" className={`sp-nav-item ${location.pathname === '/diagnostics' ? 'active' : ''}`} onClick={e => navTo(e, '/diagnostics')}>
-                      <Brain size={18} />
-                      <span>Diagnostics IA</span>
-                  </a>
                   <a href="/personnel" className={`sp-nav-item ${location.pathname === '/personnel' ? 'active' : ''}`} onClick={e => navTo(e, '/personnel')}>
                       <UserCheck size={18} />
                       <span>Personnel Médical</span>
@@ -194,16 +204,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const pendingCount = pendingList.length;
 
   React.useEffect(() => {
-    if (user?.role !== 'medecin' || !user.medecin_id) return;
+    if (user?.role !== 'medecin' || !user.medecin_id || !token) return;
     const fetchPending = () =>
-      fetch(`http://localhost:8000/api/consultations/en-attente?medecin_id=${user.medecin_id}`)
-        .then(r => r.json())
+      fetch(`http://localhost:8000/api/consultations/en-attente?medecin_id=${user.medecin_id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(r => r.ok ? r.json() : [])
         .then(d => setPendingList(Array.isArray(d) ? d.filter((c: any) => c.medecin_id === user.medecin_id) : []))
         .catch(() => {});
     fetchPending();
     const id = setInterval(fetchPending, 30_000);
     return () => clearInterval(id);
-  }, [user]);
+  }, [user, token]);
 
   React.useEffect(() => {
     if (!isAdmin || !token) return;
@@ -395,12 +407,12 @@ function AppContent() {
       <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" replace />} />
       <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/" replace />} />
       <Route path="/" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
-      <Route path="/consultations" element={<PrivateRoute><Layout><Consultations /></Layout></PrivateRoute>} />
-      <Route path="/consultation/nouvelle" element={<PrivateRoute medicalOnly><Layout><ConsultationWorkflow /></Layout></PrivateRoute>} />
-      <Route path="/consultation/:consultationId/details" element={<PrivateRoute noInfirmier><Layout><ConsultationDetails /></Layout></PrivateRoute>} />
-      <Route path="/dossier-patient/:patientId" element={<PrivateRoute medicalOnly><Layout><DossierPatient /></Layout></PrivateRoute>} />
-      <Route path="/mes-patients" element={<PrivateRoute noInfirmier><Layout><MesPatients /></Layout></PrivateRoute>} />
-      <Route path="/diagnostics" element={<PrivateRoute noInfirmier><Layout><DiagnosticsIA /></Layout></PrivateRoute>} />
+      <Route path="/consultations" element={<PrivateRoute noAdmin><Layout><Consultations /></Layout></PrivateRoute>} />
+      <Route path="/consultation/nouvelle" element={<PrivateRoute noAdmin medicalOnly><Layout><ConsultationWorkflow /></Layout></PrivateRoute>} />
+      <Route path="/consultation/:consultationId/details" element={<PrivateRoute noAdmin noInfirmier><Layout><ConsultationDetails /></Layout></PrivateRoute>} />
+      <Route path="/dossier-patient/:patientId" element={<PrivateRoute noAdmin medicalOnly><Layout><DossierPatient /></Layout></PrivateRoute>} />
+      <Route path="/mes-patients" element={<PrivateRoute noAdmin noInfirmier><Layout><MesPatients /></Layout></PrivateRoute>} />
+      <Route path="/diagnostics" element={<PrivateRoute noAdmin noInfirmier><Layout><DiagnosticsIA /></Layout></PrivateRoute>} />
       <Route path="/personnel" element={<PrivateRoute><Layout><PersonnelMedical /></Layout></PrivateRoute>} />
       <Route path="/utilisateurs" element={<PrivateRoute adminOnly><Layout><Utilisateurs /></Layout></PrivateRoute>} />
       <Route path="/identifiants" element={<PrivateRoute adminOnly><Layout><Identifiants /></Layout></PrivateRoute>} />

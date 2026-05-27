@@ -85,7 +85,10 @@ export interface DashboardStats {
     consultations_en_attente_medecin?: number; // Ajout
     consultations_en_cours?: number; // Ajout
     consultations_terminees?: number; // Ajout
+    consultations_aujourd_hui?: number;
     total_diagnostics: number;
+    diagnostics_approuves?: number;
+    diagnostics_rejetes?: number;
     taux_approbation: number;
     confiance_moyenne: number;
   };
@@ -116,12 +119,14 @@ export class APIError extends Error {
 // Helper pour les requêtes
 async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+  const token = localStorage.getItem('sp_token');
+
   try {
     const response = await fetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         ...options.headers,
       },
     });

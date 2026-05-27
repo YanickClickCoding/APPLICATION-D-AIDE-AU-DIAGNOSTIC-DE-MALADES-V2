@@ -11,10 +11,10 @@ class Medicament(Base):
     nom_commercial = Column(String(255), nullable=False)
     denomination_commune = Column(String(255))
     dosage = Column(String(100))
-    forme = Column(ENUM('COMPRIME', 'INJECTION', 'SIROP', 'CREME'))
+    forme = Column(ENUM('COMPRIME', 'INJECTION', 'SIROP', 'CREME', 'COLLYRE', 'POUDRE', 'PATCH', 'SPRAY', 'CAPSULE', 'SOLUTION'))
     quantite = Column(Integer)
     frequence = Column(String(100))
-    voie_administration = Column(ENUM('ORALE', 'INTRAVEINEUSE', 'CUTANEE', 'INTRAMUSCULAIRE'))
+    voie_administration = Column(ENUM('ORALE', 'INTRAVEINEUSE', 'CUTANEE', 'INTRAMUSCULAIRE', 'OPHTALMIQUE', 'NASALE', 'INHALATION', 'SOUS-CUTANEE', 'RECTALE'))
     duree_jours = Column(Integer)
     
     ordonnance = relationship("Ordonnance", back_populates="medicaments")

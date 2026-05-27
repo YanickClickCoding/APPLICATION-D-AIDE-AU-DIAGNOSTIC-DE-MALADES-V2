@@ -18,8 +18,13 @@ from ..schemas.diagnostic_schema import (
     DirectPredictionRequest,
 )
 from ..ml.model_manager import model_manager
+from .auth import get_current_user, get_current_non_admin
 
-router = APIRouter(prefix="/ml", tags=["ML Prediction"])
+router = APIRouter(
+    prefix="/ml",
+    tags=["ML Prediction"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 def extract_patient_data(consultation_id: int, db: Session) -> Dict:
@@ -115,7 +120,7 @@ def extract_patient_data(consultation_id: int, db: Session) -> Dict:
 
 
 @router.post("/predict", response_model=PredictionResponse)
-def predict_diagnosis(request: PredictionRequest, db: Session = Depends(get_db)):
+def predict_diagnosis(request: PredictionRequest, db: Session = Depends(get_db), _=Depends(get_current_non_admin)):
     """
     US-014, US-015: Prédire le diagnostic pour une consultation
     """
@@ -144,7 +149,7 @@ def predict_diagnosis(request: PredictionRequest, db: Session = Depends(get_db))
 
 
 @router.post("/predict-direct", response_model=PredictionResponse)
-def predict_direct(request: DirectPredictionRequest):
+def predict_direct(request: DirectPredictionRequest, _=Depends(get_current_non_admin)):
     """
     Prédiction directe à partir des données brutes du formulaire,
     sans enregistrement préalable en base de données.
@@ -177,7 +182,7 @@ def predict_direct(request: DirectPredictionRequest):
 
 
 @router.post("/explain", response_model=Dict)
-def explain_diagnosis(request: PredictionRequest, db: Session = Depends(get_db)):
+def explain_diagnosis(request: PredictionRequest, db: Session = Depends(get_db), _=Depends(get_current_non_admin)):
     """
     US-016: Expliquer pourquoi ce diagnostic a été proposé
     """
@@ -192,7 +197,7 @@ def explain_diagnosis(request: PredictionRequest, db: Session = Depends(get_db))
 
 
 @router.post("/diagnostics", response_model=DiagnosticResponse, status_code=status.HTTP_201_CREATED)
-def create_diagnostic(diagnostic: DiagnosticCreate, db: Session = Depends(get_db)):
+def create_diagnostic(diagnostic: DiagnosticCreate, db: Session = Depends(get_db), _=Depends(get_current_non_admin)):
     """Créer un diagnostic après prédiction"""
     consultation = db.query(Consultation).filter(
         Consultation.consultation_id == diagnostic.consultation_id
@@ -224,6 +229,7 @@ def approve_diagnostic(
     diagnostic_id: str,
     approval: DiagnosticApprove,
     db: Session = Depends(get_db),
+    _=Depends(get_current_non_admin),
 ):
     """US-020: Approuver un diagnostic proposé par l'IA"""
     from uuid import UUID
@@ -263,6 +269,7 @@ def reject_diagnostic(
     diagnostic_id: str,
     rejection: DiagnosticReject,
     db: Session = Depends(get_db),
+    _=Depends(get_current_non_admin),
 ):
     """US-021: Rejeter un diagnostic et proposer le diagnostic correct"""
     from uuid import UUID

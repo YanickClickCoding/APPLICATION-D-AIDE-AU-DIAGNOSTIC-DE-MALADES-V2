@@ -69,6 +69,8 @@ const Login = () => {
   };
 
   return (
+    <>
+    <div className="sp-auth-bg-image" />
     <div className="sp-auth-container">
       <div className="sp-auth-logo">
         <div className="sp-auth-logo-icon">
@@ -175,6 +177,7 @@ const Login = () => {
         © {new Date().getFullYear()} GASA SAD · Système d'Aide au Diagnostic
       </div>
     </div>
+    </>
   );
 };
 

@@ -1,0 +1,2 @@
+ANNOMALIES RENCONTREES
+-- Clic sur le bouton 'vor' dans consultation redirige vers le Dashboars 
