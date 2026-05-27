@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { registerNavigationGuard, unregisterNavigationGuard } from '../utils/navigationGuard';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
+import { MedicalDisclaimerBanner } from '../components/MedicalDisclaimerBanner';
 import {
   User, Activity, Stethoscope, Brain, CheckCircle,
   ArrowRight, ArrowLeft, X, AlertCircle, Thermometer,
@@ -1194,34 +1195,69 @@ export default function ConsultationWorkflow() {
   const stepMax = visibleSteps[visibleSteps.length - 1]?.num ?? TOTAL;
   const progress = stepMax > stepMin ? ((step - stepMin) / (stepMax - stepMin)) * 100 : 100;
 
-  const AICard = ({ analyse, label }: { analyse: AnalyseIA; label: string }) => (
-    <div style={{ padding: '20px', background: 'linear-gradient(135deg,#EEF2FF,#F5F3FF)', borderRadius: '12px', border: '2px solid #C7D2FE', marginBottom: '20px' }}>
-      <div style={{ fontSize: '11px', fontWeight: 700, color: '#6366F1', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>
-        🤖 {label}
-      </div>
-      <div style={{ fontSize: '22px', fontWeight: 800, color: '#3730A3', marginBottom: '10px' }}>{analyse.maladie_predite}</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-        <span style={{ fontSize: '13px', color: '#6B7280' }}>Confiance :</span>
-        <div style={{ flex: 1, height: '8px', background: '#E5E7EB', borderRadius: '4px', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${analyse.confiance * 100}%`, background: analyse.confiance >= 0.7 ? 'linear-gradient(90deg,#10B981,#059669)' : analyse.confiance >= 0.5 ? 'linear-gradient(90deg,#F59E0B,#D97706)' : 'linear-gradient(90deg,#EF4444,#DC2626)', transition: 'width 0.6s ease' }} />
-        </div>
-        <strong style={{ color: analyse.confiance >= 0.7 ? '#059669' : analyse.confiance >= 0.5 ? '#D97706' : '#DC2626' }}>
-          {(analyse.confiance * 100).toFixed(1)}%
-        </strong>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {analyse.top_predictions.slice(0, 3).map((p, i) => (
-          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: i === 0 ? 'rgba(79,70,229,0.08)' : '#fff', borderRadius: '8px', border: `1px solid ${i === 0 ? '#C7D2FE' : '#E5E7EB'}` }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: i === 0 ? '#4F46E5' : '#E5E7EB', color: i === 0 ? '#fff' : '#6B7280', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>{i + 1}</div>
-              <span style={{ fontWeight: i === 0 ? 700 : 500, color: '#1F2937', fontSize: '14px' }}>{p.maladie}</span>
+  const AICard = ({ analyse, label }: { analyse: AnalyseIA; label: string }) => {
+    const pct = analyse.confiance <= 1 ? analyse.confiance * 100 : analyse.confiance;
+    const isHigh   = pct >= 70;
+    const isMedium = pct >= 50 && pct < 70;
+    const isLow    = pct < 50;
+    const barColor = isHigh ? 'linear-gradient(90deg,#10B981,#059669)'
+                   : isMedium ? 'linear-gradient(90deg,#F59E0B,#D97706)'
+                   : 'linear-gradient(90deg,#EF4444,#DC2626)';
+    const textColor = isHigh ? '#059669' : isMedium ? '#D97706' : '#DC2626';
+    const badge = isHigh
+      ? { label: 'Diagnostic fiable', bg: '#D1FAE5', color: '#065F46' }
+      : isMedium
+      ? { label: 'À vérifier cliniquement', bg: '#FEF3C7', color: '#92400E' }
+      : { label: 'Suggestion exploratoire', bg: '#FEE2E2', color: '#991B1B' };
+
+    return (
+      <div style={{ marginBottom: '20px' }}>
+        <div style={{ padding: '20px', background: 'linear-gradient(135deg,#EEF2FF,#F5F3FF)', borderRadius: '12px 12px 0 0', border: '2px solid #C7D2FE', borderBottom: 'none' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: '#6366F1', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              🤖 {label}
             </div>
-            <span style={{ fontWeight: 700, color: '#4F46E5', fontSize: '14px' }}>{(p.probabilite * 100).toFixed(1)}%</span>
+            <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '999px', background: badge.bg, color: badge.color }}>
+              {badge.label}
+            </span>
           </div>
-        ))}
+          <div style={{ fontSize: '22px', fontWeight: 800, color: '#3730A3', marginBottom: '10px' }}>{analyse.maladie_predite}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <span style={{ fontSize: '13px', color: '#6B7280' }}>Confiance IA :</span>
+            <div style={{ flex: 1, height: '8px', background: '#E5E7EB', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${pct}%`, background: barColor, transition: 'width 0.6s ease' }} />
+            </div>
+            <strong style={{ color: textColor }}>{pct.toFixed(1)}%</strong>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {analyse.top_predictions.slice(0, 3).map((p, i) => {
+              const pp = p.probabilite <= 1 ? p.probabilite * 100 : p.probabilite;
+              return (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: i === 0 ? 'rgba(79,70,229,0.08)' : '#fff', borderRadius: '8px', border: `1px solid ${i === 0 ? '#C7D2FE' : '#E5E7EB'}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: i === 0 ? '#4F46E5' : '#E5E7EB', color: i === 0 ? '#fff' : '#6B7280', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>{i + 1}</div>
+                    <span style={{ fontWeight: i === 0 ? 700 : 500, color: '#1F2937', fontSize: '14px' }}>{p.maladie}</span>
+                  </div>
+                  <span style={{ fontWeight: 700, color: '#4F46E5', fontSize: '14px' }}>{pp.toFixed(1)}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        {/* Bandeau disclaimer médical sous la carte */}
+        <div style={{ padding: '10px 16px', background: isLow ? '#FEF2F2' : isMedium ? '#FFFBEB' : '#F0FDF4', borderRadius: '0 0 12px 12px', border: `2px solid ${isLow ? '#FECACA' : isMedium ? '#FDE68A' : '#BBF7D0'}`, borderTop: 'none', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+          <span style={{ fontSize: '16px', flexShrink: 0 }}>{isLow ? '⚠️' : isMedium ? 'ℹ️' : '✅'}</span>
+          <span style={{ fontSize: '12px', color: isLow ? '#7F1D1D' : isMedium ? '#78350F' : '#14532D', lineHeight: 1.5 }}>
+            {isLow
+              ? 'Confiance faible — cette suggestion est exploratoire. Le jugement clinique du médecin prévaut sur toute suggestion IA. Un examen complémentaire est fortement recommandé avant tout diagnostic.'
+              : isMedium
+              ? 'Confiance modérée — à confronter aux données cliniques et aux antécédents du patient. L\'IA est une aide à la décision, non un diagnostic définitif.'
+              : 'Confiance élevée — cohérent avec les données saisies. Validez ou corrigez selon votre examen clinique.'}
+          </span>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -1798,6 +1834,8 @@ export default function ConsultationWorkflow() {
           </p>
         </div>
       </div>
+
+      <MedicalDisclaimerBanner compact />
 
       {/* ── Stepper ── */}
       <div className="sp-card sp-fade-in" style={{ marginBottom: '20px', padding: '24px 28px' }}>

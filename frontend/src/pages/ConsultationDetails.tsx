@@ -6,6 +6,7 @@ import {
   Weight, Ruler, FileText, AlertCircle, ClipboardList, Printer
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { MedicalDisclaimerBanner } from '../components/MedicalDisclaimerBanner';
 
 interface Symptome {
   nom: string;
@@ -173,6 +174,8 @@ const ConsultationDetails = () => {
           </button>
         </div>
       </div>
+
+      <MedicalDisclaimerBanner />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} className="sp-fade-in">
         {/* En-tête consultation */}
@@ -653,77 +656,122 @@ const VitalCard = ({ icon: Icon, label, value, unit }: any) => (
 );
 
 const AnalyseIACard = ({ analyse }: { analyse: AnalyseIA }) => {
-  // Le modèle ML retourne des probabilités en décimal (0–1), normaliser en pourcentage
   const toPercent = (v: number) => (v <= 1 ? v * 100 : v);
   const confiance = toPercent(analyse.confiance);
+  const isHigh   = confiance >= 70;
+  const isMedium = confiance >= 50 && confiance < 70;
+
+  const badge = isHigh
+    ? { label: 'Diagnostic fiable', bg: '#D1FAE5', color: '#065F46' }
+    : isMedium
+    ? { label: 'À vérifier cliniquement', bg: '#FEF3C7', color: '#92400E' }
+    : { label: 'Suggestion exploratoire', bg: '#FEE2E2', color: '#991B1B' };
+
+  const disclaimerText = isHigh
+    ? 'Confiance élevée — cohérent avec les données saisies. Validez ou corrigez selon votre examen clinique.'
+    : isMedium
+    ? 'Confiance modérée — à confronter aux données cliniques et aux antécédents du patient. L\'IA est une aide à la décision, non un diagnostic définitif.'
+    : 'Confiance faible — cette suggestion est exploratoire. Le jugement clinique du médecin prévaut. Un examen complémentaire est fortement recommandé avant tout diagnostic.';
+
+  const disclaimerIcon = isHigh ? '✅' : isMedium ? 'ℹ️' : '⚠️';
+  const disclaimerBg   = isHigh ? '#F0FDF4' : isMedium ? '#FFFBEB' : '#FEF2F2';
+  const disclaimerBorder = isHigh ? '#BBF7D0' : isMedium ? '#FDE68A' : '#FECACA';
+  const disclaimerColor  = isHigh ? '#166534' : isMedium ? '#78350F' : '#991B1B';
 
   return (
-    <div style={{
-      padding: '20px',
-      background: 'linear-gradient(135deg, #EEF2FF, #F5F3FF)',
-      borderRadius: '12px',
-      border: '2px solid #C7D2FE'
-    }}>
-      <div style={{ marginBottom: '16px' }}>
-        <div style={{ fontSize: '12px', fontWeight: 700, color: '#4F46E5', textTransform: 'uppercase', marginBottom: '8px' }}>
-          Diagnostic Principal
+    <div style={{ marginBottom: '4px' }}>
+      <div style={{
+        padding: '20px',
+        background: 'linear-gradient(135deg, #EEF2FF, #F5F3FF)',
+        borderRadius: '12px 12px 0 0',
+        border: '2px solid #C7D2FE',
+        borderBottom: 'none',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+          <div>
+            <div style={{ fontSize: '12px', fontWeight: 700, color: '#4F46E5', textTransform: 'uppercase', marginBottom: '8px' }}>
+              🤖 Diagnostic Principal IA
+            </div>
+            <div style={{ fontSize: '22px', fontWeight: 800, color: '#3730A3' }}>
+              {analyse.maladie_predite}
+            </div>
+          </div>
+          <span style={{
+            padding: '4px 12px',
+            borderRadius: '20px',
+            fontSize: '11px',
+            fontWeight: 700,
+            background: badge.bg,
+            color: badge.color,
+            whiteSpace: 'nowrap',
+          }}>
+            {badge.label}
+          </span>
         </div>
-        <div style={{ fontSize: '22px', fontWeight: 800, color: '#3730A3', marginBottom: '12px' }}>
-          {analyse.maladie_predite}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
           <span style={{ fontSize: '12px', color: '#6B7280' }}>Confiance :</span>
           <div style={{ flex: 1, height: '8px', background: '#E5E7EB', borderRadius: '4px', overflow: 'hidden' }}>
             <div style={{
               height: '100%',
               width: `${confiance}%`,
-              background: confiance >= 70
+              background: isHigh
                 ? 'linear-gradient(90deg, #10B981, #059669)'
-                : confiance >= 50
+                : isMedium
                 ? 'linear-gradient(90deg, #F59E0B, #D97706)'
                 : 'linear-gradient(90deg, #EF4444, #DC2626)',
               borderRadius: '4px',
-              transition: 'width 0.6s ease'
+              transition: 'width 0.6s ease',
             }} />
           </div>
-          <strong style={{
-            fontSize: '16px',
-            color: confiance >= 70 ? '#059669' : confiance >= 50 ? '#D97706' : '#DC2626'
-          }}>
+          <strong style={{ fontSize: '16px', color: isHigh ? '#059669' : isMedium ? '#D97706' : '#DC2626' }}>
             {confiance.toFixed(1)}%
           </strong>
         </div>
+
+        {analyse.top_predictions && analyse.top_predictions.length > 1 && (
+          <div>
+            <div style={{ fontSize: '12px', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', marginBottom: '10px' }}>
+              Diagnostics Alternatifs
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {analyse.top_predictions.slice(1, 4).map((pred, index) => {
+                const prob = toPercent(pred.probabilite);
+                return (
+                  <div key={index} style={{
+                    padding: '10px 12px',
+                    background: 'rgba(255, 255, 255, 0.7)',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}>
+                    <span style={{ fontSize: '13px', color: '#374151', fontWeight: 500 }}>{pred.maladie}</span>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#6B7280' }}>{prob.toFixed(1)}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
-      {analyse.top_predictions && analyse.top_predictions.length > 1 && (
-        <div>
-          <div style={{ fontSize: '12px', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', marginBottom: '10px' }}>
-            Diagnostics Alternatifs
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {analyse.top_predictions.slice(1, 4).map((pred, index) => {
-              const prob = toPercent(pred.probabilite);
-              return (
-                <div key={index} style={{
-                  padding: '10px 12px',
-                  background: 'rgba(255, 255, 255, 0.7)',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}>
-                  <span style={{ fontSize: '13px', color: '#374151', fontWeight: 500 }}>
-                    {pred.maladie}
-                  </span>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#6B7280' }}>
-                    {prob.toFixed(1)}%
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      <div style={{
+        padding: '10px 16px',
+        background: disclaimerBg,
+        border: `1px solid ${disclaimerBorder}`,
+        borderTop: 'none',
+        borderRadius: '0 0 12px 12px',
+        display: 'flex',
+        gap: '8px',
+        alignItems: 'flex-start',
+        fontSize: '12px',
+        color: disclaimerColor,
+        lineHeight: '1.5',
+      }}>
+        <span style={{ flexShrink: 0 }}>{disclaimerIcon}</span>
+        <span>{disclaimerText}</span>
+      </div>
     </div>
   );
 };

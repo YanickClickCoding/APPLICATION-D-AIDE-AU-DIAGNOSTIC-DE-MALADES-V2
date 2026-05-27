@@ -14,6 +14,7 @@ from ..models import (
 from ..models.prediction_history import PredictionHistory
 from ..schemas.consultation_schema import ConsultationCreate, ConsultationResponse
 from .auth import get_current_non_admin
+from ..utils.audit import audit_diagnostic_valide, audit_ordonnance_emise
 
 router = APIRouter(
     prefix="/consultations",
@@ -607,6 +608,27 @@ def create_consultation_workflow(data: dict, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(db_consultation)
 
+        # ── Audit trail ──────────────────────────────────────────────────────
+        if diagnostic_final:
+            ref = analyse_finale or analyse_prelim or {}
+            audit_diagnostic_valide(
+                medecin_id=db_consultation.medecin_id,
+                patient_id=patient.patient_id if patient else None,
+                consultation_id=db_consultation.consultation_id,
+                maladie=diagnostic_final,
+                validation_type=validation_type,
+                confiance_ia=ref.get('confiance', 0.0),
+                suggestion_ia=ref.get('maladie_predite', ''),
+            )
+        if meds_valides:
+            audit_ordonnance_emise(
+                medecin_id=db_consultation.medecin_id,
+                patient_id=patient.patient_id if patient else None,
+                consultation_id=db_consultation.consultation_id,
+                maladie=diagnostic_final or '',
+                medicaments=[m['nom'] for m in meds_valides],
+            )
+
         return {
             "success": True,
             "message": "Consultation enregistrée avec succès",
@@ -616,6 +638,8 @@ def create_consultation_workflow(data: dict, db: Session = Depends(get_db)):
 
     except Exception as e:
         db.rollback()
+        import logging as _log
+        _log.getLogger(__name__).error(f"Erreur workflow: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de l'enregistrement: {str(e)}"
@@ -1203,12 +1227,35 @@ def complete_consultation_medecin(consultation_id: int, data: dict, db: Session 
             ))
 
         db.commit()
+
+        # ── Audit trail ──────────────────────────────────────────────────────
+        if diagnostic_final:
+            audit_diagnostic_valide(
+                medecin_id=c.medecin_id,
+                patient_id=c.patient_id,
+                consultation_id=consultation_id,
+                maladie=diagnostic_final,
+                validation_type=validation_type,
+                confiance_ia=(analyse_finale or {}).get('confiance', 0.0),
+                suggestion_ia=(analyse_finale or {}).get('maladie_predite', ''),
+            )
+        if meds_valides:
+            audit_ordonnance_emise(
+                medecin_id=c.medecin_id,
+                patient_id=c.patient_id,
+                consultation_id=consultation_id,
+                maladie=diagnostic_final or '',
+                medicaments=[m['nom'] for m in meds_valides],
+            )
+
         return {"success": True, "consultation_id": consultation_id}
 
     except HTTPException:
         raise
     except Exception as e:
         db.rollback()
+        import logging as _log
+        _log.getLogger(__name__).error(f"Erreur workflow-complet: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
 
 

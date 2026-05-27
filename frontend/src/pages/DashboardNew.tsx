@@ -6,6 +6,7 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { analyticsAPI, healthAPI, mlAPI } from '../services/api';
 import type { DashboardStats, Consultation } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { MedicalDisclaimerBanner } from '../components/MedicalDisclaimerBanner';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -255,6 +256,8 @@ const Dashboard = () => {
               )}
           </div>
       </div>
+
+      <MedicalDisclaimerBanner compact />
 
       {/* Stats Grid */}
       <div className="sp-stats-grid sp-fade-in" style={{ marginBottom: '20px' }}>

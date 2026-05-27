@@ -4,6 +4,7 @@ import { ArrowLeft, Calendar, Activity, FileText, Pill, AlertCircle, User, Phone
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { patientsAPI, consultationsAPI } from '../services/api';
+import { MedicalDisclaimerBanner } from '../components/MedicalDisclaimerBanner';
 
 interface DossierMedicalInfo {
   dossier_id: number;
@@ -226,6 +227,8 @@ const DossierPatient = () => {
           )}
         </div>
       </div>
+
+      <MedicalDisclaimerBanner compact />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px' }} className="sp-fade-in">
         {/* Informations du patient */}

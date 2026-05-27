@@ -4,6 +4,7 @@ import {
   AlertCircle, Percent, RefreshCw, ImageOff
 } from 'lucide-react';
 import { analyticsAPI } from '../services/api';
+import { MedicalDisclaimerBanner } from '../components/MedicalDisclaimerBanner';
 
 const API = 'http://localhost:8000/api';
 
@@ -142,6 +143,8 @@ const DiagnosticsIA = () => {
           <Activity size={16} /> Actualiser
         </button>
       </div>
+
+      <MedicalDisclaimerBanner />
 
       {/* ── KPI Cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }} className="sp-fade-in">

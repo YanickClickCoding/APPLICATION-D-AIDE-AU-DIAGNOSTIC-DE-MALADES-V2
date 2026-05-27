@@ -2,10 +2,13 @@
 FastAPI Main Application
 Medical Diagnostic AI System
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import logging
+import time
+import traceback
 
 from .config import settings
 from .database import engine, Base
@@ -73,6 +76,30 @@ app = FastAPI(
     lifespan=lifespan,
     redirect_slashes=False  # Désactiver la redirection automatique du trailing slash
 )
+
+# ── Middleware : log chaque requête HTTP + capture erreurs 500 ────────────────
+@app.middleware("http")
+async def http_logging_middleware(request: Request, call_next):
+    start = time.time()
+    try:
+        response = await call_next(request)
+        duration_ms = (time.time() - start) * 1000
+        level = logging.WARNING if response.status_code >= 400 else logging.INFO
+        logger.log(level,
+            f"{request.method} {request.url.path} → {response.status_code} "
+            f"({duration_ms:.0f}ms)"
+        )
+        return response
+    except Exception as exc:
+        duration_ms = (time.time() - start) * 1000
+        logger.error(
+            f"{request.method} {request.url.path} → 500 EXCEPTION ({duration_ms:.0f}ms)\n"
+            + traceback.format_exc()
+        )
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Erreur interne: {str(exc)}"}
+        )
 
 # Configuration CORS
 app.add_middleware(
