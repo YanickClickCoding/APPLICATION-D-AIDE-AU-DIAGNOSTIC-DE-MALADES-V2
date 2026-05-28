@@ -104,6 +104,7 @@ export default function AdminSystem() {
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [nEstimators, setNEstimators] = useState(200);
   const [maxDepth, setMaxDepth] = useState(30);
+  const [showTrainWarning, setShowTrainWarning] = useState(false);
 
   // IA Config
   const [iaConfig, setIaConfig] = useState<IAConfig>({ seuil_confiance_min: 0.60, seuil_alerte_bas: 0.40, n_estimators: 200, max_depth: 30 });
@@ -276,6 +277,70 @@ export default function AdminSystem() {
         </div>
       )}
 
+      {/* Modal avertissement réentraînement */}
+      {showTrainWarning && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+          onClick={() => setShowTrainWarning(false)}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: '32px 36px', maxWidth: 540, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}
+            onClick={e => e.stopPropagation()}>
+
+            {/* En-tête */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 12, background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <AlertTriangle size={24} style={{ color: '#D97706' }} />
+              </div>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#1F2937' }}>Avant de réentraîner</h2>
+                <p style={{ margin: 0, fontSize: 13, color: '#6B7280' }}>Lire les informations importantes ci-dessous</p>
+              </div>
+            </div>
+
+            {/* Performances actuelles */}
+            <div style={{ background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 10, padding: '12px 16px', marginBottom: 16 }}>
+              <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 700, color: '#166534' }}>Performances actuelles du modèle</p>
+              <div style={{ display: 'flex', gap: 20 }}>
+                <span style={{ fontSize: 13, color: '#15803D' }}>✓ Top-1 : <strong>90 %</strong> (45/50 maladies)</span>
+                <span style={{ fontSize: 13, color: '#15803D' }}>✓ Top-3 : <strong>98 %</strong> (49/50 maladies)</span>
+              </div>
+            </div>
+
+            {/* Avertissement */}
+            <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10, padding: '12px 16px', marginBottom: 16 }}>
+              <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 700, color: '#92400E' }}>⚠️ Réentraîner sans modifier le dataset ne changera pas les résultats</p>
+              <p style={{ margin: 0, fontSize: 12, color: '#78350F', lineHeight: 1.6 }}>
+                Le modèle atteint déjà 84 % d'accuracy sur ses données de test internes. Les 5 maladies encore ambiguës
+                (DT1/DT2, HépA/HépB, RGO/Hernie, Gastrite/Ulcère, IRA/IRC) ne peuvent pas être distinguées
+                sans sérologie ou biopsie — même avec plus d'arbres ou de profondeur.
+              </p>
+            </div>
+
+            {/* Ce qui améliorerait vraiment */}
+            <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 10, padding: '12px 16px', marginBottom: 24 }}>
+              <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 700, color: '#1E40AF' }}>Ce qui améliorerait réellement le modèle</p>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: '#1E3A8A', lineHeight: 1.8 }}>
+                <li>Ajouter des features binaires dans le dataset (seuils HTA, anosmie, etc.)</li>
+                <li>Augmenter le nombre de cas d'entraînement par maladie ambiguë</li>
+                <li>Inclure les résultats de sérologie comme feature discriminante</li>
+              </ul>
+            </div>
+
+            {/* Boutons */}
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowTrainWarning(false)}
+                style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #D1D5DB', background: '#fff', color: '#374151', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+                Annuler
+              </button>
+              <button
+                onClick={() => { setShowTrainWarning(false); startTraining(); }}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#7C3AED,#4F46E5)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+                <Play size={15} /> Lancer quand même
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bannière modèle non entraîné */}
       {status && !status.model.loaded && (
         <div style={{
@@ -370,7 +435,7 @@ export default function AdminSystem() {
                 />
               </div>
               <button
-                onClick={startTraining}
+                onClick={() => setShowTrainWarning(true)}
                 disabled={trainingRunning || loadingTrain}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
@@ -494,7 +559,7 @@ export default function AdminSystem() {
                 />
               </div>
               <button
-                onClick={startTraining}
+                onClick={() => setShowTrainWarning(true)}
                 disabled={trainingRunning || loadingTrain}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,

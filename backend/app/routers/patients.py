@@ -141,6 +141,20 @@ def get_patient(patient_id: int, db: Session = Depends(get_db), current_user = D
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Patient non trouvé"
         )
+
+    # Créer le dossier médical à la volée si absent (patients créés avant ce correctif)
+    if patient.dossier_medical is None:
+        from datetime import datetime
+        from ..models import DossierMedical
+        ts = datetime.now().strftime('%Y%m%d%H%M%S')
+        dossier = DossierMedical(
+            patient_id=patient.patient_id,
+            numero_dossier=f"DM-{ts}-{patient.patient_id}",
+        )
+        db.add(dossier)
+        db.commit()
+        db.refresh(patient)
+
     return patient
 
 
@@ -169,6 +183,41 @@ def update_patient(
     db.refresh(patient)
     
     return patient
+
+
+@router.get("/{patient_id}/ordonnances")
+def get_patient_ordonnances(patient_id: int, db: Session = Depends(get_db)):
+    """Retourne toutes les ordonnances d'un patient avec leurs médicaments."""
+    from ..models import Medecin
+    ordonnances = (
+        db.query(Ordonnance)
+        .options(joinedload(Ordonnance.medicaments), joinedload(Ordonnance.medecin))
+        .filter(Ordonnance.patient_id == patient_id)
+        .order_by(Ordonnance.date_emission.desc())
+        .all()
+    )
+    result = []
+    for o in ordonnances:
+        medecin_nom = f"Dr. {o.medecin.prenoms} {o.medecin.nom}" if o.medecin else None
+        result.append({
+            "ordonnance_id": o.ordonnance_id,
+            "date_emission": o.date_emission.isoformat() if o.date_emission else None,
+            "renouvelable": o.renouvelable,
+            "medecin_nom": medecin_nom,
+            "medicaments": [
+                {
+                    "medicament_id": m.medicament_id,
+                    "nom_commercial": m.nom_commercial,
+                    "denomination_commune": m.denomination_commune,
+                    "dosage": m.dosage,
+                    "forme": m.forme,
+                    "frequence": m.frequence,
+                    "duree_jours": m.duree_jours,
+                }
+                for m in o.medicaments
+            ],
+        })
+    return result
 
 
 @router.delete("/{patient_id}")

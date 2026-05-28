@@ -55,6 +55,12 @@ const Consultations = () => {
     patientName: string;
     consultations: Consultation[];
   } | null>(null);
+  const [hoveredConsultId, setHoveredConsultId] = useState<number | null>(null);
+
+  useEffect(() => {
+    document.body.style.overflow = consultListModal ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [consultListModal]);
 
   const fetchData = async () => {
     try {
@@ -681,8 +687,15 @@ const Consultations = () => {
                   {consultListModal.consultations.map((c, idx) => {
                     const mName = getMedecinName(c.medecin_id);
                     const { cls, text: statutText } = getStatutBadge(c.statut || '');
+                    const isEnAttente = c.statut === 'en attente' || c.statut === 'en_attente_medecin';
+                    const isHovered = hoveredConsultId === c.id;
                     return (
-                      <div key={c.id} style={{ background: 'var(--sp-gray-50)', borderRadius: '10px', padding: '14px 16px', border: '1px solid var(--sp-gray-100)' }}>
+                      <div
+                        key={c.id}
+                        onMouseEnter={() => setHoveredConsultId(c.id)}
+                        onMouseLeave={() => setHoveredConsultId(null)}
+                        style={{ position: 'relative', background: isHovered ? '#fff' : 'var(--sp-gray-50)', borderRadius: '10px', padding: '14px 16px', border: `1px solid ${isHovered ? 'var(--sp-primary-200, #C7D2FE)' : 'var(--sp-gray-100)'}`, transition: 'background 0.15s, border-color 0.15s' }}
+                      >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                           <span style={{ fontSize: '12px', color: 'var(--sp-gray-400)', fontWeight: 600 }}>
                             #{String(c.id).padStart(4, '0')} — Consultation {idx + 1}
@@ -703,6 +716,16 @@ const Consultations = () => {
                             {mName || <em style={{ color: 'var(--sp-gray-300)' }}>Non affecté</em>}
                           </div>
                         </div>
+                        {isEnAttente && isHovered && (
+                          <Link
+                            to={`/consultation/nouvelle?reprendre=${c.id}`}
+                            className="sp-btn sp-btn-primary"
+                            style={{ position: 'absolute', bottom: '10px', right: '12px', padding: '4px 12px', fontSize: '12px', height: '28px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
+                            onClick={() => setConsultListModal(null)}
+                          >
+                            <Play size={13} /> Reprendre
+                          </Link>
+                        )}
                       </div>
                     );
                   })}

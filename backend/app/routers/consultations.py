@@ -689,6 +689,16 @@ def init_consultation(data: dict, db: Session = Depends(get_db)):
             db.add(patient)
             db.flush()
 
+    # Créer le dossier médical si inexistant (garantit qu'il existe dès la première consultation)
+    from ..models import DossierMedical
+    existing_dossier = db.query(DossierMedical).filter(DossierMedical.patient_id == patient.patient_id).first()
+    if not existing_dossier:
+        ts = datetime.now().strftime('%Y%m%d%H%M%S')
+        db.add(DossierMedical(
+            patient_id=patient.patient_id,
+            numero_dossier=f"DM-{ts}-{patient.patient_id}",
+        ))
+
     nom_patient = f"{patient.prenoms} {patient.nom}".strip()
     db_consultation = Consultation(
         patient_id=patient.patient_id,

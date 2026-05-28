@@ -667,25 +667,13 @@ const AnalyseIACard = ({ analyse }: { analyse: AnalyseIA }) => {
     ? { label: 'À vérifier cliniquement', bg: '#FEF3C7', color: '#92400E' }
     : { label: 'Suggestion exploratoire', bg: '#FEE2E2', color: '#991B1B' };
 
-  const disclaimerText = isHigh
-    ? 'Confiance élevée — cohérent avec les données saisies. Validez ou corrigez selon votre examen clinique.'
-    : isMedium
-    ? 'Confiance modérée — à confronter aux données cliniques et aux antécédents du patient. L\'IA est une aide à la décision, non un diagnostic définitif.'
-    : 'Confiance faible — cette suggestion est exploratoire. Le jugement clinique du médecin prévaut. Un examen complémentaire est fortement recommandé avant tout diagnostic.';
-
-  const disclaimerIcon = isHigh ? '✅' : isMedium ? 'ℹ️' : '⚠️';
-  const disclaimerBg   = isHigh ? '#F0FDF4' : isMedium ? '#FFFBEB' : '#FEF2F2';
-  const disclaimerBorder = isHigh ? '#BBF7D0' : isMedium ? '#FDE68A' : '#FECACA';
-  const disclaimerColor  = isHigh ? '#166534' : isMedium ? '#78350F' : '#991B1B';
-
   return (
     <div style={{ marginBottom: '4px' }}>
       <div style={{
         padding: '20px',
         background: 'linear-gradient(135deg, #EEF2FF, #F5F3FF)',
-        borderRadius: '12px 12px 0 0',
+        borderRadius: '12px',
         border: '2px solid #C7D2FE',
-        borderBottom: 'none',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
           <div>
@@ -756,22 +744,6 @@ const AnalyseIACard = ({ analyse }: { analyse: AnalyseIA }) => {
         )}
       </div>
 
-      <div style={{
-        padding: '10px 16px',
-        background: disclaimerBg,
-        border: `1px solid ${disclaimerBorder}`,
-        borderTop: 'none',
-        borderRadius: '0 0 12px 12px',
-        display: 'flex',
-        gap: '8px',
-        alignItems: 'flex-start',
-        fontSize: '12px',
-        color: disclaimerColor,
-        lineHeight: '1.5',
-      }}>
-        <span style={{ flexShrink: 0 }}>{disclaimerIcon}</span>
-        <span>{disclaimerText}</span>
-      </div>
     </div>
   );
 };

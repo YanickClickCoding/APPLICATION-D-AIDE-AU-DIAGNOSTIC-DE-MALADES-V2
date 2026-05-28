@@ -77,7 +77,131 @@ const SYMPTOMES_FEMME_SEULEMENT = [
 
 // Symptômes communs aux deux sexes (tous les autres)
 const SYMPTOMES_COMMUNS = [
-  "Adénopathie", "Agrandissement des mains pieds", "Albuminémie basse", "Anémie", "Angioedème", "Anorexie", "Anxiété", "Apnée du sommeil", "Arthralgie", "Ascite", "Atrophie musculaire", "Aucun symptôme", "Aucun symptôme habituellement", "Aura", "Ballonnements", "Besoin fréquent d'uriner", "Besoin impérieux de déféquer", "Bleus faciles", "Brûlures d'estomac", "Bulles", "Céphalées", "Chaleur", "Chancre", "Cheveux cassants", "Choc", "Chute", "Cicatrices", "Cicatrisation lente", "Claudication", "Comédones", "Complications neuro", "Comportement inapproprié", "Confusion", "Congestion nasale", "Constipation", "Convulsions", "Crampes", "Crampes abdominales", "Crevasses", "Cyanose", "Déformation progressive", "Délirium", "Démangeaisons", "Démangeaisons nasales", "Démence", "Dépigmentation", "Dépôts lipidiques aux paupières", "Dépression", "Désorientaton", "Desquamation", "Diarrhée", "Diarrhée sanguinolente", "Difficulté à avaler", "Difficulté à parler", "Difficulté à respirer", "Difficulté de lecture", "Difficulté nocturne", "Difficultés à avaler", "Difficultés à parler", "Difficultés à uriner", "Difficultés de langage", "Difficultés de vision", "Douleur", "Douleur à l'effort", "Douleur abdominale", "Douleur abdominale supérieure", "Douleur articulaire soudaine", "Douleur au bras", "Douleur au bras épaule", "Douleur au repas", "Douleur auriculaire", "Douleur colique intense", "Douleur épigastrique", "Douleur faciale", "Douleur lombaire", "Douleur neuropathique", "Douleur oculaire", "Douleur pelvienne", "Douleur pelvi-périnéale", "Douleur périnéale", "Douleur thoracique", "Douleur thoracique pleurétique", "Douleur thoracique sévère", "Douleur thyroïdienne", "Douleurs abdominales", "Douleurs articulaires", "Douleurs musculaires", "Douleurs musculaires diffuses", "Douleurs osseuses", "Durcissement cutané", "Dysarthrie", "Dysphagie", "Dyspnée", "Dysurie", "Ecchymoses", "Écoulement", "Écoulement auriculaire", "Écoulement nasal", "Écoulement puriforme", "Écoulement urétral", "Efforts pour déféquer", "Encéphalopathie", "Engourdissement", "Engourdissement des pieds", "Epistaxis", "Épistaxis", "Érosions", "Éruption", "Éruption cutanée", "Éruption malaire", "Éruption prurigineuse", "Essoufflement", "Essoufflement soudain", "Éternuements", "Évanouissement", "Évanouissements", "Excroissance cutanée", "Faiblesse", "Faiblesse ascendante", "Faiblesse musculaire", "Faiblesse soudaine", "Fatigue", "Fatigue oculaire", "Fatigue post-critique", "Fièvre", "Fièvre élevée", "Fièvre intermittente", "Fistules", "Flotteurs", "Flux faible", "Fragilité osseuse", "Fréquence urinaire", "Frissons", "Froid excessif", "Frottement péricardique", "Ganglions enflés", "Gaz", "Généralement sans symptôme", "Gonflement", "Gonflement des chevilles", "Gonflement des lèvres", "Gonflement d'un membre", "Grossissement du visage", "Groupées ou dispersées", "Halos colorés", "Hématurie", "Hémoptysie", "Hémorragie digestive", "Hépatomégalie", "Histaminémie", "Hoarseness", "Hypercholangiite", "Hyperlipidémie", "Hyperpigmentation", "Hypertension", "Hypertension portale", "Hypotension", "Ictère", "Impact psychologique", "Incontinence", "Infection", "Infections", "Infections fréquentes", "Infections urinaires", "Infectiosus", "Infectiosus secondaires", "Infrequence des selles", "Injection conjonctivale", "Insomnie", "Intolérance à la chaleur", "Irritabilité", "Jaunisse", "Keratitis", "Larmoiement", "Lenteur de mouvement", "Lignes ondulées", "Lymphadénopathie", "Mal de gorge", "Mal de tête", "Malabsorption", "Malaise", "Malaise général", "Maux de tête", "Maux de tête diffus", "Maux de tête matinaux", "Maux de tête sévère", "Maux de tête sévères", "Mélæna", "Mucus dans les selles", "Nausées", "Nervosité", "Nocturia", "Nodules", "Nycturie", "Œdème pulmonaire", "Œdèmes", "Oligurie ou polyurie", "Oppression thoracique", "Otalgie", "Pâleur", "Palpitations", "Papules", "Paralysie", "Paresthésies", "Peau sèche", "Pérachie", "Perte d'appétit", "Perte d'audition", "Perte d'autonomie", "Perte de conscience", "Perte de goût", "Perte de mémoire", "Perte de poids", "Perte de réflexes", "Perte de vision", "Perte de vision progressive", "Perte de voix", "Perte d'odorat", "Petites bosses ombiliquées", "Phonophobie", "Photophobie", "Photosensibilité", "Plaques rouges squameuses", "Plissement des yeux", "Prise de poids", "Prise de poids rapide", "Production d'expectorations", "Protéinurie", "Prurit", "Prurit sévère", "Pustules", "Raideur matinale", "Ralentissement intellectuel", "Rash", "Rash photosensible", "Rash rose", "Raucité", "Raynaud", "Récidives", "Reflux gastro-esophagien", "Régurgitation", "Respiration sifflante", "Restriction de mobilité", "Rigidité", "Ronflement", "Rot", "Rougeur", "Rougeur cutanée", "Rougeur oculaire", "Rougeur pharyngée", "Saignement", "Saignement des plaques", "Saignement digestif", "Saignements", "Saignements de nez", "Saignements prolongés", "Scotome central", "Sécheresse", "Sécheresse buccale", "Sécheresse cutanée", "Sécheresse oculaire", "Selles dures", "Selles pâles", "Sensation d'accélération", "Sensation de ballonnement", "Sensation de blocage", "Sensation de pressure", "Sensation de satiété rapide", "Sensibilité à la lumière", "Sensibilité à la palpation", "Soif excessive", "Somnolence diurne", "Souvent asymptomatique", "Spasticité", "Splenomégalie", "Splénomégalie", "Stridor inspiratoire", "Sueurs", "Sueurs froides", "Sueurs nocturnes", "Syncope", "Taches blanches", "Taches de Koplik", "Taches sombres", "Tachycardie", "Thrombose", "Tophi", "Toux", "Toux aboyante", "Toux avec expectorations", "Toux persistante", "Toux sèche", "Tremblements", "Trouble de l'équilibre", "Trouble du sommeil", "Troubles cognitifs", "Troubles du sommeil", "Ulcérations", "Ulcères buccaux", "Ulcères des pieds", "Urétrite", "Urgence urinaire", "Urination fréquente", "Urine foncée", "Urines foncées", "Uveite", "Varices œsophagiennes", "Vergetures", "Verrue génitale", "Verrue plantaire douloureuse", "Verrues génitales", "Vertige", "Vertiges", "Vésicules", "Visage rouge", "Vision centrale floue", "Vision floue", "Vision floue à toutes distances", "Vision floue de loin", "Vision floue de près", "Vision jaunâtre", "Vision rapprochée floue", "Vision tunnel", "Vomissements", "Xanthomes", "Yeux rouges", "Yeux saillants"
+  "Adénopathie", "Agrandissement des mains pieds", "Albuminémie basse", "Alternance diarrhée-constipation",
+  "Anémie", "Angioedème", "Anurie", "Anorexie", "Anxiété", "Apnée du sommeil", "Arthralgie", "Ascite",
+  "Atrophie musculaire", "Aucun symptôme", "Aucun symptôme habituellement", "Aura",
+  // Variantes / synonymes (normalisés côté backend vers le terme canonique)
+  "Absence d'urine", "Acidité", "Ampoules",
+  "Articulations douloureuses", "Avoir froid",
+  "Bactériurie", "Ballonnements", "Ballonnement", "Barrel chest", "Battements irréguliers",
+  "Besoin fréquent d'uriner", "Besoin impérieux de déféquer", "Boutons",
+  "Blépharospasme", "Bleus faciles", "Bosse de bison", "Brûlures d'estomac", "Brûlures épigastriques",
+  "Brûlures génitales", "Brûlures mictionnelles", "Bulles",
+  "Candidose buccale", "Céphalée", "Céphalées", "Chaleur", "Chancre", "Cheveux cassants",
+  "Choc", "Chute", "Cicatrices", "Cicatrisation lente", "Cloques", "Claudication",
+  "Comédones", "Complications neuro", "Comportement inapproprié", "Confusion",
+  "Congestion nasale", "Constipation", "Convulsions",
+  "Courbatures", "Crachat", "Crachats", "Crampes", "Crampes abdominales", "Crampes musculaires",
+  "Crachats purulents", "Crevasses", "Crise convulsive", "Cyanose",
+  "Déformation progressive", "Délirium", "Démangeaisons", "Démangeaisons nasales", "Démangeaisons oculaires",
+  "Démence", "Dépigmentation", "Dépôts lipidiques aux paupières", "Dépression", "Désorientaton",
+  "Desquamation", "Désorientation", "Diarrhée", "Diarrhée sanguinolente",
+  "Difficulté à avaler", "Difficulté à parler", "Difficulté à respirer",
+  "Difficulté de lecture", "Difficulté nocturne", "Difficultés à avaler",
+  "Difficultés à parler", "Difficultés à uriner", "Difficultés à déféquer",
+  "Difficultés de langage", "Difficultés de vision",
+  "Diplopie monoculaire", "Double vision",
+  "Douleur", "Douleur à jeun", "Douleur à l'effort", "Douleur abdominale",
+  "Douleur abdominale supérieure", "Douleur articulaire soudaine", "Douleur au bras",
+  "Douleur au bras épaule", "Douleur au dos", "Douleur au flanc", "Douleur au rein",
+  "Douleur au repas", "Douleur auriculaire", "Douleur calmée penché en avant",
+  "Douleur colique intense", "Douleur costovertébrale", "Douleur dans le dos",
+  "Douleur dans la poitrine", "Douleur épigastrique", "Douleur faciale",
+  "Douleur irradiant dans le dos", "Douleur irradiant épaule droite", "Douleur irradiant vers aine",
+  "Douleur lombaire", "Douleur neuropathique", "Douleur oculaire", "Douleur pelvienne",
+  "Douleur pelvi-périnéale", "Douleur périnéale", "Douleur thoracique", "Douleur thoracique pleurétique",
+  "Douleur thoracique sévère", "Douleur thyroïdienne", "Douleur à la mâchoire",
+  "Douleurs abdominales", "Douleurs articulaires", "Douleurs dans les muscles",
+  "Douleurs dans les os", "Douleurs musculaires", "Douleurs musculaires diffuses",
+  "Douleurs osseuses", "Durcissement cutané", "Dysarthrie", "Dysphagie", "Dyspnée",
+  "Dyspnée nocturne", "Dysurie",
+  "Ecchymoses", "Écoulement", "Écoulement auriculaire", "Écoulement nasal", "Écoulement puriforme",
+  "Écoulement urétral", "Écriture micrographique", "Efforts pour déféquer", "Encéphalopathie",
+  "Engourdissement", "Engourdissement des pieds", "Enthésite", "Envie de vomir",
+  "Envies fréquentes d'uriner", "Epistaxis", "Épistaxis", "Épuisement", "Étourdissements",
+  "Érosions", "Éruption", "Éruption cutanée", "Éruption malaire", "Éruption prurigineuse", "Éruption vésiculaire",
+  "Essoufflement", "Essoufflement soudain", "Éternuements", "Évanouissement", "Évanouissements",
+  "Excroissance cutanée", "Expectorations",
+  "Faiblesse", "Faiblesse ascendante", "Faiblesse musculaire", "Faiblesse soudaine",
+  "Fasciculations", "Fatigue", "Fatigue intense", "Fatigue oculaire", "Fatigue post-critique",
+  "Fièvre", "Fièvre élevée", "Fièvre intermittente", "Fistules", "Flotteurs", "Flux faible",
+  "Fourmillements", "Fourmillements dans les membres", "Fourmillements dans les pieds",
+  "Fragilité osseuse", "Fréquence urinaire", "Frissons", "Froid excessif", "Frottement péricardique",
+  "Ganglions", "Ganglions gonflés", "Ganglions enflés", "Gaz", "Généralement sans symptôme",
+  "Goût amer", "Goût métallique", "Arrière-goût métallique", "Gonflement",
+  "Gonflement des membres inférieurs", "Gonflement des pieds", "Jambes gonflées",
+  "Pieds gonflés", "Chevilles gonflées",
+  "Gonflement des chevilles", "Gonflement des lèvres", "Gonflement d'un membre", "Gonflement parotides",
+  "Gonflement thyroïde", "Grossissement du visage", "Groupées ou dispersées",
+  "Haleine ammoniacale", "Haleine urémique", "Halos colorés", "Halos autour des lumières", "Hématémèse",
+  "Hémarthrose", "Hématurie", "Hémoptysie", "Hémorragie digestive", "Hémorragie rétinienne",
+  "Hépatomégalie", "Héliotrope éruption", "Histaminémie", "Hoarseness", "Hypercholangiite",
+  "Hyperesthésie", "Hyperlipidémie", "Hyperpigmentation", "Hypertension", "Hypertension portale",
+  "Hypoglycémie", "Hypotension",
+  "Ictère", "Impact psychologique", "Incontinence", "Infection", "Infections", "Infections fréquentes",
+  "Infections récurrentes", "Infections urinaires", "Infectiosus", "Infectiosus secondaires",
+  "Infrequence des selles", "Injection conjonctivale", "Insomnie", "Intolérance à la chaleur", "Irritabilité",
+  "Jaunisse",
+  "Keratitis",
+  "Larmoiement", "Lenteur de mouvement", "Lignes ondulées", "Lymphadénopathie",
+  "Mal de gorge", "Mal de tête", "Malabsorption", "Malaise", "Malaise général",
+  "Maux de tête", "Maux de tête diffus", "Maux de tête matinaux", "Maux de tête sévère", "Maux de tête sévères",
+  "Méléna", "Mélæna", "Ménorragie", "Métamorphopsies", "Mucus dans les selles", "Myxoedème",
+  "Mal au cœur", "Mal au ventre", "Mal de dos", "Mal de tête", "Mal à la tête",
+  "Manque d'air", "Manque d'appétit", "Mauvaise haleine",
+  "Nausée", "Nausées", "Nervosité", "Nez qui saigne", "Nocturia", "Nodules", "Nodules rhumatoïdes", "Nycturie",
+  "Œdème pulmonaire", "Œdèmes", "Oedèmes", "Oligurie ou polyurie", "Oppression thoracique",
+  "Orthopnée", "Otalgie",
+  "Odeur d'urine dans l'haleine", "Odeur ammoniaque", "Oligurie", "Oublis fréquents",
+  "Pâleur", "Palpitations", "Papules", "Papules de Gottron", "Paralysie", "Paresthésies",
+  "Pas d'appétit", "Pas d'urine", "Pas uriner", "Peau décolorée", "Peau grise",
+  "Peau qui démange", "Peau qui gratte", "Peau qui pèle", "Peau qui s'écaille",
+  "Peau sèche", "Pérachie", "Perte d'appétit", "Perte d'audition", "Perte d'autonomie",
+  "Perte de conscience", "Perte de goût", "Perte de mémoire", "Perte de poids", "Perte de réflexes",
+  "Perte de vision", "Perte de vision progressive", "Perte de voix", "Perte d'odorat",
+  "Petites bosses ombiliquées", "Pétéchies", "Phonophobie", "Photophobie", "Photosensibilité",
+  "Plaques rouges squameuses", "Plissement des yeux", "Pollakiurie", "Pouls irrégulier",
+  "Prise de poids", "Prise de poids rapide", "Production d'expectorations", "Protéinurie",
+  "Prurit", "Prurit oculaire", "Prurit sévère", "Purpura", "Pustules",
+  "Raideur matinale", "Ralentissement intellectuel", "Rash", "Rash photosensible", "Rash rose",
+  "Raucité", "Raynaud", "Récidives", "Reflux", "Reflux acide", "Reflux gastro-esophagien",
+  "Régurgitation", "Remontées acides", "Remontées gastriques",
+  "Réflexes abolis", "Respiration sifflante", "Restriction de mobilité", "Rétention d'eau",
+  "Rétention hydrique", "Rétention urinaire",
+  "Rigidité", "Ronflement", "Ronflement fort", "Rot", "Rougeur", "Rougeur cutanée", "Rougeur oculaire", "Rougeur pharyngée",
+  "Rougeurs cutanées", "Rythme cardiaque irrégulier",
+  "Saignement", "Saignement des plaques", "Saignement digestif", "Saignements",
+  "Saignements de nez", "Saignements prolongés", "Scotome central", "Sécheresse",
+  "Sécheresse buccale", "Sécheresse cutanée", "Sécheresse oculaire", "Selles dures", "Selles pâles",
+  "Sensation d'accélération", "Sensation de ballonnement", "Sensation de blocage",
+  "Sensation de pressure", "Sensation de satiété rapide", "Sensation vidange incomplète",
+  "Sensibilité à la lumière", "Sensibilité à la palpation", "Soif excessive",
+  "Somnolence diurne", "Souvent asymptomatique", "Spasticité", "Splénomégalie",
+  "Stridor inspiratoire", "Sueurs", "Sueurs froides", "Sueurs nocturnes", "Syncope",
+  "Sang dans les selles", "Sang dans les urines", "Selles liquides", "Selles noires",
+  "Selles sanglantes", "Se lever la nuit pour uriner", "Soif anormale", "Soif intense", "Souffle court",
+  "Taches blanches", "Taches blanches pharyngées", "Taches blanches sur la peau",
+  "Taches de Koplik", "Taches sombres",
+  "Tachycardie", "Teint grisâtre", "Teint pâle", "Teint pâle grisâtre",
+  "Température élevée", "Tension artérielle élevée", "Tension haute",
+  "Télangiectasies", "Thrombose", "Tophi", "Transpiration nocturne", "Tremblements des mains",
+  "Trous de mémoire",
+  "Toux", "Toux aboyante", "Toux avec expectorations", "Toux nocturne", "Toux persistante",
+  "Toux productive", "Toux sèche", "Tremblements", "Trouble de l'équilibre", "Trouble du sommeil",
+  "Troubles cognitifs", "Troubles du sommeil",
+  "Ulcère cornéen", "Ulcérations", "Ulcères buccaux", "Ulcères des pieds",
+  "Urétrite", "Urgence urinaire", "Urination fréquente", "Uriner la nuit", "Uriner souvent",
+  "Urine abondante", "Urine avec mousse", "Urine écumeuse", "Urine foncée", "Urine mousseuse",
+  "Urine rare", "Urine trouble", "Urines foncées", "Urines rouges", "Urines roses",
+  "Uvéite", "Uveite",
+  "Varices œsophagiennes", "Vergetures", "Verrue génitale", "Verrue plantaire douloureuse",
+  "Verrues génitales", "Vertige", "Vertiges", "Vésicules", "Visage rouge",
+  "Vision centrale floue", "Vision floue", "Vision floue à toutes distances",
+  "Vision floue de loin", "Vision floue de près", "Vision jaunâtre", "Vision rapprochée floue",
+  "Vision tunnel", "Voix rauque", "Vomissement", "Vomissements", "Vomir", "Vomir du sang",
+  "Vue brouillée", "Voir double", "Voir flou", "Ventre gonflé", "Ventre qui fait mal",
+  "Xanthomes", "Yeux jaunes", "Yeux qui brûlent", "Yeux qui coulent",
+  "Yeux qui piquent", "Yeux rouges", "Yeux saillants",
 ];
 
 function getSymptomesDisponibles(sexe: 'M' | 'F'): string[] {
@@ -85,6 +209,8 @@ function getSymptomesDisponibles(sexe: 'M' | 'F'): string[] {
   if (sexe === 'F') return [...SYMPTOMES_COMMUNS, ...SYMPTOMES_FEMME_SEULEMENT].sort((a, b) => a.localeCompare(b, 'fr'));
   return [...SYMPTOMES_COMMUNS, ...SYMPTOMES_HOMME_SEULEMENT, ...SYMPTOMES_FEMME_SEULEMENT].sort((a, b) => a.localeCompare(b, 'fr'));
 }
+
+const ALL_SYMPTOMES_SET = new Set([...SYMPTOMES_COMMUNS, ...SYMPTOMES_HOMME_SEULEMENT, ...SYMPTOMES_FEMME_SEULEMENT]);
 
 // ─── Exam suggestion engine ───────────────────────────────────────────────────
 
@@ -396,6 +522,7 @@ export default function ConsultationWorkflow() {
   const [quickStartPrenoms, setQuickStartPrenoms] = useState('');
   const [quickStartAge, setQuickStartAge] = useState<number | ''>('');
   const [quickStartSexe, setQuickStartSexe] = useState<'M' | 'F'>('M');
+  const [quickStartMotif, setQuickStartMotif] = useState('');
 
   const [step, setStep] = useState(reprendreId ? 0 : 1);
   const [loading, setLoading] = useState(false);
@@ -412,6 +539,8 @@ export default function ConsultationWorkflow() {
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [savedDraft, setSavedDraft] = useState<any>(null);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+  const [pendingDrafts, setPendingDrafts] = useState<any[]>([]);
+  const [needsMotif, setNeedsMotif] = useState(false);
   const [backendLoadComplete, setBackendLoadComplete] = useState(false);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -509,7 +638,8 @@ export default function ConsultationWorkflow() {
       if (draft.patient?.nom) setPatient(draft.patient);
       if (draft.motif !== undefined) setMotif(draft.motif);
       if (typeof draft.medecinId === 'number') setMedecinId(draft.medecinId);
-      if (Array.isArray(draft.symptomes) && draft.symptomes.length > 0) setSymptomes(draft.symptomes);
+      if (Array.isArray(draft.symptomes) && draft.symptomes.length > 0)
+      setSymptomes(draft.symptomes.filter((s: any) => ALL_SYMPTOMES_SET.has(s.nom)));
       if (draft.vitaux) setVitaux(v => ({ ...v, ...draft.vitaux }));
       if (draft.analysePreliminaire) setAnalysePreliminaire(draft.analysePreliminaire);
     }
@@ -523,6 +653,10 @@ export default function ConsultationWorkflow() {
     if (draft.suivi) setSuivi(v => ({ ...v, ...draft.suivi }));
     setShowResumeModal(false);
     setSavedDraft(null);
+    const draftMotif = draft.motif?.trim() ?? '';
+    if (draftMotif === '' || draftMotif === 'Consultation médicale') {
+      setNeedsMotif(true);
+    }
     showToast('Consultation restaurée — vous reprenez là où vous en étiez', 'success');
   };
 
@@ -576,6 +710,12 @@ export default function ConsultationWorkflow() {
   };
 
   // ── Effects ────────────────────────────────────────────────────────────────
+
+  // Bloquer le scroll de la page quand la modal données est ouverte
+  useEffect(() => {
+    document.body.style.overflow = showDonneesModal ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [showDonneesModal]);
 
   // Infirmier : charger la liste des médecins
   useEffect(() => {
@@ -690,7 +830,11 @@ export default function ConsultationWorkflow() {
         if (d.motif) setMotif(d.motif);
         if (d.symptomes?.length) {
           const rev: Record<string, string> = { LEGER: 'Légère', MODERE: 'Modérée', SEVERE: 'Sévère' };
-          setSymptomes(d.symptomes.map((s: any) => ({ nom: s.nom, severite: rev[s.severite] || 'Modérée', duree_jours: s.duree_jours, description: s.description || '' })));
+          setSymptomes(
+            d.symptomes
+              .filter((s: any) => ALL_SYMPTOMES_SET.has(s.nom))
+              .map((s: any) => ({ nom: s.nom, severite: rev[s.severite] || 'Modérée', duree_jours: s.duree_jours, description: s.description || '' }))
+          );
         }
         if (d.signes_vitaux) setVitaux(v => ({ ...v, ...d.signes_vitaux }));
         if (d.analyse_preliminaire) {
@@ -793,7 +937,7 @@ export default function ConsultationWorkflow() {
 
   // ── Détection brouillon au montage ────────────────────────────────────────
   useEffect(() => {
-    // Infirmier sans reprendreId : vérifier sp_draft_infirmier
+    // Infirmier sans reprendreId : modal bloquant (un seul brouillon possible)
     if (isInfirmier && !reprendreId && !directPatientId) {
       const raw = localStorage.getItem('sp_draft_infirmier');
       if (raw) {
@@ -809,8 +953,9 @@ export default function ConsultationWorkflow() {
         } catch { localStorage.removeItem('sp_draft_infirmier'); }
       }
     }
-    // Médecin sans reprendreId : chercher un brouillon sp_draft_med_*
+    // Médecin sans reprendreId : collecter TOUS les brouillons valides (sans modal bloquant)
     if (isMedecin && !reprendreId && !directPatientId) {
+      const found: any[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (!key?.startsWith('sp_draft_med_')) continue;
@@ -820,14 +965,15 @@ export default function ConsultationWorkflow() {
           const draft = JSON.parse(raw);
           const age = Date.now() - new Date(draft.savedAt).getTime();
           if (age < 48 * 3600 * 1000 && draft.patient?.nom) {
-            setSavedDraft(draft);
-            setShowResumeModal(true);
-            break;
+            found.push({ ...draft, _key: key });
           } else {
             localStorage.removeItem(key);
           }
         } catch { localStorage.removeItem(key); }
       }
+      // Trier du plus récent au plus ancien
+      found.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
+      if (found.length > 0) setPendingDrafts(found);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -880,6 +1026,8 @@ export default function ConsultationWorkflow() {
 
   // Médecin sélectionne un patient trouvé
   const handleSelectPatient = async (result: PatientSearchResult) => {
+    setShowResumeModal(false);
+    setSavedDraft(null);
     setSelectLoading(true);
     try {
       if (result.consultation_en_attente_id) {
@@ -966,6 +1114,8 @@ export default function ConsultationWorkflow() {
 
   // Médecin démarre directement sans dossier trouvé — utilise les champs nom/prénoms saisis
   const handleQuickStart = async () => {
+    setShowResumeModal(false);
+    setSavedDraft(null);
     const nom = quickStartNom.trim();
     const prenoms = quickStartPrenoms.trim() || nom;
     if (!nom) { showToast('Veuillez renseigner au moins le nom du patient', 'error'); return; }
@@ -976,7 +1126,7 @@ export default function ConsultationWorkflow() {
     try {
       const res = await apiFetch('http://localhost:8000/api/consultations/init', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patient: { nom, prenoms, date_naissance, sexe }, motif: 'Consultation médicale', medecin_id: user?.medecin_id }),
+        body: JSON.stringify({ patient: { nom, prenoms, date_naissance, sexe }, motif: quickStartMotif.trim() || 'Consultation médicale', medecin_id: user?.medecin_id }),
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -985,7 +1135,7 @@ export default function ConsultationWorkflow() {
       const data = await res.json();
       setDraftConsultationId(data.consultation_id);
       setPatient({ nom, prenoms, date_naissance, sexe, groupe_sanguin: '' });
-      setMotif('Consultation médicale');
+      setMotif(quickStartMotif.trim() || 'Consultation médicale');
       setDoctorMode('nouveau');
       setStep(2);
       setDoctorPhase('workflow');
@@ -1122,13 +1272,19 @@ export default function ConsultationWorkflow() {
   };
 
   // ── Symptômes helpers ──────────────────────────────────────────────────────
-  const addSymptome = () => setSymptomes([...symptomes, { nom: '', severite: 'Modérée', duree_jours: 1 }]);
-  const removeSymptome = (i: number) => setSymptomes(symptomes.filter((_, idx) => idx !== i));
+  const invalidateAnalyse = () => {
+    if (analysePreliminaire) { setAnalysePreliminaire(null); setExamens([]); }
+    if (analyseFinale)       { setAnalyseFinale(null); }
+  };
+
+  const addSymptome = () => { invalidateAnalyse(); setSymptomes([...symptomes, { nom: '', severite: 'Modérée', duree_jours: 1 }]); };
+  const removeSymptome = (i: number) => { invalidateAnalyse(); setSymptomes(symptomes.filter((_, idx) => idx !== i)); };
   const editSymptome = (i: number, f: keyof Symptome, v: any) => {
     if (f === 'nom' && typeof v === 'string' && v.trim()) {
       const déjàSaisi = symptomes.some((s, idx) => idx !== i && s.nom.trim().toLowerCase() === v.trim().toLowerCase());
       if (déjàSaisi) showToast(`"${v.trim()}" a déjà été saisi`, 'error');
     }
+    if (f === 'nom') invalidateAnalyse();
     const u = [...symptomes]; u[i] = { ...u[i], [f]: v }; setSymptomes(u);
   };
 
@@ -1244,17 +1400,6 @@ export default function ConsultationWorkflow() {
             })}
           </div>
         </div>
-        {/* Bandeau disclaimer médical sous la carte */}
-        <div style={{ padding: '10px 16px', background: isLow ? '#FEF2F2' : isMedium ? '#FFFBEB' : '#F0FDF4', borderRadius: '0 0 12px 12px', border: `2px solid ${isLow ? '#FECACA' : isMedium ? '#FDE68A' : '#BBF7D0'}`, borderTop: 'none', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-          <span style={{ fontSize: '16px', flexShrink: 0 }}>{isLow ? '⚠️' : isMedium ? 'ℹ️' : '✅'}</span>
-          <span style={{ fontSize: '12px', color: isLow ? '#7F1D1D' : isMedium ? '#78350F' : '#14532D', lineHeight: 1.5 }}>
-            {isLow
-              ? 'Confiance faible — cette suggestion est exploratoire. Le jugement clinique du médecin prévaut sur toute suggestion IA. Un examen complémentaire est fortement recommandé avant tout diagnostic.'
-              : isMedium
-              ? 'Confiance modérée — à confronter aux données cliniques et aux antécédents du patient. L\'IA est une aide à la décision, non un diagnostic définitif.'
-              : 'Confiance élevée — cohérent avec les données saisies. Validez ou corrigez selon votre examen clinique.'}
-          </span>
-        </div>
       </div>
     );
   };
@@ -1298,7 +1443,61 @@ export default function ConsultationWorkflow() {
               />
             </div>
 
-            {/* Résultats */}
+            {/* ── Brouillons filtrés ── */}
+            {(() => {
+              const q = patientSearchQuery.trim().toLowerCase();
+              const visible = pendingDrafts.filter(d => {
+                if (!q) return true;
+                const full = `${d.patient?.prenoms ?? ''} ${d.patient?.nom ?? ''}`.toLowerCase();
+                return full.includes(q);
+              });
+              if (visible.length === 0) return null;
+              return (
+                <div style={{ marginBottom: '16px' }}>
+                  <p style={{ fontSize: '12px', fontWeight: 700, color: '#92400E', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <ClipboardList size={13} style={{ color: '#D97706' }} />
+                    Consultation{visible.length > 1 ? 's' : ''} non terminée{visible.length > 1 ? 's' : ''}
+                  </p>
+                  {visible.map((draft, idx) => (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '10px', marginBottom: '8px' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <span style={{ fontWeight: 700, color: '#1F2937', fontSize: '15px' }}>
+                            {draft.patient?.prenoms} {draft.patient?.nom}
+                          </span>
+                          <span style={{ fontSize: '11px', background: '#FEF3C7', color: '#92400E', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                            Brouillon
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#78350F', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                          <span>Étape {draft.step ?? 1} — {draft.motif || 'Consultation médicale'}</span>
+                          <span>· Sauvegardé {formatDraftAge(draft.savedAt)}</span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                        <button
+                          className="sp-btn sp-btn-primary"
+                          style={{ padding: '6px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                          onClick={() => { applyDraft(draft, 'full'); setPendingDrafts([]); }}
+                        >
+                          <ArrowRight size={14} /> Reprendre
+                        </button>
+                        <button
+                          className="sp-btn sp-btn-ghost"
+                          style={{ padding: '6px 10px', fontSize: '13px', color: '#9CA3AF' }}
+                          title="Supprimer ce brouillon"
+                          onClick={() => { localStorage.removeItem(draft._key); setPendingDrafts(prev => prev.filter((_, i) => i !== idx)); }}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* Résultats serveur */}
             {hasSearched && patientSearchResults.length > 0 && (
               <div style={{ marginBottom: '24px' }}>
                 <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '10px' }}>
@@ -1497,6 +1696,18 @@ export default function ConsultationWorkflow() {
                       <option value="F">♀ Féminin</option>
                     </select>
                   </div>
+                </div>
+
+                <div className="sp-form-group" style={{ margin: '0 0 16px' }}>
+                  <label className="sp-form-label" style={{ color: '#1E40AF', fontWeight: 700 }}>Motif de consultation</label>
+                  <input
+                    type="text"
+                    className="sp-form-input"
+                    value={quickStartMotif}
+                    onChange={e => setQuickStartMotif(e.target.value)}
+                    placeholder="Ex : douleur thoracique, fièvre, suivi diabète…"
+                    maxLength={200}
+                  />
                 </div>
 
                 <button onClick={handleQuickStart} disabled={loading || !quickStartNom.trim()} className="sp-btn sp-btn-outline" style={{ color: '#2563EB', borderColor: '#2563EB', opacity: !quickStartNom.trim() ? 0.5 : 1 }}>
@@ -1869,6 +2080,29 @@ export default function ConsultationWorkflow() {
         </div>
       )}
 
+      {/* ── Bandeau motif manquant (brouillon repris sans motif) ── */}
+      {needsMotif && step > 1 && (
+        <div style={{ marginBottom: '12px', padding: '14px 18px', background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <AlertCircle size={18} style={{ color: '#EA580C', flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <label style={{ fontSize: '12px', fontWeight: 700, color: '#C2410C', display: 'block', marginBottom: '6px' }}>
+              Motif de consultation manquant
+            </label>
+            <input
+              type="text"
+              className="sp-form-input"
+              style={{ marginBottom: 0, height: '34px', fontSize: '13px' }}
+              value={motif === 'Consultation médicale' ? '' : motif}
+              onChange={e => setMotif(e.target.value)}
+              onBlur={() => { if (motif.trim() && motif.trim() !== 'Consultation médicale') setNeedsMotif(false); }}
+              placeholder="Ex : douleur thoracique, fièvre, suivi diabète…"
+              autoFocus
+              maxLength={200}
+            />
+          </div>
+        </div>
+      )}
+
       {/* ── Content ── */}
       <div className="sp-card sp-fade-in">
         <div style={{ padding: '32px' }}>
@@ -1938,7 +2172,6 @@ export default function ConsultationWorkflow() {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
                 <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1F2937' }}>Symptômes & Signes Vitaux</h2>
-                {roleBadge('Infirmier')}
               </div>
 
               {/* Sélecteur médecin — toujours visible à l'étape 2 pour l'infirmier */}
@@ -1984,7 +2217,14 @@ export default function ConsultationWorkflow() {
                         value={s.nom}
                         onChange={e => { editSymptome(i, 'nom', e.target.value); setOpenSymptomIdx(i); }}
                         onFocus={() => setOpenSymptomIdx(i)}
-                        onBlur={() => setTimeout(() => setOpenSymptomIdx(null), 200)}
+                        onBlur={() => {
+                          setTimeout(() => setOpenSymptomIdx(null), 200);
+                          const val = s.nom.trim();
+                          if (val && !ALL_SYMPTOMES_SET.has(val)) {
+                            editSymptome(i, 'nom', '');
+                            showToast(`"${val}" n'est pas dans la liste des symptômes disponibles`, 'error');
+                          }
+                        }}
                         placeholder="Rechercher un symptôme..."
                         autoComplete="off"
                         style={s.nom.trim() && symptomes.some((o, idx) => idx !== i && o.nom.trim().toLowerCase() === s.nom.trim().toLowerCase()) ? { borderColor: '#EF4444', background: '#FEF2F2' } : undefined}
@@ -2002,7 +2242,7 @@ export default function ConsultationWorkflow() {
                                 .filter(sym => !s.nom.trim() || sym.toLowerCase().includes(s.nom.toLowerCase()));
                               if (filtered.length === 0)
                                 return <span style={{ color: '#9CA3AF', fontSize: '13px' }}>Aucun symptôme trouvé</span>;
-                              return filtered.slice(0, 80).map((sym, idx) => (
+                              return filtered.map((sym, idx) => (
                                 <button
                                   key={idx}
                                   type="button"
@@ -2066,7 +2306,7 @@ export default function ConsultationWorkflow() {
                     </label>
                     <input type="number" step={f.step} className="sp-form-input"
                       value={(vitaux as any)[f.key] || ''}
-                      onChange={e => setVitaux({ ...vitaux, [f.key]: parseFloat(e.target.value) || undefined })} />
+                      onChange={e => { invalidateAnalyse(); setVitaux({ ...vitaux, [f.key]: parseFloat(e.target.value) || undefined }); }} />
                   </div>
                 ))}
               </div>
@@ -2440,12 +2680,6 @@ export default function ConsultationWorkflow() {
                 <textarea className="sp-form-textarea" rows={3} value={notesValidation} onChange={e => setNotesValidation(e.target.value)} placeholder="Observations, justification, commentaires cliniques..." />
               </div>
 
-              <div style={{ padding: '14px 18px', background: '#FEF3C7', borderRadius: '8px', border: '1px solid #FCD34D', display: 'flex', gap: '10px', marginTop: '16px' }}>
-                <AlertCircle size={18} style={{ color: '#D97706', flexShrink: 0, marginTop: '2px' }} />
-                <div style={{ fontSize: '13px', color: '#92400E' }}>
-                  <strong>Note :</strong> Le diagnostic final est sous votre responsabilité médicale. L'IA est un outil d'aide à la décision.
-                </div>
-              </div>
             </div>
           )}
 
@@ -2700,7 +2934,19 @@ export default function ConsultationWorkflow() {
                   isDirty ? (setPendingNavTo('infirmier-search'), setLeaveModalOpen(true)) : setInfirmierPhase('search');
                   return;
                 }
-                setStep(s => Math.max(stepMin, s - 1));
+                setStep(s => {
+                  const next = Math.max(stepMin, s - 1);
+                  // Retour avant l'analyse préliminaire → réinitialiser pour forcer un nouveau calcul
+                  if (next < 3 && analysePreliminaire) {
+                    setAnalysePreliminaire(null);
+                    setExamens([]);
+                  }
+                  // Retour avant l'analyse finale → réinitialiser
+                  if (next < 5 && analyseFinale) {
+                    setAnalyseFinale(null);
+                  }
+                  return next;
+                });
               }}
               disabled={step === stepMin && !isMedecin && !isInfirmier}
               className="sp-btn sp-btn-outline"
@@ -2725,7 +2971,16 @@ export default function ConsultationWorkflow() {
 
             {/* ── Étape 2 : médecin nouveau patient → vers analyse IA ── */}
             {step === 2 && isMedecin && doctorMode === 'nouveau' && (
-              <button onClick={() => setStep(3)} className="sp-btn sp-btn-primary">
+              <button
+                onClick={() => {
+                  if (symptomes.filter(s => s.nom.trim()).length === 0) {
+                    showToast('Veuillez saisir au moins un symptôme avant de continuer', 'error');
+                    return;
+                  }
+                  setStep(3);
+                }}
+                className="sp-btn sp-btn-primary"
+              >
                 Suivant <ArrowRight size={16} />
               </button>
             )}
@@ -2836,11 +3091,11 @@ export default function ConsultationWorkflow() {
         onClick={() => setShowDonneesModal(false)}
       >
         <div
-          style={{ background: '#fff', borderRadius: '24px', width: '100%', maxWidth: '560px', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}
+          style={{ background: '#fff', borderRadius: '24px', width: '100%', maxWidth: '560px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #E5E7EB', position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #E5E7EB', flexShrink: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg,#4F46E5,#7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <ClipboardList size={18} style={{ color: '#fff' }} />
@@ -2855,7 +3110,7 @@ export default function ConsultationWorkflow() {
             </button>
           </div>
 
-          <div style={{ padding: '24px' }}>
+          <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
             {/* Symptômes */}
             <div style={{ marginBottom: '24px' }}>
               <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#4F46E5', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>

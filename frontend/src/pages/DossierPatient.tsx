@@ -45,6 +45,7 @@ interface Consultation {
   diagnostic?: DiagnosticInfo | null;
 }
 
+
 const DossierPatient = () => {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
@@ -80,7 +81,7 @@ const DossierPatient = () => {
         setConsultations([...consultationsData].sort((a, b) =>
           new Date(b.date_heure ?? '').getTime() - new Date(a.date_heure ?? '').getTime()
         ));
-        
+
         setError(null);
       } catch (err: any) {
         console.error('Erreur chargement dossier patient:', err);
@@ -620,6 +621,7 @@ const DossierPatient = () => {
           </div>
         </div>
       </div>
+
       {/* ── Section Impression (Cachée à l'écran) ──────────────────── */}
       <div className="print-only medical-folder" style={{ display: 'none' }}>
         <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: '20px', marginBottom: '30px' }}>
