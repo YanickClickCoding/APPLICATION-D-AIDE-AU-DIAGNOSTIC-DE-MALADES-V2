@@ -527,6 +527,7 @@ export default function ConsultationWorkflow() {
   const [step, setStep] = useState(reprendreId ? 0 : 1);
   const [loading, setLoading] = useState(false);
   const [draftConsultationId, setDraftConsultationId] = useState<number | null>(null);
+  const [_createdPatientId, _setCreatedPatientId] = useState<number | null>(null);
 
   // État infirmier/admin
   const [medecinId, setMedecinId] = useState<number | null>(null);
@@ -594,17 +595,67 @@ export default function ConsultationWorkflow() {
   const isDirty = (isInfirmier ? infirmierPhase === 'workflow' : doctorPhase === 'workflow') && !infirmierSubmitted;
 
   // ── Helpers persistance ────────────────────────────────────────────────────
-  const getDraftKey = (): string | null => {
+  const _getDraftKey = (): string | null => {
     if (isInfirmier) return 'sp_draft_infirmier';
     const id = activeConsultationId || draftConsultationId;
     return id ? `sp_draft_med_${id}` : null;
   };
 
   const clearDraftStorage = (consultationId?: number | null) => {
+    // Annuler d'abord le timer d'auto-sauvegarde pour éviter qu'il re-sauvegarde après le clear
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
     localStorage.removeItem('sp_draft_infirmier');
     const id = consultationId ?? activeConsultationId ?? draftConsultationId;
     if (id) localStorage.removeItem(`sp_draft_med_${id}`);
     setDraftSavedAt(null);
+  };
+
+  // Réinitialise TOUT l'état du formulaire pour repartir d'une page vierge
+  const resetFormState = (consultationId?: number | null) => {
+    clearDraftStorage(consultationId);
+    // Phases
+    setInfirmierPhase('search');
+    setDoctorPhase('search');
+    setDoctorMode(null);
+    // Identifiants
+    setDraftConsultationId(null);
+    _setCreatedPatientId(null);
+    setActiveConsultationId(null);
+    // Formulaire patient
+    setPatient({ nom: '', prenoms: '', date_naissance: '', sexe: 'M', groupe_sanguin: '' });
+    setMotif('');
+    setMedecinId(null);
+    // Quick-start fields
+    setQuickStartNom('');
+    setQuickStartPrenoms('');
+    setQuickStartAge('');
+    setQuickStartSexe('M');
+    setQuickStartMotif('');
+    // Données cliniques
+    setSymptomes([]);
+    setVitaux({ tension_systolique: 120, tension_diastolique: 80, frequence_cardiaque: 70, frequence_respiratoire: 16, temperature: 37.0, saturation_o2: 98 });
+    setExamens([]);
+    setAnalysePreliminaire(null);
+    setAnalyseFinale(null);
+    setDiagnosticFinal('');
+    setDiagnosticCorrection('');
+    setOrdonnance([]);
+    setSuivi({ date_prochain_rdv: '', instructions_patient: '', notes_medecin: '' });
+    // État de soumission
+    setInfirmierSubmitted(false);
+    setStep(1);
+    // Recherche
+    setPatientSearchQuery('');
+    setPatientSearchResults([]);
+    setHasSearched(false);
+    setForceNewPatient(false);
+    // Modals et brouillons
+    setShowResumeModal(false);
+    setSavedDraft(null);
+    setPendingDrafts([]);
   };
 
   const formatDraftAge = (iso: string) => {
@@ -937,16 +988,15 @@ export default function ConsultationWorkflow() {
 
   // ── Détection brouillon au montage ────────────────────────────────────────
   useEffect(() => {
-    // Infirmier sans reprendreId : modal bloquant (un seul brouillon possible)
+    // Infirmier sans reprendreId : afficher le brouillon inline (comme le médecin, sans modal bloquant)
     if (isInfirmier && !reprendreId && !directPatientId) {
       const raw = localStorage.getItem('sp_draft_infirmier');
       if (raw) {
         try {
           const draft = JSON.parse(raw);
           const age = Date.now() - new Date(draft.savedAt).getTime();
-          if (age < 48 * 3600 * 1000 && draft.step >= 1 && draft.patient?.nom) {
-            setSavedDraft(draft);
-            setShowResumeModal(true);
+          if (age < 48 * 3600 * 1000 && draft.patient?.nom) {
+            setPendingDrafts([{ ...draft, _key: 'sp_draft_infirmier' }]);
           } else {
             localStorage.removeItem('sp_draft_infirmier');
           }
@@ -1101,13 +1151,13 @@ export default function ConsultationWorkflow() {
     }
   };
 
-  // Infirmier démarre avec un nouveau patient (introuvable) — uniquement nom/prénom → étape 1
+  // Infirmier — nouveau patient introuvable → va directement à l'étape 1 (formulaire complet)
+  // La création en DB se fait au "Suivant" de l'étape 1 avec toutes les infos remplies
   const handleInfirmierQuickStart = () => {
-    const nom = quickStartNom.trim();
-    const prenoms = quickStartPrenoms.trim() || nom;
-    if (!nom) { showToast('Veuillez renseigner au moins le nom du patient', 'error'); return; }
     if (!medecinId) { showToast('Veuillez sélectionner un médecin avant de continuer', 'error'); return; }
-    setPatient({ nom, prenoms, date_naissance: '', sexe: 'M', groupe_sanguin: '' });
+    // Pré-remplir le nom depuis la recherche
+    const nom = patientSearchQuery.trim().toUpperCase();
+    setPatient({ nom, prenoms: '', date_naissance: '', sexe: 'M', groupe_sanguin: '' });
     setInfirmierPhase('workflow');
     setStep(1);
   };
@@ -1155,7 +1205,7 @@ export default function ConsultationWorkflow() {
       showToast('Veuillez remplir les champs obligatoires (nom, prénoms, date de naissance, motif)', 'error');
       return;
     }
-    // Brouillon déjà créé (retour en arrière) → ne pas recréer un doublon
+    // Brouillon déjà créé (retour en arrière) → juste avancer
     if (draftConsultationId) {
       setStep(2);
       return;
@@ -1229,9 +1279,10 @@ export default function ConsultationWorkflow() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.detail || `Erreur serveur ${res.status}`);
       }
+      const data = await res.json();
       clearDraftStorage(draftConsultationId);
-      showToast('Consultation enregistrée ! Affichage des diagnostics IA...', 'success');
-      setTimeout(() => navigate('/diagnostics'), 1500);
+      showToast('Consultation clôturée avec succès !', 'success');
+      setTimeout(() => navigate(`/dossier-patient/${data.patient_id}`), 1500);
     } catch (e: any) {
       showToast(e.message || 'Erreur lors de l\'enregistrement', 'error');
     } finally { setLoading(false); }
@@ -1247,8 +1298,9 @@ export default function ConsultationWorkflow() {
         body: JSON.stringify({ patient, motif, symptomes, signes_vitaux: vitaux, analyse_preliminaire: analysePreliminaire, medecin_id: medecinId, consultation_id: draftConsultationId }),
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Erreur serveur'); }
-      setInfirmierSubmitted(true);
+      // Effacer le draft AVANT setInfirmierSubmitted pour éviter toute re-sauvegarde
       clearDraftStorage(draftConsultationId);
+      setInfirmierSubmitted(true);
       showToast('Consultation envoyée au médecin avec succès', 'success');
     } catch (e: any) { showToast(e.message || 'Erreur', 'error'); }
     finally { setLoading(false); }
@@ -1264,9 +1316,10 @@ export default function ConsultationWorkflow() {
         body: JSON.stringify({ examens, analyse_finale: analyseFinale, diagnostic_final: finalDiag, validation_type: validationDecision, notes_validation: notesValidation, ordonnance, suivi }),
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Erreur serveur'); }
+      const result = await res.json();
       clearDraftStorage(activeConsultationId);
-      showToast('Consultation complétée avec succès !', 'success');
-      setTimeout(() => navigate('/consultations'), 1500);
+      showToast('Consultation clôturée avec succès !', 'success');
+      setTimeout(() => navigate(`/patients/${result.patient_id}/dossier`), 1500);
     } catch (e: any) { showToast(e.message || 'Erreur', 'error'); }
     finally { setLoading(false); }
   };
@@ -1355,7 +1408,6 @@ export default function ConsultationWorkflow() {
     const pct = analyse.confiance <= 1 ? analyse.confiance * 100 : analyse.confiance;
     const isHigh   = pct >= 70;
     const isMedium = pct >= 50 && pct < 70;
-    const isLow    = pct < 50;
     const barColor = isHigh ? 'linear-gradient(90deg,#10B981,#059669)'
                    : isMedium ? 'linear-gradient(90deg,#F59E0B,#D97706)'
                    : 'linear-gradient(90deg,#EF4444,#DC2626)';
@@ -1798,6 +1850,63 @@ export default function ConsultationWorkflow() {
               />
             </div>
 
+            {/* ── Brouillons infirmier (même style que médecin) ── */}
+            {(() => {
+              const q = patientSearchQuery.trim().toLowerCase();
+              const visible = pendingDrafts.filter(d => {
+                if (!q) return true;
+                const full = `${d.patient?.prenoms ?? ''} ${d.patient?.nom ?? ''}`.toLowerCase();
+                return full.includes(q);
+              });
+              if (visible.length === 0) return null;
+              return (
+                <div style={{ marginBottom: '16px' }}>
+                  <p style={{ fontSize: '12px', fontWeight: 700, color: '#92400E', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <ClipboardList size={13} style={{ color: '#D97706' }} />
+                    Consultation{visible.length > 1 ? 's' : ''} non terminée{visible.length > 1 ? 's' : ''}
+                  </p>
+                  {visible.map((draft, idx) => (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '10px', marginBottom: '8px' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <span style={{ fontWeight: 700, color: '#1F2937', fontSize: '15px' }}>
+                            {draft.patient?.prenoms} {draft.patient?.nom}
+                          </span>
+                          <span style={{ fontSize: '11px', background: '#FEF3C7', color: '#92400E', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                            Brouillon
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#78350F', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                          <span>Étape {draft.step ?? 1} — {draft.motif || 'Consultation médicale'}</span>
+                          <span>· Sauvegardé {formatDraftAge(draft.savedAt)}</span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                        <button
+                          className="sp-btn sp-btn-primary"
+                          style={{ padding: '6px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                          onClick={() => { applyDraft(draft, 'full'); setPendingDrafts([]); }}
+                        >
+                          <ArrowRight size={14} /> Reprendre
+                        </button>
+                        <button
+                          className="sp-btn sp-btn-ghost"
+                          style={{ padding: '6px 10px', fontSize: '13px', color: '#9CA3AF' }}
+                          title="Supprimer ce brouillon"
+                          onClick={() => {
+                            localStorage.removeItem(draft._key);
+                            setPendingDrafts(prev => prev.filter((_, i) => i !== idx));
+                          }}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
             {/* Résultats */}
             {hasSearched && patientSearchResults.length > 0 && (
               <div style={{ marginBottom: '24px' }}>
@@ -1877,53 +1986,33 @@ export default function ConsultationWorkflow() {
               </div>
             )}
 
-            {/* Patient introuvable ou création forcée */}
+            {/* Patient introuvable → bouton pour aller directement au formulaire complet */}
             {hasSearched && (patientSearchResults.length === 0 || forceNewPatient) && (
               <div style={{ padding: '20px', background: '#EFF6FF', borderRadius: '10px', border: '1px solid #BFDBFE', marginBottom: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px', marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <UserX size={20} style={{ color: '#2563EB', flexShrink: 0 }} />
-                    <div>
-                      <div style={{ fontWeight: 700, color: '#1E3A8A', fontSize: '15px' }}>
-                        {forceNewPatient ? 'Nouveau patient homonyme' : 'Patient introuvable'}
-                      </div>
-                      <div style={{ fontSize: '13px', color: '#1D4ED8' }}>
-                        {forceNewPatient
-                          ? 'Vérifiez le nom/prénom ci-dessous puis créez un nouveau dossier.'
-                          : `Aucun dossier pour « ${patientSearchQuery} ». Vérifiez et corrigez le nom/prénom, puis démarrez la consultation.`}
-                      </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                  <UserX size={22} style={{ color: '#2563EB', flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#1E3A8A', fontSize: '15px' }}>
+                      {forceNewPatient ? 'Nouveau patient homonyme' : `Aucun dossier trouvé pour « ${patientSearchQuery} »`}
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#1D4ED8', marginTop: '2px' }}>
+                      Créez un nouveau dossier patient en remplissant le formulaire complet.
                     </div>
                   </div>
                   {forceNewPatient && (
-                    <button onClick={() => setForceNewPatient(false)} className="sp-btn sp-btn-ghost sp-btn-sm" style={{ flexShrink: 0, fontSize: '12px', color: '#6B7280' }}>
+                    <button onClick={() => setForceNewPatient(false)} className="sp-btn sp-btn-ghost sp-btn-sm" style={{ marginLeft: 'auto', fontSize: '12px', color: '#6B7280' }}>
                       <X size={14} /> Annuler
                     </button>
                   )}
                 </div>
-
-                <p style={{ fontSize: '12px', color: '#1D4ED8', marginBottom: '12px' }}>
-                  Les autres informations (date de naissance, sexe, groupe sanguin...) seront complétées à l'étape suivante.
-                </p>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '8px', alignItems: 'end', marginBottom: '16px' }}>
-                  <div className="sp-form-group" style={{ margin: 0 }}>
-                    <label className="sp-form-label" style={{ color: '#1E40AF', fontWeight: 700 }}>Nom de famille <span style={{ color: '#EF4444' }}>*</span></label>
-                    <input type="text" className="sp-form-input" value={quickStartNom} onChange={e => setQuickStartNom(e.target.value.toUpperCase())} placeholder="DUPONT" />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => { const n = quickStartPrenoms.toUpperCase(); const p = quickStartNom.charAt(0).toUpperCase() + quickStartNom.slice(1).toLowerCase(); setQuickStartNom(n); setQuickStartPrenoms(p); }}
-                    title="Inverser nom et prénom"
-                    style={{ background: '#DBEAFE', border: '1px solid #93C5FD', borderRadius: '8px', padding: '8px 10px', cursor: 'pointer', color: '#1D4ED8', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1px', fontSize: '16px' }}
-                  >⇄</button>
-                  <div className="sp-form-group" style={{ margin: 0 }}>
-                    <label className="sp-form-label" style={{ color: '#1E40AF', fontWeight: 700 }}>Prénoms</label>
-                    <input type="text" className="sp-form-input" value={quickStartPrenoms} onChange={e => { const v = e.target.value; setQuickStartPrenoms(v.charAt(0).toUpperCase() + v.slice(1).toLowerCase()); }} placeholder="Jean" />
-                  </div>
-                </div>
-
-                <button onClick={handleInfirmierQuickStart} disabled={!quickStartNom.trim() || !medecinId} className="sp-btn sp-btn-outline" style={{ color: '#2563EB', borderColor: '#2563EB', opacity: (!quickStartNom.trim() || !medecinId) ? 0.5 : 1 }} title={!medecinId ? 'Sélectionnez d\'abord un médecin' : ''}>
-                  <Plus size={15} /> Continuer vers le formulaire
+                <button
+                  onClick={handleInfirmierQuickStart}
+                  disabled={!medecinId}
+                  className="sp-btn sp-btn-primary"
+                  style={{ width: '100%', opacity: !medecinId ? 0.5 : 1 }}
+                  title={!medecinId ? 'Sélectionnez d\'abord un médecin' : ''}
+                >
+                  <UserPlus size={15} /> Démarrer la consultation — nouveau patient
                 </button>
               </div>
             )}
@@ -2008,24 +2097,20 @@ export default function ConsultationWorkflow() {
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '12px', flexDirection: 'column' }}>
             <button
-              onClick={() => applyDraft(savedDraft, savedDraft._medecin_only ? 'medecin-only' : 'full')}
+              onClick={() => resetFormState(savedDraft?.consultationId)}
               className="sp-btn sp-btn-primary"
-              style={{ flex: 1, fontWeight: 700 }}
+              style={{ flex: 1, fontWeight: 700, background: '#10B981', borderColor: '#10B981' }}
             >
-              <ArrowRight size={15} /> Reprendre
+              <RefreshCw size={15} /> Nouvelle consultation (recommencer)
             </button>
             <button
-              onClick={() => {
-                clearDraftStorage(savedDraft.consultationId);
-                setShowResumeModal(false);
-                setSavedDraft(null);
-              }}
+              onClick={() => applyDraft(savedDraft, savedDraft._medecin_only ? 'medecin-only' : 'full')}
               className="sp-btn sp-btn-outline"
-              style={{ flex: 1 }}
+              style={{ flex: 1, fontSize: '13px' }}
             >
-              <RefreshCw size={15} /> Recommencer
+              <ArrowRight size={15} /> Reprendre la consultation précédente
             </button>
           </div>
         </div>

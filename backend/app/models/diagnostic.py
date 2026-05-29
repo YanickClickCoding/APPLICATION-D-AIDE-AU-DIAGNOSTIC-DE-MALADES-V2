@@ -16,9 +16,9 @@ class Diagnostic(Base):
     diagnostic_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     
     # Foreign Keys
-    consultation_id = Column(Integer, ForeignKey("consultations.consultation_id"), nullable=False)
-    analyse_ia_id = Column(Integer, ForeignKey("analyses_ia.analyse_id"))
-    medecin_id = Column(Integer, ForeignKey("medecins.medecin_id"), nullable=True)
+    consultation_id = Column(Integer, ForeignKey("consultations.consultation_id"), nullable=False, index=True)
+    analyse_ia_id = Column(Integer, ForeignKey("analyses_ia.analyse_id"), index=True)
+    medecin_id = Column(Integer, ForeignKey("medecins.medecin_id"), nullable=True, index=True)
     dossier_id = Column(Integer, ForeignKey("dossiers_medicaux.dossier_id"), nullable=False)
     
     # Diagnostic Information

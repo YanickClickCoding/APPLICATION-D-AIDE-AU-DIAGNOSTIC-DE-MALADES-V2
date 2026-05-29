@@ -16,8 +16,8 @@ class SignesVitaux(Base):
     signes_vitaux_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
 
     # Foreign Keys
-    consultation_id = Column(Integer, ForeignKey("consultations.consultation_id"), nullable=False)
-    infirmier_id = Column(Integer, ForeignKey("infirmiers.infirmier_id"))
+    consultation_id = Column(Integer, ForeignKey("consultations.consultation_id"), nullable=False, index=True)
+    infirmier_id = Column(Integer, ForeignKey("infirmiers.infirmier_id"), index=True)
 
     # Vital Signs
     tension_systolique = Column(Integer)

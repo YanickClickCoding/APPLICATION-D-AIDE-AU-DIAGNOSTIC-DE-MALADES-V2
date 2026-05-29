@@ -1258,7 +1258,7 @@ def complete_consultation_medecin(consultation_id: int, data: dict, db: Session 
                 medicaments=[m['nom'] for m in meds_valides],
             )
 
-        return {"success": True, "consultation_id": consultation_id}
+        return {"success": True, "consultation_id": consultation_id, "patient_id": c.patient_id}
 
     except HTTPException:
         raise

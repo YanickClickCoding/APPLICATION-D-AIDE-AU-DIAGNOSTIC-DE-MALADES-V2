@@ -35,7 +35,7 @@ Elle **n'est jamais modifiée** au cours d'une consultation. Son rôle est uniqu
               lookup sur maladie   │   copie snapshot (prescription)
                 ┌──────────────────┴───────────────────┐
                 │                                      │
-                ▼  N:1 (N médicaments                  ▼  1 → 0..N
+                ▼  N:1 (N médicaments )                 ▼  1 → 0..N
    ┌────────────────────────┐             ┌────────────────────────┐
    │       diagnostics      │             │      medicaments       │
    │  ──────────────────── │             │  ──────────────────── │

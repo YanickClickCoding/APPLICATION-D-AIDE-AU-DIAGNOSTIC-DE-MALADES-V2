@@ -32,7 +32,10 @@ def _build_engine_url() -> str | URL:
 engine = create_engine(
     _build_engine_url(),
     pool_pre_ping=True,
-    echo=False
+    pool_size=20,        # connexions persistantes dans le pool
+    max_overflow=40,     # connexions temporaires supplémentaires
+    pool_recycle=3600,   # recycle les connexions après 1h (évite les timeouts MySQL)
+    echo=False,
 )
 
 # Create session factory

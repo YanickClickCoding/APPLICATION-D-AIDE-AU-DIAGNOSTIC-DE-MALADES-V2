@@ -7,8 +7,8 @@ from ..database import Base
 class Examen(Base):
     __tablename__ = "examens"
     examen_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    consultation_id = Column(Integer, ForeignKey("consultations.consultation_id"), nullable=False)
-    type = Column(ENUM('CLINIQUE', 'IMAGERIE', 'BIOLOGIE', 'ELECTROCARDIOGRAMME'))
+    consultation_id = Column(Integer, ForeignKey("consultations.consultation_id"), nullable=False, index=True)
+    type = Column(ENUM('CLINIQUE', 'IMAGERIE', 'BIOLOGIE', 'ELECTROCARDIOGRAMME'), index=True)
     nom = Column(String(255), nullable=False)
     description = Column(Text)
     resultats = Column(Text)

@@ -5,6 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Dict
 import json
+import asyncio
+from functools import partial
 
 from ..database import get_db
 from ..models import Consultation, Symptome, SignesVitaux, AnalyseIA, Diagnostic, Examen
@@ -120,7 +122,7 @@ def extract_patient_data(consultation_id: int, db: Session) -> Dict:
 
 
 @router.post("/predict", response_model=PredictionResponse)
-def predict_diagnosis(request: PredictionRequest, db: Session = Depends(get_db), _=Depends(get_current_non_admin)):
+async def predict_diagnosis(request: PredictionRequest, db: Session = Depends(get_db), _=Depends(get_current_non_admin)):
     """
     US-014, US-015: Prédire le diagnostic pour une consultation
     """
@@ -131,7 +133,10 @@ def predict_diagnosis(request: PredictionRequest, db: Session = Depends(get_db),
         )
 
     consultation_data = extract_patient_data(request.consultation_id, db)
-    prediction = model_manager.predict(consultation_data)
+
+    # Exécution dans un thread pool pour ne pas bloquer la boucle asyncio
+    loop = asyncio.get_event_loop()
+    prediction = await loop.run_in_executor(None, model_manager.predict, consultation_data)
 
     # Enregistrer l'analyse IA
     db_analyse = AnalyseIA(
@@ -149,7 +154,7 @@ def predict_diagnosis(request: PredictionRequest, db: Session = Depends(get_db),
 
 
 @router.post("/predict-direct", response_model=PredictionResponse)
-def predict_direct(request: DirectPredictionRequest, _=Depends(get_current_non_admin)):
+async def predict_direct(request: DirectPredictionRequest, _=Depends(get_current_non_admin)):
     """
     Prédiction directe à partir des données brutes du formulaire,
     sans enregistrement préalable en base de données.
@@ -178,11 +183,12 @@ def predict_direct(request: DirectPredictionRequest, _=Depends(get_current_non_a
         ],
     }
 
-    return model_manager.predict(consultation_data)
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, model_manager.predict, consultation_data)
 
 
 @router.post("/explain", response_model=Dict)
-def explain_diagnosis(request: PredictionRequest, db: Session = Depends(get_db), _=Depends(get_current_non_admin)):
+async def explain_diagnosis(request: PredictionRequest, db: Session = Depends(get_db), _=Depends(get_current_non_admin)):
     """
     US-016: Expliquer pourquoi ce diagnostic a été proposé
     """
@@ -193,7 +199,8 @@ def explain_diagnosis(request: PredictionRequest, db: Session = Depends(get_db),
         )
 
     consultation_data = extract_patient_data(request.consultation_id, db)
-    return model_manager.explain_prediction(consultation_data)
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, model_manager.explain_prediction, consultation_data)
 
 
 @router.post("/diagnostics", response_model=DiagnosticResponse, status_code=status.HTTP_201_CREATED)

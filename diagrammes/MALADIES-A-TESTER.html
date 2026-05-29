@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Jeu de Test Diagnostic | 50 Maladies pour IA Médicale</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #eef2f7;
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      padding: 2rem 1.5rem;
+      color: #0a1c2f;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      margin-bottom: 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 1rem;
+      border-bottom: 2px solid #cbdde9;
+      padding-bottom: 1rem;
+    }
+
+    h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #1a5f7a, #0f2e40);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      letter-spacing: -0.3px;
+    }
+
+    .badge-counter {
+      background: #1f5e7e;
+      color: white;
+      padding: 0.4rem 1rem;
+      border-radius: 40px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    .ref-bar {
+      background: #ffffffd9;
+      backdrop-filter: blur(4px);
+      border-radius: 28px;
+      padding: 0.75rem 1.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.2rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      border: 1px solid #dce5ec;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+    }
+
+    .ref-item {
+      background: #f0f4f9;
+      border-radius: 24px;
+      padding: 0.2rem 0.8rem;
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: #144d64;
+    }
+
+    /* Grille cartes */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 1.8rem;
+    }
+
+    /* Carte maladie */
+    .card {
+      background: white;
+      border-radius: 28px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0,0,0,0.03);
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      border: 1px solid #e2edf2;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 30px -12px rgba(0, 32, 64, 0.15);
+    }
+
+    .card-header {
+      background: #f9fbfd;
+      padding: 1rem 1.5rem;
+      border-bottom: 2px solid #e2edf2;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .disease-name {
+      font-weight: 800;
+      font-size: 1.3rem;
+      background: linear-gradient(130deg, #1a4c66, #0b3b50);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    .cat-tag {
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: #e3f0f5;
+      padding: 0.2rem 0.7rem;
+      border-radius: 30px;
+      color: #146b8a;
+    }
+
+    .severity {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.2rem 0.7rem;
+      border-radius: 30px;
+      background: #f0eef2;
+    }
+
+    .severity.leger { background: #dcfce7; color: #15803d; }
+    .severity.modere { background: #fff3e3; color: #b45309; }
+    .severity.grave { background: #ffe4e2; color: #b91c1c; }
+    .severity.critique { background: #fecaca; color: #991b1b; }
+
+    .card-content {
+      padding: 1.2rem 1.5rem 1.5rem;
+    }
+
+    .section {
+      margin-bottom: 1rem;
+      border-bottom: 1px dashed #e9f0f3;
+      padding-bottom: 0.7rem;
+    }
+
+    .section-title {
+      font-weight: 700;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #5b7f94;
+      margin-bottom: 0.6rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .vitals-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem;
+      font-size: 0.8rem;
+    }
+
+    .vital-item {
+      background: #f8fafc;
+      border-radius: 14px;
+      padding: 0.35rem 0.7rem;
+      display: flex;
+      justify-content: space-between;
+      font-family: monospace;
+      font-weight: 500;
+    }
+
+    .vital-label {
+      color: #436c7f;
+    }
+
+    .symptom-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 6px;
+    }
+
+    .symptom-badge {
+      background: #eef2ff;
+      padding: 0.2rem 0.65rem;
+      border-radius: 30px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: #1e4d6b;
+    }
+
+    .exam-list {
+      background: #fafdff;
+      border-left: 3px solid #7ab3c8;
+      padding: 0.6rem 0.8rem;
+      border-radius: 14px;
+      font-size: 0.75rem;
+      font-family: monospace;
+      margin-top: 10px;
+    }
+
+    .exam-item {
+      margin: 0.2rem 0;
+      color: #1f5c77;
+    }
+
+    hr {
+      margin: 0.7rem 0;
+      border: 0;
+      height: 1px;
+      background: linear-gradient(90deg, #cbdde9, transparent);
+    }
+
+    .footer-note {
+      margin-top: 3rem;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #5c7e92;
+      border-top: 1px solid #d0e0e8;
+      padding-top: 1.8rem;
+    }
+
+    @media (max-width: 760px) {
+      body { padding: 1rem; }
+      .grid { grid-template-columns: 1fr; }
+      .vitals-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🏥 Jeu de Test Diagnostic<br><span style="font-size: 0.9rem; font-weight: normal;">50 cas cliniques · signes vitaux + symptômes + examens</span></h1>
+    <div class="badge-counter">🧪 Moteur IA · validation différentielle</div>
+  </div>
+
+  <div class="ref-bar">
+    <span>📏 Champs: <span class="ref-item">tension_systolique/diastolique</span> <span class="ref-item">frequence_cardiaque</span> <span class="ref-item">temperature</span> <span class="ref-item">frequence_respiratoire</span> <span class="ref-item">saturation_o2</span></span>
+    <span>⚕️ Sévérité: léger · modéré · grave · critique</span>
+    <span>📋 Symptômes codifiés · examens biologiques / imagerie</span>
+  </div>
+
+  <div class="grid" id="maladiesGrid"></div>
+  <div class="footer-note">
+    ✅ Chaque fiche contient les données exactes à saisir dans l’application — idéal pour tester algorithmes de diagnostic, classification supervisée et validation des scores de probabilité.
+  </div>
+</div>
+
+<script>
+  // --------------------------------------------------------------
+  // DONNEES DES 50 MALADIES (format structuré)
+  // --------------------------------------------------------------
+  const maladiesData = [
+    { name: "Hypertension", cat: "Cardiovasculaire", age:55, sexe:"M", sys:165, dia:100, hr:82, temp:37.0, rr:16, spo2:97, poids:92, taille:175, duree:"90 j", severity:"modere", symptoms:["Maux de tête","Maux de tête matinaux","Hypertension","Vertiges","Palpitations"], exams:["Créatinine : 1.2 mg/dL","Potassium : 4.2 mEq/L","Glucose à jeun : 105 mg/dL","Cholestérol total : 220 mg/dL"] },
+    { name: "Infarctus du myocarde", cat: "Cardiovasculaire", age:62, sexe:"M", sys:95, dia:60, hr:110, temp:37.2, rr:22, spo2:93, poids:85, taille:172, duree:"1 j", severity:"critique", symptoms:["Douleur thoracique sévère","Douleur au bras épaule","Sueurs froides","Nausées","Essoufflement soudain","Palpitations"], exams:["Troponine : 2.5 ng/mL","CK : 450 U/L","Myoglobine : 180 ng/mL","ECG : Sus-décalage ST V1-V4"] },
+    { name: "Insuffisance cardiaque", cat: "Cardiovasculaire", age:70, sexe:"F", sys:145, dia:88, hr:98, temp:36.8, rr:24, spo2:91, poids:78, taille:162, duree:"30 j", severity:"grave", symptoms:["Essoufflement","Gonflement des chevilles","Œdèmes","Fatigue","Dyspnée","Toux sèche"], exams:["BNP : 850 pg/mL","ProBNP : 4500 pg/mL","Créatinine : 1.4 mg/dL","Rx thorax : Cardiomégalie + épanchement"] },
+    { name: "Arythmie cardiaque", cat: "Cardiovasculaire", age:48, sexe:"M", sys:125, dia:78, hr:148, temp:36.9, rr:18, spo2:96, poids:80, taille:178, duree:"3 j", severity:"modere", symptoms:["Palpitations","Sensation d'accélération","Vertiges","Essoufflement","Fatigue","Syncope"], exams:["ECG : FA rapide","Potassium : 3.2 mEq/L","TSH : 0.1 mUI/L"] },
+    { name: "Angine de poitrine", cat: "Cardiovasculaire", age:58, sexe:"M", sys:138, dia:85, hr:78, temp:37.0, rr:16, spo2:97, poids:88, taille:175, duree:"14 j", severity:"modere", symptoms:["Douleur thoracique","Douleur à l'effort","Oppression thoracique","Douleur au bras","Essoufflement"], exams:["Troponine normale","LDL : 160 mg/dL","Cholestérol total : 240 mg/dL","ECG : sous-décalage ST"] },
+    { name: "Asthme", cat: "Respiratoire", age:22, sexe:"F", sys:118, dia:72, hr:102, temp:37.1, rr:26, spo2:93, poids:58, taille:165, duree:"7 j", severity:"modere", symptoms:["Respiration sifflante","Toux sèche","Difficulté à respirer","Oppression thoracique","Essoufflement","Toux nocturne"], exams:["Eosinophiles : 8%","Spirométrie : VEMS/CV <0.70 réversible"] },
+    { name: "Pneumonie", cat: "Respiratoire", age:45, sexe:"M", sys:105, dia:65, hr:112, temp:39.4, rr:28, spo2:89, poids:75, taille:172, duree:"5 j", severity:"grave", symptoms:["Fièvre élevée","Toux avec expectorations","Douleur thoracique pleurétique","Difficulté à respirer","Frissons","Fatigue"], exams:["GB : 18.5K/µL","Neutrophiles : 88%","CRP : 145 mg/L","Rx thorax : opacité lobe inf droit"] },
+    { name: "BPCO", cat: "Respiratoire", age:68, sexe:"M", sys:135, dia:80, hr:90, temp:37.2, rr:22, spo2:88, poids:65, taille:170, duree:"180 j", severity:"grave", symptoms:["Toux persistante","Toux avec expectorations","Essoufflement","Dyspnée","Respiration sifflante","Fatigue"], exams:["Spirométrie GOLD III","Globules Rouges : 5.8M/µL","Hémoglobine : 17.2 g/dL"] },
+    { name: "Tuberculose", cat: "Respiratoire", age:35, sexe:"M", sys:110, dia:68, hr:95, temp:38.3, rr:20, spo2:94, poids:55, taille:170, duree:"45 j", severity:"grave", symptoms:["Toux persistante","Hémoptysie","Sueurs nocturnes","Perte de poids","Fièvre intermittente","Fatigue"], exams:["BAAR positif","Xpert MTB/RIF positif","Rx thorax : infiltrats apicaux"] },
+    { name: "COVID-19", cat: "Respiratoire", age:40, sexe:"F", sys:120, dia:75, hr:95, temp:38.8, rr:22, spo2:92, poids:68, taille:163, duree:"8 j", severity:"modere", symptoms:["Fièvre","Toux sèche","Perte de goût","Perte d'odorat","Fatigue","Difficulté à respirer"], exams:["Lymphopénie","CRP élevée","Scanner : verre dépoli périphérique"] },
+    { name: "Diabète Type 2", cat: "Métabolique", age:52, sexe:"M", sys:142, dia:88, hr:80, temp:37.0, rr:16, spo2:97, poids:98, taille:174, duree:"60 j", severity:"modere", symptoms:["Soif excessive","Fréquence urinaire","Fatigue","Perte de poids","Vision floue","Cicatrisation lente"], exams:["Glucose : 186 mg/dL","HbA1c : 9.2%","Cholestérol total : 235 mg/dL"] },
+    { name: "Diabète Type 1", cat: "Métabolique", age:16, sexe:"F", sys:108, dia:65, hr:105, temp:37.5, rr:22, spo2:98, poids:42, taille:162, duree:"14 j", severity:"grave", symptoms:["Soif excessive","Fréquence urinaire","Perte de poids","Fatigue","Nausées","Douleur abdominale"], exams:["Glucose : 320 mg/dL","HbA1c : 11.5%","Potassium 3.5, Sodium 130"] },
+    { name: "Hypothyroïdie", cat: "Métabolique", age:44, sexe:"F", sys:110, dia:70, hr:52, temp:36.0, rr:14, spo2:98, poids:82, taille:165, duree:"90 j", severity:"modere", symptoms:["Fatigue","Prise de poids","Froid excessif","Cheveux cassants","Peau sèche","Constipation","Dépression"], exams:["Cholestérol total : 265 mg/dL","LDL : 180 mg/dL","Hémoglobine : 10.5 g/dL"] },
+    { name: "Hyperthyroïdie", cat: "Métabolique", age:32, sexe:"F", sys:145, dia:70, hr:115, temp:37.8, rr:18, spo2:98, poids:48, taille:162, duree:"30 j", severity:"modere", symptoms:["Palpitations","Perte de poids","Intolérance chaleur","Tremblements","Nervosité","Yeux saillants"], exams:["Glycémie 115 mg/dL","Cholestérol total bas"] },
+    { name: "Syndrome de Cushing", cat: "Métabolique", age:38, sexe:"F", sys:155, dia:95, hr:88, temp:37.0, rr:16, spo2:97, poids:90, taille:162, duree:"180 j", severity:"modere", symptoms:["Prise de poids rapide","Grossissement visage","Hypertension","Vergetures","Fatigue","Infections fréquentes"], exams:["Glucose 145 mg/dL","Potassium 3.0","Sodium 148"] },
+    { name: "Gastrite", cat: "Digestif", age:34, sexe:"M", sys:120, dia:75, hr:78, temp:37.1, rr:16, spo2:99, poids:72, taille:174, duree:"10 j", severity:"leger", symptoms:["Douleur épigastrique","Brûlures d'estomac","Nausées","Ballonnements","Perte d'appétit","Rot"], exams:["Test H. pylori positif","Hémoglobine 12.8"] },
+    { name: "RGO", cat: "Digestif", age:42, sexe:"F", sys:125, dia:78, hr:75, temp:37.0, rr:16, spo2:99, poids:75, taille:162, duree:"30 j", severity:"leger", symptoms:["Brûlures d'estomac","Reflux gastro-esophagien","Régurgitation","Toux sèche","Difficulté à avaler"], exams:["pH-métrie : pH<4 sur 6%"] },
+    { name: "Ulcère gastro-duodénal", cat: "Digestif", age:50, sexe:"M", sys:118, dia:72, hr:88, temp:37.0, rr:16, spo2:98, poids:70, taille:170, duree:"21 j", severity:"modere", symptoms:["Douleur épigastrique","Douleur au repas","Nausées","Saignement digestif","Mélaena","Perte d'appétit"], exams:["Hémoglobine 9.5 g/dL","Endoscopie : ulcère duodénal"] },
+    { name: "Hépatite B", cat: "Digestif", age:28, sexe:"M", sys:112, dia:70, hr:82, temp:38.0, rr:17, spo2:98, poids:70, taille:172, duree:"15 j", severity:"modere", symptoms:["Ictère","Jaunisse","Fatigue","Douleur abdominale","Nausées","Selles pâles","Urine foncée"], exams:["ALT 680 U/L","AST 540","Bilirubine 4.8 mg/dL"] },
+    { name: "Cirrhose", cat: "Digestif", age:58, sexe:"M", sys:108, dia:65, hr:95, temp:37.5, rr:18, spo2:95, poids:80, taille:170, duree:"365 j", severity:"grave", symptoms:["Ascite","Ictère","Hépatomégalie","Splenomégalie","Saignement digestif","Varices œsophagiennes","Confusion"], exams:["Albumine 2.2 g/dL","INR 2.1","Bilirubine 6.5","Plaquettes 85K"] },
+    { name: "Insuffisance rénale chronique", cat: "Rénal", age:65, sexe:"M", sys:158, dia:96, hr:80, temp:36.8, rr:18, spo2:96, poids:80, taille:170, duree:"180 j", severity:"grave", symptoms:["Fatigue","Nausées","Perte d'appétit","Gonflement des chevilles","Oligurie","Prurit"], exams:["Créatinine 4.8 mg/dL","Urée 85","TFG 14 mL/min","Potassium 5.8"] },
+    { name: "Lithiase rénale", cat: "Rénal", age:38, sexe:"M", sys:130, dia:82, hr:108, temp:37.8, rr:20, spo2:98, poids:80, taille:175, duree:"2 j", severity:"grave", symptoms:["Douleur lombaire","Douleur colique","Hématurie","Nausées","Vomissements","Fréquence urinaire"], exams:["Acide urique 9.2","Calcium 11.2","Écho : calcul 8mm"] },
+    { name: "Cystite", cat: "Rénal", age:26, sexe:"F", sys:115, dia:70, hr:85, temp:37.9, rr:16, spo2:99, poids:58, taille:162, duree:"3 j", severity:"leger", symptoms:["Dysurie","Fréquence urinaire","Urgence","Douleur pelvienne","Urines foncées","Hématurie"], exams:["ECBU : leucocytes >10⁴","E. coli >10⁵"] },
+    { name: "Migraine", cat: "Neurologique", age:30, sexe:"F", sys:118, dia:72, hr:75, temp:36.9, rr:15, spo2:99, poids:60, taille:165, duree:"2 j", severity:"modere", symptoms:["Maux de tête sévères","Nausées","Vomissements","Photophobie","Phonophobie","Aura","Vertiges"], exams:["Examen neuro normal (ICHD-3)"] },
+    { name: "Épilepsie", cat: "Neurologique", age:20, sexe:"M", sys:122, dia:75, hr:88, temp:37.0, rr:16, spo2:97, poids:68, taille:172, duree:"7 j", severity:"grave", symptoms:["Convulsions","Perte de conscience","Fatigue post-critique","Confusion","Troubles cognitifs"], exams:["EEG : pointes-ondes 3Hz","IRM normale"] },
+    { name: "AVC", cat: "Neurologique", age:68, sexe:"M", sys:180, dia:105, hr:88, temp:37.3, rr:20, spo2:94, poids:82, taille:172, duree:"1 j", severity:"critique", symptoms:["Faiblesse soudaine","Difficulté à parler","Paralysie","Perte de vision","Céphalées","Dysphagie"], exams:["Scanner : hypodensité sylvienne","Glucose 155 mg/dL","Cholestérol 248"] },
+    { name: "Parkinson", cat: "Neurologique", age:72, sexe:"M", sys:128, dia:78, hr:65, temp:36.8, rr:15, spo2:97, poids:70, taille:168, duree:"365 j", severity:"modere", symptoms:["Tremblements","Lenteur mouvement","Rigidité","Trouble équilibre","Difficulté marche","Constipation"], exams:["DaTscan réduit","Clinique bradykinésie"] },
+    { name: "Grippe", cat: "Infectieux", age:35, sexe:"M", sys:118, dia:72, hr:98, temp:39.2, rr:19, spo2:97, poids:75, taille:175, duree:"3 j", severity:"modere", symptoms:["Fièvre élevée","Douleurs musculaires","Céphalées","Fatigue","Toux sèche","Congestion nasale","Frissons"], exams:["Test grippe A positif","Leucopénie"] },
+    { name: "Typhoïde", cat: "Infectieux", age:18, sexe:"M", sys:105, dia:65, hr:75, temp:40.1, rr:18, spo2:97, poids:60, taille:168, duree:"10 j", severity:"grave", symptoms:["Fièvre élevée","Diarrhée","Douleur abdominale","Rash rose","Malaise général","Maux tête"], exams:["Leucopénie","Hémoculture Salmonella Typhi"] },
+    { name: "Malaria", cat: "Infectieux", age:28, sexe:"M", sys:100, dia:62, hr:115, temp:40.5, rr:22, spo2:94, poids:65, taille:170, duree:"5 j", severity:"grave", symptoms:["Fièvre intermittente","Frissons","Sueurs","Maux tête sévère","Douleurs musculaires","Nausées"], exams:["Hb 7.8 g/dL","Plaquettes 65K","Frottis : Plasmodium 3%"] },
+    { name: "VIH/SIDA", cat: "Infectieux", age:32, sexe:"M", sys:108, dia:68, hr:92, temp:38.5, rr:20, spo2:93, poids:55, taille:172, duree:"60 j", severity:"grave", symptoms:["Perte poids","Sueurs nocturnes","Lymphadénopathie","Infections fréquentes","Toux persistante","Fatigue","Diarrhée"], exams:["CD4 effondrés","Sérologie VIH positive"] },
+    { name: "Dengue", cat: "Infectieux", age:24, sexe:"F", sys:102, dia:62, hr:68, temp:39.8, rr:18, spo2:97, poids:55, taille:160, duree:"5 j", severity:"modere", symptoms:["Fièvre élevée","Douleurs musculaires","Articulaires","Maux tête sévère","Rash","Douleur oculaire"], exams:["Plaquettes 48K","Hématocrite 48%","NS1 positif"] },
+    { name: "Anémie ferriprive", cat: "Hématologique", age:28, sexe:"F", sys:105, dia:65, hr:105, temp:36.8, rr:19, spo2:96, poids:55, taille:162, duree:"30 j", severity:"modere", symptoms:["Fatigue","Pâleur","Essoufflement","Vertiges","Palpitations","Cheveux cassants"], exams:["Hb 7.2 g/dL","VGM 62 fL","Microcytaire"] },
+    { name: "Leucémie", cat: "Hématologique", age:45, sexe:"M", sys:118, dia:72, hr:95, temp:38.2, rr:18, spo2:96, poids:70, taille:172, duree:"30 j", severity:"grave", symptoms:["Fatigue","Pâleur","Bleus faciles","Saignements","Infections","Ganglions","Douleurs osseuses"], exams:["GB 85K","Blastes 60%","Plaquettes 42K"] },
+    { name: "Thrombose veineuse profonde", cat: "Hématologique", age:52, sexe:"F", sys:132, dia:80, hr:90, temp:37.5, rr:18, spo2:96, poids:80, taille:165, duree:"3 j", severity:"modere", symptoms:["Gonflement membre","Douleur au bras","Chaleur","Rougeur","Claudication"], exams:["D-dimères 2800","Écho-Doppler : thrombus poplité"] },
+    { name: "Arthrite rhumatoïde", cat: "Rhumatologique", age:48, sexe:"F", sys:122, dia:76, hr:80, temp:37.4, rr:16, spo2:98, poids:68, taille:162, duree:"90 j", severity:"modere", symptoms:["Douleurs articulaires","Raideur matinale","Gonflement","Fatigue","Douleurs musculaires"], exams:["CRP 48 mg/L","ESR 65","Hb 10.8"] },
+    { name: "Lupus érythémateux", cat: "Rhumatologique", age:28, sexe:"F", sys:138, dia:85, hr:92, temp:38.0, rr:17, spo2:97, poids:58, taille:160, duree:"60 j", severity:"modere", symptoms:["Éruption malaire","Photosensibilité","Douleurs articulaires","Fatigue","Fièvre","Ulcères buccaux"], exams:["Leucopénie","Plaquettes 90K","Créatinine 1.5"] },
+    { name: "Goutte", cat: "Rhumatologique", age:52, sexe:"M", sys:148, dia:90, hr:85, temp:37.8, rr:16, spo2:98, poids:95, taille:174, duree:"2 j", severity:"modere", symptoms:["Douleur articulaire soudaine","Gonflement","Rougeur","Chaleur","Tophi"], exams:["Acide urique 10.8 mg/dL","CRP 55"] },
+    { name: "Psoriasis", cat: "Dermatologique", age:35, sexe:"M", sys:125, dia:78, hr:76, temp:37.0, rr:16, spo2:99, poids:80, taille:175, duree:"180 j", severity:"modere", symptoms:["Plaques rouges squameuses","Prurit","Desquamation","Saignement plaques","Douleurs articulaires"], exams:["Dermatoscopie : signe tache bougie"] },
+    { name: "Eczéma", cat: "Dermatologique", age:8, sexe:"M", sys:98, dia:62, hr:90, temp:37.0, rr:18, spo2:99, poids:25, taille:128, duree:"30 j", severity:"leger", symptoms:["Démangeaisons","Éruption prurigineuse","Sécheresse cutanée","Rougeur","Vésicules"], exams:["Eosinophiles 12%","Prick-test sensibilisation"] },
+    { name: "Urticaire", cat: "Dermatologique", age:24, sexe:"F", sys:112, dia:70, hr:95, temp:37.2, rr:17, spo2:99, poids:60, taille:163, duree:"1 j", severity:"modere", symptoms:["Démangeaisons","Éruption cutanée","Angioedème","Gonflement lèvres","Rougeur"], exams:["IgE totales élevées","Test allergie positif"] },
+    { name: "Conjonctivite", cat: "Ophtalmologique", age:12, sexe:"M", sys:100, dia:65, hr:85, temp:37.5, rr:17, spo2:99, poids:38, taille:148, duree:"3 j", severity:"leger", symptoms:["Yeux rouges","Rougeur oculaire","Larmoiement","Démangeaisons","Écoulement puriforme"], exams:["Conjonctivite purulente bilatérale"] },
+    { name: "Glaucome", cat: "Ophtalmologique", age:65, sexe:"F", sys:138, dia:85, hr:72, temp:36.8, rr:15, spo2:98, poids:70, taille:160, duree:"180 j", severity:"modere", symptoms:["Perte vision progressive","Vision tunnel","Halos colorés","Douleur oculaire"], exams:["PIO 32/28 mmHg","OCT : amincissement fibres"] },
+    { name: "Rhinite allergique", cat: "Autres", age:22, sexe:"M", sys:115, dia:70, hr:78, temp:36.9, rr:16, spo2:99, poids:70, taille:175, duree:"14 j", severity:"leger", symptoms:["Congestion nasale","Éternuements","Démangeaisons nasales","Écoulement nasal","Larmoiement"], exams:["Eosinophiles 8%","Prick-test pollens"] },
+    { name: "Pancréatite", cat: "Autres", age:42, sexe:"M", sys:100, dia:62, hr:115, temp:38.5, rr:24, spo2:94, poids:85, taille:175, duree:"2 j", severity:"grave", symptoms:["Douleur abdominale supérieure","Nausées","Vomissements","Fièvre","Douleur épigastrique"], exams:["Lipase 1200 UI/L","CRP 180","Scanner : pancréas œdématié"] },
+    { name: "Syndrome côlon irritable", cat: "Autres", age:32, sexe:"F", sys:118, dia:72, hr:78, temp:37.0, rr:16, spo2:99, poids:60, taille:165, duree:"180 j", severity:"modere", symptoms:["Crampes abdominales","Ballonnements","Diarrhée","Constipation","Gaz","Anxiété"], exams:["CRP normale","Coloscopie normale"] },
+    { name: "Embolie pulmonaire", cat: "Autres", age:55, sexe:"F", sys:95, dia:60, hr:125, temp:37.5, rr:30, spo2:85, poids:72, taille:162, duree:"1 j", severity:"critique", symptoms:["Essoufflement soudain","Douleur thoracique pleurétique","Palpitations","Syncope","Toux sèche"], exams:["D-dimères 5200","Troponine 0.8","Angio-scanner : thrombus bilatéral"] },
+    { name: "Sclérose en plaques", cat: "Autres", age:28, sexe:"F", sys:118, dia:72, hr:78, temp:37.0, rr:16, spo2:98, poids:62, taille:165, duree:"14 j", severity:"modere", symptoms:["Faiblesse","Engourdissement","Troubles cognitifs","Fatigue","Difficulté marche","Vision floue"], exams:["IRM : plaques démyélinisantes","Potentiels évoqués altérés"] },
+    { name: "Fibromyalgie", cat: "Autres", age:42, sexe:"F", sys:120, dia:75, hr:80, temp:37.0, rr:16, spo2:99, poids:70, taille:163, duree:"180 j", severity:"modere", symptoms:["Douleurs musculaires diffuses","Fatigue","Troubles sommeil","Maux tête diffus","Anxiété","Raideur matinale"], exams:["CRP <5","ESR normale","18/18 points douloureux"] },
+    { name: "Mononucléose infectieuse", cat: "Autres", age:19, sexe:"F", sys:110, dia:68, hr:98, temp:39.0, rr:18, spo2:97, poids:55, taille:162, duree:"7 j", severity:"modere", symptoms:["Mal de gorge","Ganglions enflés","Fatigue","Fièvre","Hépatomégalie","Splénomégalie","Rash rose"], exams:["Hyperlymphocytose","MNI-test positif","EBV IgM+"] }
+  ];
+
+  // Helper severity class
+  function getSeverityClass(sev) {
+    if(sev === "leger") return "leger";
+    if(sev === "modere") return "modere";
+    if(sev === "grave") return "grave";
+    if(sev === "critique") return "critique";
+    return "";
+  }
+
+  function renderCards() {
+    const grid = document.getElementById("maladiesGrid");
+    grid.innerHTML = "";
+    maladiesData.forEach((m, idx) => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="card-header">
+          <span class="disease-name">${idx+1}. ${m.name}</span>
+          <div style="display: flex; gap: 8px;">
+            <span class="cat-tag">${m.cat}</span>
+            <span class="severity ${getSeverityClass(m.severity)}">⚠️ ${m.severity}</span>
+          </div>
+        </div>
+        <div class="card-content">
+          <div class="section">
+            <div class="section-title">📊 Signes vitaux & données</div>
+            <div class="vitals-grid">
+              <div class="vital-item"><span class="vital-label">Âge/Sexe:</span> ${m.age} ans · ${m.sexe}</div>
+              <div class="vital-item"><span class="vital-label">TA:</span> ${m.sys}/${m.dia} mmHg</div>
+              <div class="vital-item"><span class="vital-label">FC:</span> ${m.hr} bpm</div>
+              <div class="vital-item"><span class="vital-label">Temp:</span> ${m.temp} °C</div>
+              <div class="vital-item"><span class="vital-label">FR:</span> ${m.rr} /min</div>
+              <div class="vital-item"><span class="vital-label">SpO₂:</span> ${m.spo2}%</div>
+              <div class="vital-item"><span class="vital-label">IMC ~:</span> ${((m.poids/((m.taille/100)**2)).toFixed(1))} (${m.poids} kg, ${m.taille} cm)</div>
+              <div class="vital-item"><span class="vital-label">Durée:</span> ${m.duree}</div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-title">🤒 Symptômes (checklist)</div>
+            <div class="symptom-list">
+              ${m.symptoms.map(s => `<span class="symptom-badge">${s}</span>`).join('')}
+            </div>
+          </div>
+          <div>
+            <div class="section-title">🧪 Examens & résultats</div>
+            <div class="exam-list">
+              ${m.exams.map(e => `<div class="exam-item">🔬 ${e}</div>`).join('')}
+            </div>
+          </div>
+          <hr />
+          <div style="font-size:0.7rem; color:#5884a0; text-align:right;">#${m.cat.toLowerCase()}</div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+  renderCards();
+</script>
+</body>
+</html>

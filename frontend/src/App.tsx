@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useEffect, lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { triggerNavigationGuard } from './utils/navigationGuard';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './components/Toast';
@@ -7,20 +7,30 @@ import { initDB } from './db';
 import { Users, Calendar, LogOut, UserCheck, Clock, Settings, Brain, User, Bell, UserPlus } from 'lucide-react';
 import { adminAPI } from './services/api';
 
-// Pages
-import Login from './pages/Login';
-import Dashboard from './pages/DashboardNew';
-import Consultations from './pages/Consultations';
-import ConsultationWorkflow from './pages/ConsultationWorkflow';
-import ConsultationDetails from './pages/ConsultationDetails';
-import PersonnelMedical from './pages/PersonnelMedical';
-import Utilisateurs from './pages/Utilisateurs';
-import Register from './pages/Register';
-import Identifiants from './pages/Identifiants';
-import AdminSystem from './pages/AdminSystem';
-import DossierPatient from './pages/DossierPatient';
-import MesPatients from './pages/MesPatients';
-import DiagnosticsIA from './pages/DiagnosticsIA';
+// Pages — chargement différé pour réduire le bundle initial (~60%)
+const Login             = lazy(() => import('./pages/Login'));
+const Dashboard         = lazy(() => import('./pages/DashboardNew'));
+const Consultations     = lazy(() => import('./pages/Consultations'));
+const ConsultationWorkflow = lazy(() => import('./pages/ConsultationWorkflow'));
+const ConsultationDetails  = lazy(() => import('./pages/ConsultationDetails'));
+const PersonnelMedical  = lazy(() => import('./pages/PersonnelMedical'));
+const Utilisateurs      = lazy(() => import('./pages/Utilisateurs'));
+const Register          = lazy(() => import('./pages/Register'));
+const Identifiants      = lazy(() => import('./pages/Identifiants'));
+const AdminSystem       = lazy(() => import('./pages/AdminSystem'));
+const DossierPatient    = lazy(() => import('./pages/DossierPatient'));
+const MesPatients       = lazy(() => import('./pages/MesPatients'));
+const DiagnosticsIA     = lazy(() => import('./pages/DiagnosticsIA'));
+
+const PageLoader = () => (
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
+    <div style={{ textAlign: 'center', color: '#6B7280' }}>
+      <div style={{ width: 40, height: 40, border: '3px solid #E5E7EB', borderTop: '3px solid #4F46E5', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      Chargement…
+    </div>
+  </div>
+);
 
 const PrivateRoute = ({
   children,
@@ -213,7 +223,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         .then(d => setPendingList(Array.isArray(d) ? d.filter((c: any) => c.medecin_id === user.medecin_id) : []))
         .catch(() => {});
     fetchPending();
-    const id = setInterval(fetchPending, 30_000);
+    const id = setInterval(fetchPending, 60_000);
     return () => clearInterval(id);
   }, [user, token]);
 
@@ -403,22 +413,24 @@ function AppContent() {
   const { isAuthenticated } = useAuth();
 
   return (
-    <Routes>
-      <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" replace />} />
-      <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/" replace />} />
-      <Route path="/" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
-      <Route path="/consultations" element={<PrivateRoute noAdmin><Layout><Consultations /></Layout></PrivateRoute>} />
-      <Route path="/consultation/nouvelle" element={<PrivateRoute noAdmin medicalOnly><Layout><ConsultationWorkflow /></Layout></PrivateRoute>} />
-      <Route path="/consultation/:consultationId/details" element={<PrivateRoute noAdmin noInfirmier><Layout><ConsultationDetails /></Layout></PrivateRoute>} />
-      <Route path="/dossier-patient/:patientId" element={<PrivateRoute noAdmin medicalOnly><Layout><DossierPatient /></Layout></PrivateRoute>} />
-      <Route path="/mes-patients" element={<PrivateRoute noAdmin noInfirmier><Layout><MesPatients /></Layout></PrivateRoute>} />
-      <Route path="/diagnostics" element={<PrivateRoute noAdmin noInfirmier><Layout><DiagnosticsIA /></Layout></PrivateRoute>} />
-      <Route path="/personnel" element={<PrivateRoute><Layout><PersonnelMedical /></Layout></PrivateRoute>} />
-      <Route path="/utilisateurs" element={<PrivateRoute adminOnly><Layout><Utilisateurs /></Layout></PrivateRoute>} />
-      <Route path="/identifiants" element={<PrivateRoute adminOnly><Layout><Identifiants /></Layout></PrivateRoute>} />
-      <Route path="/admin/systeme" element={<PrivateRoute adminOnly><Layout><AdminSystem /></Layout></PrivateRoute>} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" replace />} />
+        <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/" replace />} />
+        <Route path="/" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
+        <Route path="/consultations" element={<PrivateRoute noAdmin><Layout><Consultations /></Layout></PrivateRoute>} />
+        <Route path="/consultation/nouvelle" element={<PrivateRoute noAdmin medicalOnly><Layout><ConsultationWorkflow /></Layout></PrivateRoute>} />
+        <Route path="/consultation/:consultationId/details" element={<PrivateRoute noAdmin noInfirmier><Layout><ConsultationDetails /></Layout></PrivateRoute>} />
+        <Route path="/dossier-patient/:patientId" element={<PrivateRoute noAdmin medicalOnly><Layout><DossierPatient /></Layout></PrivateRoute>} />
+        <Route path="/mes-patients" element={<PrivateRoute noAdmin noInfirmier><Layout><MesPatients /></Layout></PrivateRoute>} />
+        <Route path="/diagnostics" element={<PrivateRoute noAdmin noInfirmier><Layout><DiagnosticsIA /></Layout></PrivateRoute>} />
+        <Route path="/personnel" element={<PrivateRoute><Layout><PersonnelMedical /></Layout></PrivateRoute>} />
+        <Route path="/utilisateurs" element={<PrivateRoute adminOnly><Layout><Utilisateurs /></Layout></PrivateRoute>} />
+        <Route path="/identifiants" element={<PrivateRoute adminOnly><Layout><Identifiants /></Layout></PrivateRoute>} />
+        <Route path="/admin/systeme" element={<PrivateRoute adminOnly><Layout><AdminSystem /></Layout></PrivateRoute>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 

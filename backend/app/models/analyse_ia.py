@@ -16,7 +16,7 @@ class AnalyseIA(Base):
     analyse_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     
     # Foreign Key
-    consultation_id = Column(Integer, ForeignKey("consultations.consultation_id"), nullable=False)
+    consultation_id = Column(Integer, ForeignKey("consultations.consultation_id"), nullable=False, index=True)
     
     # AI Model Info
     modele_ia = Column(String(100))  # Nom du modèle (ex: "RandomForest_v1.0")

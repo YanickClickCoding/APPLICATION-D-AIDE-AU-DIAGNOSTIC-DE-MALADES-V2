@@ -22,8 +22,8 @@ class Consultation(Base):
     # Consultation Info
     date_heure = Column(DateTime, nullable=False)
     motif = Column(Text, nullable=False)
-    medecin_id = Column(Integer, ForeignKey("medecins.medecin_id"))
-    statut = Column(String(30), default='en attente')
+    medecin_id = Column(Integer, ForeignKey("medecins.medecin_id"), index=True)
+    statut = Column(String(30), default='en attente', index=True)
     
     # Timestamps
     created_at = Column(DateTime, server_default=func.now())

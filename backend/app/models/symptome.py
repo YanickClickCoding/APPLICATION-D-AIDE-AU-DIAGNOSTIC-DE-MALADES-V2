@@ -16,7 +16,7 @@ class Symptome(Base):
     symptome_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
 
     # Foreign Key
-    consultation_id = Column(Integer, ForeignKey("consultations.consultation_id"), nullable=False)
+    consultation_id = Column(Integer, ForeignKey("consultations.consultation_id"), nullable=False, index=True)
 
     # Symptom Information
     nom = Column(String(255), nullable=False)
