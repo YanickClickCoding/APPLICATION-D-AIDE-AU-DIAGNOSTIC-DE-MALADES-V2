@@ -310,3 +310,61 @@ def reject_diagnostic(
 def get_model_info():
     """Informations sur le modèle chargé"""
     return model_manager.get_model_info()
+
+
+@router.get("/synonymes", dependencies=[])
+def get_synonymes():
+    """
+    Retourne le dictionnaire synonymes → terme canonique.
+    Utilisé par le frontend pour la recherche bidirectionnelle dans le dropdown.
+    Merge dictionnaire statique + custom admin.
+    """
+    from ..ml.model_manager import SYNONYMES_SYMPTOMES, ModelManager
+    custom = ModelManager._charger_synonymes_custom()
+    merged = {**custom, **SYNONYMES_SYMPTOMES}
+    # Construire la carte inverse : canonique → [synonymes]
+    inverse: dict[str, list[str]] = {}
+    for syn, canonique in merged.items():
+        inverse.setdefault(canonique, []).append(syn)
+    return {"synonymes": merged, "inverse": inverse, "total": len(merged)}
+
+
+@router.get("/symptomes", dependencies=[])
+def get_symptomes_list():
+    """
+    Retourne tous les symptômes connus du modèle ML — sans authentification requise.
+    Lit d'abord le cache JSON (mis à jour après chaque entraînement), sinon calcule depuis le modèle.
+    """
+    import os as _os
+
+    _CACHE = "./ml_models/symptomes_cache.json"
+    # Essayer plusieurs chemins pour le cache
+    cache_candidates = [_CACHE, "../ml_models/symptomes_cache.json",
+        _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+                      "..", "ml_models", "symptomes_cache.json")]
+    for path in cache_candidates:
+        if _os.path.exists(path):
+            try:
+                with open(path, encoding="utf-8") as f:
+                    data = json.load(f)
+                return {"symptomes": data["symptomes"], "total": data["total"],
+                        "updated_at": data.get("updated_at"), "source": "cache"}
+            except Exception:
+                break
+
+    # Fallback : calculer depuis le modèle en mémoire
+    if not model_manager.model_loaded or not model_manager.trainer.feature_names:
+        return {"symptomes": [], "total": 0}
+
+    def fix_mojibake(s: str) -> str:
+        try:
+            return s.encode("latin-1").decode("utf-8")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            return s
+
+    symptomes = sorted({
+        fix_mojibake(feat[8:].replace("_", " "))
+        for feat in model_manager.trainer.feature_names
+        if feat.startswith("symptom_")
+    })
+    return {"symptomes": symptomes, "total": len(symptomes), "source": "model"}

@@ -112,6 +112,7 @@ def list_patients(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
     patients = (
         db.query(Patient)
         .options(joinedload(Patient.dossier_medical))
+        .order_by(Patient.created_at.desc())
         .offset(skip)
         .limit(limit)
         .all()

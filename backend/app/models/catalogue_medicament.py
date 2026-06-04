@@ -7,7 +7,7 @@ from ..database import Base
 class CatalogueMedicament(Base):
     __tablename__ = "catalogue_medicaments"
 
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     maladie = Column(String(200), nullable=False, index=True)
     nom_commercial = Column(String(255), nullable=False)
     denomination_commune = Column(String(255), nullable=False)

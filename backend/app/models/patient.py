@@ -13,7 +13,7 @@ class Patient(Base):
     __tablename__ = "patients"
     
     # Primary Key (INT AUTO_INCREMENT)
-    patient_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    patient_id = Column(Integer, primary_key=True, autoincrement=True)
     
     # Personal Information
     nom = Column(String(100), nullable=False)

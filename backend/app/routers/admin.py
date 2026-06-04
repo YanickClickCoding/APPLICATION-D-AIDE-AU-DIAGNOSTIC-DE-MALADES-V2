@@ -573,6 +573,32 @@ def update_ia_config(data: IAConfigUpdate, admin: User = Depends(get_current_adm
 # ENTRAÎNEMENT
 # ═══════════════════════════════════════════════════════════════════════════════
 
+_SYMPTOMES_CACHE_PATH = "./ml_models/symptomes_cache.json"
+
+
+def _fix_mojibake(s: str) -> str:
+    try:
+        return s.encode("latin-1").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return s
+
+
+def _save_symptomes_cache():
+    """Sauvegarde la liste des symptômes du modèle actuel dans un fichier JSON public."""
+    if not model_manager.trainer.feature_names:
+        return
+    symptomes = sorted({
+        _fix_mojibake(feat[8:].replace("_", " "))
+        for feat in model_manager.trainer.feature_names
+        if feat.startswith("symptom_")
+    })
+    cache = {"symptomes": symptomes, "total": len(symptomes), "updated_at": datetime.now().isoformat()}
+    os.makedirs(os.path.dirname(_SYMPTOMES_CACHE_PATH), exist_ok=True)
+    with open(_SYMPTOMES_CACHE_PATH, "w", encoding="utf-8") as f:
+        json.dump(cache, f, ensure_ascii=False)
+    logging.info(f"[ADMIN] Cache symptômes mis à jour : {len(symptomes)} symptômes")
+
+
 def _run_training_task(n_estimators: int, max_depth: int):
     global _training_state
     try:
@@ -615,6 +641,11 @@ def _run_training_task(n_estimators: int, max_depth: int):
                         "max_depth": max_depth,
                         **session_results,
                     })
+                except Exception:
+                    pass
+                # Sauvegarder le cache des symptômes après chaque entraînement réussi
+                try:
+                    _save_symptomes_cache()
                 except Exception:
                     pass
             else:
@@ -842,3 +873,314 @@ def get_logs(lines: int = 150, admin: User = Depends(get_current_admin)):
         return {"lines": [l.rstrip() for l in tail], "total": len(all_lines), "exists": True}
     except OSError as exc:
         return {"lines": [], "total": 0, "exists": False, "error": str(exc)}
+
+
+# ─── Ajout d'une nouvelle maladie dans le dataset ─────────────────────────────
+
+CATEGORIES_MEDICALES = [
+    "Infectieuses", "Cardiovasculaires", "Respiratoires", "Gastro-intestinales",
+    "Endocriniennes / Métaboliques", "Hépatiques", "Neurologiques", "Rhumatologiques",
+    "Dermatologiques", "Ophtalmologiques", "Hématologiques", "Rénales / Urinaires", "Autres",
+]
+
+_DATASET_CANDIDATES_ADMIN = [
+    os.path.join("..", "les ressources dataset", "dataset_medical_robust_enhanced.csv"),
+    os.path.join("..", "..", "les ressources dataset", "dataset_medical_robust_enhanced.csv"),
+    os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
+        "les ressources dataset", "dataset_medical_robust_enhanced.csv",
+    ),
+]
+DATASET_PATH = next((p for p in _DATASET_CANDIDATES_ADMIN if os.path.exists(p)), None)
+
+
+class NouvellesMaladieRequest(BaseModel):
+    nom_maladie: str = Field(..., min_length=2, max_length=100)
+    categorie: str
+    symptomes: List[str] = Field(..., min_length=1)
+    n_cas: int = Field(default=80, ge=20, le=300)
+
+
+def _generer_cas_synthetiques(nom_maladie: str, symptomes: List[str], n_cas: int) -> List[List]:
+    """Génère n_cas lignes CSV synthétiques pour une nouvelle maladie."""
+    import random
+    import csv
+
+    # Lire le CSV pour connaître les colonnes et l'ID courant
+    with open(DATASET_PATH, "r", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        headers = next(reader)
+        rows = list(reader)
+
+    n_existant = len(rows)
+    colonnes_vitaux = [h for h in headers if h.startswith("Vital_")]
+    colonnes_labs   = [h for h in headers if h.startswith("Lab_")]
+
+    # Valeurs normales moyennes pour les vitaux (mu, sigma)
+    vitaux_normaux = {
+        "Vital_Tension Systolique (mmHg)":       (120.0, 15.0),
+        "Vital_Tension Diastolique (mmHg)":      (80.0,  10.0),
+        "Vital_Fréquence Cardiaque (bpm)":       (75.0,  12.0),
+        "Vital_Fréquence Respiratoire (resp/min)":(16.0, 3.0),
+        "Vital_Température (°C)":                (37.0,  0.5),
+        "Vital_Saturation O2 (%)":               (97.5,  1.5),
+        "Vital_IMC (kg/m²)":                     (24.0,  4.0),
+    }
+    # Valeurs normales moyennes pour les labs (mu, sigma)
+    labs_normaux = {
+        "Lab_Hémoglobine (g/dL)":              (14.0, 1.5),
+        "Lab_Hématocrite (%)":                 (42.0, 4.0),
+        "Lab_Globules Rouges (M/µL)":          (4.8,  0.5),
+        "Lab_Globules Blancs (K/µL)":          (7.5,  2.0),
+        "Lab_Neutrophiles (%)":                (60.0, 8.0),
+        "Lab_Lymphocytes (%)":                 (30.0, 6.0),
+        "Lab_Monocytes (%)":                   (6.0,  1.5),
+        "Lab_Eosinophiles (%)":                (2.5,  1.0),
+        "Lab_Basophiles (%)":                  (0.5,  0.2),
+        "Lab_Plaquettes (K/µL)":               (250.0,50.0),
+        "Lab_VGM (fL)":                        (88.0, 6.0),
+        "Lab_CCMH (g/dL)":                     (34.0, 1.5),
+        "Lab_Glucose (mg/dL)":                 (95.0, 15.0),
+        "Lab_Glucose à jeun (mg/dL)":          (92.0, 12.0),
+        "Lab_Glucose post-prandial (mg/dL)":   (120.0,20.0),
+        "Lab_HbA1c (%)":                       (5.4,  0.4),
+        "Lab_Cholestérol total (mg/dL)":       (185.0,30.0),
+        "Lab_Cholestérol HDL (mg/dL)":         (50.0, 10.0),
+        "Lab_Cholestérol LDL (mg/dL)":         (110.0,25.0),
+        "Lab_Triglycérides (mg/dL)":           (130.0,40.0),
+        "Lab_Acide urique (mg/dL)":            (5.5,  1.2),
+        "Lab_Créatinine (mg/dL)":              (1.0,  0.2),
+        "Lab_Urée (mg/dL)":                    (30.0, 8.0),
+        "Lab_TFG (mL/min/1.73m²)":             (90.0, 15.0),
+        "Lab_Sodium (mEq/L)":                  (140.0,3.0),
+        "Lab_Potassium (mEq/L)":               (4.2,  0.4),
+        "Lab_Chlore (mEq/L)":                  (102.0,4.0),
+        "Lab_Calcium (mg/dL)":                 (9.5,  0.6),
+        "Lab_Phosphore (mg/dL)":               (3.5,  0.5),
+        "Lab_Magnésium (mg/dL)":               (2.0,  0.3),
+        "Lab_ALT/SGPT (U/L)":                  (25.0, 10.0),
+        "Lab_AST/SGOT (U/L)":                  (22.0, 8.0),
+        "Lab_Bilirubine totale (mg/dL)":       (0.7,  0.3),
+        "Lab_Bilirubine conjuguée (mg/dL)":    (0.15, 0.05),
+        "Lab_Bilirubine non-conjuguée (mg/dL)":(0.55, 0.25),
+        "Lab_Phosphatase alcaline (U/L)":      (75.0, 20.0),
+        "Lab_GGT (U/L)":                       (25.0, 10.0),
+        "Lab_Albumine (g/dL)":                 (4.2,  0.4),
+        "Lab_Protéine totale (g/dL)":          (7.2,  0.6),
+        "Lab_Globulines (g/dL)":               (2.8,  0.4),
+        "Lab_Ratio A/G":                       (1.6,  0.2),
+        "Lab_CK (U/L)":                        (100.0,40.0),
+        "Lab_Myoglobine (ng/mL)":              (50.0, 20.0),
+        "Lab_Troponine (ng/mL)":               (0.02, 0.01),
+        "Lab_BNP (pg/mL)":                     (50.0, 20.0),
+        "Lab_ProBNP (pg/mL)":                  (120.0,50.0),
+        "Lab_PT/INR":                          (1.05, 0.1),
+        "Lab_aPTT (sec)":                      (30.0, 4.0),
+        "Lab_TT (sec)":                        (14.0, 2.0),
+        "Lab_Fibrinogène (mg/dL)":             (300.0,60.0),
+        "Lab_CRP (mg/L)":                      (2.0,  2.0),
+        "Lab_ESR (mm/h)":                      (15.0, 8.0),
+        "Lab_PSA (ng/mL)":                     (1.0,  0.5),
+        "Lab_BAAR (résultat)":                 (0.0,  0.0),
+        "Lab_Culture Mycobactéries (résultat)":(0.0,  0.0),
+        "Lab_Test Xpert MTB/RIF (résultat)":   (0.0,  0.0),
+    }
+
+    groupes = {"0-14": (0, 14), "15-24": (15, 24), "25-44": (25, 44),
+               "45-64": (45, 64), "65+": (65, 90)}
+
+    nouveaux_cas = []
+    for i in range(n_cas):
+        idx = n_existant + i + 1
+        cas_id = f"CAS_{idx:07d}"
+
+        sexe = random.choice(["M", "F"])
+        age  = random.randint(10, 85)
+        groupe_age = next((g for g, (lo, hi) in groupes.items() if lo <= age <= hi), "45-64")
+        severite = random.choices(["Légère", "Modérée", "Sévère"], weights=[30, 50, 20])[0]
+        duree = random.randint(1, 21)
+        date_c = f"202{random.randint(4,5)}-{random.randint(1,12):02d}-{random.randint(1,28):02d}"
+
+        # Symptômes : prend 60-100% de la liste fournie + éventuellement 0-2 symptômes supplémentaires
+        k = max(1, int(len(symptomes) * random.uniform(0.6, 1.0)))
+        symptomes_cas = random.sample(symptomes, k)
+        symptomes_str = ", ".join(symptomes_cas)
+
+        row = {
+            "ID": cas_id,
+            "Maladie_Diagnostic": nom_maladie,
+            "Symptomes_Rapportes": symptomes_str,
+            "Sexe": sexe,
+            "Age": age,
+            "Groupe_Age": groupe_age,
+            "Severite": severite,
+            "Duree_Symptomes_Jours": duree,
+            "Date_Consultation": date_c,
+            "Antecedents_Medicaux": "Aucun",
+            "Medicaments_Actuels": "Aucun",
+        }
+
+        for col in colonnes_vitaux:
+            mu, sigma = vitaux_normaux.get(col, (50.0, 5.0))
+            row[col] = round(random.gauss(mu, sigma), 2)
+
+        for col in colonnes_labs:
+            mu, sigma = labs_normaux.get(col, (10.0, 2.0))
+            val = max(0.0, round(random.gauss(mu, sigma), 3))
+            row[col] = val
+
+        nouveaux_cas.append([row.get(h, "") for h in headers])
+
+    return nouveaux_cas, headers
+
+
+@router.post("/dataset/add-disease")
+def add_disease_to_dataset(
+    payload: NouvellesMaladieRequest,
+    admin: User = Depends(get_current_admin),
+):
+    """
+    Ajoute une nouvelle maladie au dataset d'entraînement en générant des cas synthétiques.
+    """
+    import csv
+
+    if not DATASET_PATH or not os.path.exists(DATASET_PATH):
+        raise HTTPException(status_code=404, detail=f"Dataset introuvable. Chemins testés : {_DATASET_CANDIDATES_ADMIN}")
+
+    if payload.categorie not in CATEGORIES_MEDICALES:
+        raise HTTPException(status_code=400, detail=f"Catégorie invalide. Choisir parmi : {CATEGORIES_MEDICALES}")
+
+    # Vérifier si la maladie existe déjà
+    with open(DATASET_PATH, "r", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        next(reader)  # skip header
+        maladies_existantes = {row[1].strip().lower() for row in reader if row}
+
+    if payload.nom_maladie.strip().lower() in maladies_existantes:
+        raise HTTPException(
+            status_code=409,
+            detail=f"La maladie '{payload.nom_maladie}' existe déjà dans le dataset."
+        )
+
+    try:
+        nouveaux_cas, headers = _generer_cas_synthetiques(
+            payload.nom_maladie, payload.symptomes, payload.n_cas
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur génération des cas : {str(e)}")
+
+    # Compter total avant
+    with open(DATASET_PATH, "r", encoding="utf-8") as f:
+        total_avant = sum(1 for _ in f) - 1  # -1 pour l'en-tête
+
+    # Appendre au CSV
+    with open(DATASET_PATH, "a", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerows(nouveaux_cas)
+
+    # ── Générer et sauvegarder les synonymes automatiques pour cette maladie ──
+    try:
+        _SYNONYMES_CACHE_PATH_JSON = os.path.join(".", "ml_models", "custom_synonymes.json")
+        custom_syn: dict = {}
+        if os.path.exists(_SYNONYMES_CACHE_PATH_JSON):
+            with open(_SYNONYMES_CACHE_PATH_JSON, "r", encoding="utf-8") as f:
+                custom_syn = json.load(f)
+
+        PATTERNS_AUTO = {
+            "fièvre":       ["corps chaud", "chaud", "température", "avoir de la fièvre"],
+            "toux":         ["tousser", "toux sèche", "toux grasse"],
+            "dyspnée":      ["mal à respirer", "essoufflement", "manque d'air"],
+            "céphalées":    ["mal de tête", "maux de tête", "mal à la tête"],
+            "nausées":      ["nausée", "envie de vomir", "mal au coeur"],
+            "vomissements": ["vomir", "vomi"],
+            "diarrhée":     ["selles liquides", "ventre qui dérange"],
+            "douleurs abdominales": ["mal au ventre", "ventre qui fait mal"],
+            "fatigue":      ["très fatigué", "épuisé", "sans énergie"],
+            "arthralgie":   ["mal aux articulations", "rhumatisme"],
+            "prurit":       ["démangeaisons", "ça gratte", "peau qui gratte"],
+            "éruption":     ["boutons", "rash", "plaques rouges"],
+        }
+        for symptome in payload.symptomes:
+            s_lower = symptome.lower()
+            for terme, variantes in PATTERNS_AUTO.items():
+                if terme in s_lower:
+                    for var in variantes:
+                        if var not in custom_syn:
+                            custom_syn[var] = symptome
+
+        with open(_SYNONYMES_CACHE_PATH_JSON, "w", encoding="utf-8") as f:
+            json.dump(custom_syn, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logging.warning(f"[ADMIN] Synonymes auto non générés: {e}")
+
+    # ── Sauvegarder les règles cliniques dynamiques ───────────────────────────
+    _CUSTOM_RULES_PATH = os.path.join(".", "ml_models", "custom_disease_rules.json")
+    try:
+        existing_rules: dict = {}
+        if os.path.exists(_CUSTOM_RULES_PATH):
+            with open(_CUSTOM_RULES_PATH, "r", encoding="utf-8") as f:
+                existing_rules = json.load(f)
+
+        # Normaliser les symptômes en minuscules pour la correspondance
+        existing_rules[payload.nom_maladie] = {
+            "symptomes_boost": payload.symptomes,
+            "boost_factor": 4.0,
+            "min_symptomes_match": max(1, len(payload.symptomes) // 3),
+        }
+        os.makedirs(os.path.dirname(_CUSTOM_RULES_PATH), exist_ok=True)
+        with open(_CUSTOM_RULES_PATH, "w", encoding="utf-8") as f:
+            json.dump(existing_rules, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logging.warning(f"[ADMIN] Impossible de sauvegarder les règles cliniques: {e}")
+
+    logging.info(
+        f"[ADMIN] Nouvelle maladie ajoutée au dataset : '{payload.nom_maladie}' "
+        f"({payload.n_cas} cas, catégorie: {payload.categorie}) par {admin.email}"
+    )
+
+    return {
+        "success": True,
+        "maladie": payload.nom_maladie,
+        "categorie": payload.categorie,
+        "cas_ajoutes": payload.n_cas,
+        "total_dataset": total_avant + payload.n_cas,
+        "message": f"{payload.n_cas} cas synthétiques ajoutés pour '{payload.nom_maladie}'. Règles cliniques sauvegardées. Relancez l'entraînement pour activer la détection.",
+    }
+
+
+@router.post("/symptomes/refresh")
+def refresh_symptomes_cache(admin: User = Depends(get_current_admin)):
+    """Force la mise à jour du cache des symptômes (sans réentraîner)."""
+    try:
+        _save_symptomes_cache()
+        cache_size = 0
+        if os.path.exists(_SYMPTOMES_CACHE_PATH):
+            with open(_SYMPTOMES_CACHE_PATH, encoding="utf-8") as f:
+                cache_size = len(json.load(f).get("symptomes", []))
+        return {"success": True, "total": cache_size, "message": f"Cache mis à jour : {cache_size} symptômes"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/dataset/maladies")
+def list_maladies_dataset(admin: User = Depends(get_current_admin)):
+    """Retourne la liste des maladies présentes dans le dataset avec leur nombre de cas."""
+    import csv
+    from collections import Counter
+
+    if not DATASET_PATH or not os.path.exists(DATASET_PATH):
+        raise HTTPException(status_code=404, detail="Dataset introuvable.")
+
+    with open(DATASET_PATH, "r", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        next(reader)
+        compteur = Counter(row[1].strip() for row in reader if row)
+
+    return {
+        "total_maladies": len(compteur),
+        "total_cas": sum(compteur.values()),
+        "maladies": sorted(
+            [{"nom": m, "cas": c} for m, c in compteur.items()],
+            key=lambda x: x["cas"], reverse=True
+        ),
+    }

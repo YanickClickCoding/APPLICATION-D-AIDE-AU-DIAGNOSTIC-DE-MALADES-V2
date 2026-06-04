@@ -161,7 +161,10 @@ const Consultations = () => {
         new Date(b.date_heure || b.date || 0).getTime() - new Date(a.date_heure || a.date || 0).getTime()
       );
       return { consultations: sorted, latest: sorted[0] };
-    });
+    }).sort((a, b) =>
+      new Date(b.latest?.date_heure || b.latest?.date || 0).getTime() -
+      new Date(a.latest?.date_heure || a.latest?.date || 0).getTime()
+    );
   })();
 
   // ─── Handlers ────────────────────────────────────────────────────────────────

@@ -6,7 +6,7 @@ from ..database import Base
 
 class Ordonnance(Base):
     __tablename__ = "ordonnances"
-    ordonnance_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    ordonnance_id = Column(Integer, primary_key=True, autoincrement=True)
     traitement_id = Column(Integer, ForeignKey("traitements.traitement_id"), nullable=False, unique=True)
     medecin_id = Column(Integer, ForeignKey("medecins.medecin_id"), nullable=True)  # NULL si médecin non assigné
     patient_id = Column(Integer, ForeignKey("patients.patient_id"), nullable=False, index=True)

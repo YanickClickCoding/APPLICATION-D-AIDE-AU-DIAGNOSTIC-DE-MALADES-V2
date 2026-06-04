@@ -81,13 +81,13 @@ const SYMPTOMES_COMMUNS = [
   "Anémie", "Angioedème", "Anurie", "Anorexie", "Anxiété", "Apnée du sommeil", "Arthralgie", "Ascite",
   "Atrophie musculaire", "Aucun symptôme", "Aucun symptôme habituellement", "Aura",
   // Variantes / synonymes (normalisés côté backend vers le terme canonique)
-  "Absence d'urine", "Acidité", "Ampoules",
+  "Absence d'urine", "Acidité", "Altération de la conscience", "Ampoules",
   "Articulations douloureuses", "Avoir froid",
   "Bactériurie", "Ballonnements", "Ballonnement", "Barrel chest", "Battements irréguliers",
   "Besoin fréquent d'uriner", "Besoin impérieux de déféquer", "Boutons",
   "Blépharospasme", "Bleus faciles", "Bosse de bison", "Brûlures d'estomac", "Brûlures épigastriques",
   "Brûlures génitales", "Brûlures mictionnelles", "Bulles",
-  "Candidose buccale", "Céphalée", "Céphalées", "Chaleur", "Chancre", "Cheveux cassants",
+  "Candidose buccale", "Céphalée", "Céphalées", "Céphalées sévères", "Chaleur", "Chancre", "Cheveux cassants",
   "Choc", "Chute", "Cicatrices", "Cicatrisation lente", "Cloques", "Claudication",
   "Comédones", "Complications neuro", "Comportement inapproprié", "Confusion",
   "Congestion nasale", "Constipation", "Convulsions",
@@ -163,7 +163,7 @@ const SYMPTOMES_COMMUNS = [
   "Plaques rouges squameuses", "Plissement des yeux", "Pollakiurie", "Pouls irrégulier",
   "Prise de poids", "Prise de poids rapide", "Production d'expectorations", "Protéinurie",
   "Prurit", "Prurit oculaire", "Prurit sévère", "Purpura", "Pustules",
-  "Raideur matinale", "Ralentissement intellectuel", "Rash", "Rash photosensible", "Rash rose",
+  "Raideur de la nuque", "Raideur matinale", "Ralentissement intellectuel", "Rash", "Rash photosensible", "Rash rose",
   "Raucité", "Raynaud", "Récidives", "Reflux", "Reflux acide", "Reflux gastro-esophagien",
   "Régurgitation", "Remontées acides", "Remontées gastriques",
   "Réflexes abolis", "Respiration sifflante", "Restriction de mobilité", "Rétention d'eau",
@@ -204,13 +204,197 @@ const SYMPTOMES_COMMUNS = [
   "Yeux qui piquent", "Yeux rouges", "Yeux saillants",
 ];
 
-function getSymptomesDisponibles(sexe: 'M' | 'F'): string[] {
-  if (sexe === 'M') return [...SYMPTOMES_COMMUNS, ...SYMPTOMES_HOMME_SEULEMENT].sort((a, b) => a.localeCompare(b, 'fr'));
-  if (sexe === 'F') return [...SYMPTOMES_COMMUNS, ...SYMPTOMES_FEMME_SEULEMENT].sort((a, b) => a.localeCompare(b, 'fr'));
-  return [...SYMPTOMES_COMMUNS, ...SYMPTOMES_HOMME_SEULEMENT, ...SYMPTOMES_FEMME_SEULEMENT].sort((a, b) => a.localeCompare(b, 'fr'));
+function getSymptomesDisponibles(sexe: 'M' | 'F', extra: string[] = []): string[] {
+  const base = sexe === 'M'
+    ? [...SYMPTOMES_COMMUNS, ...SYMPTOMES_HOMME_SEULEMENT]
+    : sexe === 'F'
+      ? [...SYMPTOMES_COMMUNS, ...SYMPTOMES_FEMME_SEULEMENT]
+      : [...SYMPTOMES_COMMUNS, ...SYMPTOMES_HOMME_SEULEMENT, ...SYMPTOMES_FEMME_SEULEMENT];
+  // Fusionner avec les symptômes dynamiques du modèle ML
+  const seen = new Set<string>();
+  return [...base, ...extra]
+    .filter(s => { const k = s.trim().toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; })
+    .sort((a, b) => a.localeCompare(b, 'fr'));
 }
 
 const ALL_SYMPTOMES_SET = new Set([...SYMPTOMES_COMMUNS, ...SYMPTOMES_HOMME_SEULEMENT, ...SYMPTOMES_FEMME_SEULEMENT]);
+
+// ── Synonymes locaux : langage courant + termes médicaux → terme canonique ──
+// Fonctionne sans API, immédiatement au chargement de la page.
+const SYNONYMES_LOCAUX: Record<string, string> = {
+  // Général
+  "corps chaud":"Fièvre","chaud":"Fièvre","température":"Fièvre","hyperthermie":"Fièvre élevée","très forte fièvre":"Fièvre élevée",
+  "très fatigué":"Fatigue","épuisé":"Fatigue","asthénie":"Fatigue","sans énergie":"Fatigue","épuisement":"Fatigue",
+  "grelotter":"Frissons","avoir froid":"Frissons","trembler de froid":"Frissons",
+  "amaigrissement":"Perte de poids","maigrir":"Perte de poids","cachexie":"Perte de poids",
+  "transpirer la nuit":"Sueurs nocturnes","sueurs la nuit":"Sueurs nocturnes","diaphorèse":"Sueurs nocturnes",
+  "mal partout":"Courbatures","courbaturé":"Courbatures","myalgies":"Douleurs musculaires",
+  // Tête / Neuro
+  "mal à la tête":"Maux de tête","mal de tête":"Maux de tête","céphalée":"Maux de tête","céphalées":"Maux de tête",
+  "tête qui tourne":"Vertiges","étourdissement":"Vertiges","tournis":"Vertiges","vertige":"Vertiges",
+  "crise d'épilepsie":"Convulsions","convulsion":"Convulsions","seizure":"Convulsions",
+  "s'est évanoui":"Syncope","évanouissement":"Syncope","malaise":"Syncope","lipothymie":"Syncope",
+  "désorienté":"Confusion","désorientation":"Désorientation","esprit embrouillé":"Confusion",
+  "mémoire qui baisse":"Perte de mémoire","amnésie":"Perte de mémoire","oubli":"Perte de mémoire",
+  "mains qui tremblent":"Tremblements","tremblement":"Tremblements","bradykinésie":"Lenteur de mouvement",
+  "nuque raide":"Raideur de la nuque","cou raide":"Raideur de la nuque","méningisme":"Raideur de la nuque","rigidité cervicale":"Raideur de la nuque",
+  "sensible à la lumière":"Photophobie","lumière douloureuse":"Photophobie","intolérance à la lumière":"Photophobie",
+  "sensible au bruit":"Phonophobie","intolérance au bruit":"Phonophobie",
+  "parole difficile":"Difficultés de langage","aphasie":"Difficultés de langage","dysarthrie":"Difficultés à parler",
+  "fourmis dans les membres":"Fourmillements","picotements":"Fourmillements","paresthésies":"Fourmillements","engourdissement":"Engourdissement",
+  "muscles qui fondent":"Atrophie musculaire","fonte musculaire":"Atrophie musculaire","amyotrophie":"Atrophie musculaire",
+  "muscles qui tressautent":"Fasciculations","myokymie":"Fasciculations",
+  "paralysie":"Paralysie","ne peut plus bouger":"Paralysie","plégie":"Paralysie",
+  "visage figé":"Visage inexpressif","masque facial":"Visage inexpressif","hypomimie":"Visage inexpressif",
+  "écriture qui rapetisse":"Écriture micrographique","petite écriture":"Écriture micrographique",
+  "démence":"Démence","perte des facultés mentales":"Démence",
+  "troubles cognitifs":"Troubles cognitifs","déclin cognitif":"Troubles cognitifs","brouillard mental":"Difficultés de concentration",
+  // Gorge / ORL
+  "mal à la gorge":"Mal de gorge","gorge qui fait mal":"Mal de gorge","gorge irritée":"Mal de gorge","pharyngite":"Mal de gorge",
+  "mal en avalant":"Difficultés à avaler","odynophagie":"Difficultés à avaler","dysphagie":"Dysphagie",
+  "nez bouché":"Congestion nasale","obstruction nasale":"Congestion nasale","rhinite":"Congestion nasale",
+  "nez qui coule":"Rhinorrhée","écoulement nasal":"Rhinorrhée","rhinorrhée":"Rhinorrhée",
+  "voix rauque":"Enrouement","dysphonie":"Enrouement","hoarseness":"Voix rauque","enrouement":"Enrouement",
+  "ganglions au cou":"Ganglions enflés","adénopathie":"Ganglions enflés","polyadénopathie":"Lymphadénopathie",
+  "amygdales gonflées":"Amygdalite","tonsillite":"Amygdalite",
+  "oreille qui fait mal":"Otalgie","otalgie":"Otalgie","douleur à l'oreille":"Otalgie",
+  "sifflements dans les oreilles":"Bourdonnements","acouphènes":"Bourdonnements","tinnitus":"Bourdonnements",
+  // Respiratoires
+  "tousser":"Toux","toux sèche":"Toux sèche","toux grasse":"Toux grasse","expectoration":"Expectoration",
+  "sang dans les crachats":"Hémoptysie","cracher du sang":"Hémoptysie",
+  "mal à respirer":"Essoufflement","manque d'air":"Essoufflement","dyspnée":"Dyspnée","dyspnee":"Dyspnée",
+  "respiration difficile":"Dyspnée","difficultés à respirer":"Dyspnée","souffle court":"Essoufflement",
+  "sifflement respiratoire":"Sifflement respiratoire","wheezing":"Wheezing","bronchospasme":"Sifflement respiratoire",
+  "saignement de nez":"Épistaxis","nez qui saigne":"Épistaxis",
+  "apnée":"Pauses respiratoires nocturnes","ronfler":"Ronflements",
+  "thorax en tonneau":"Barrel chest","barrel chest":"Barrel chest",
+  "stridor":"Stridor inspiratoire","toux aboyante":"Toux aboyante",
+  // Cardiaques
+  "coeur qui bat vite":"Tachycardie","tachycardie":"Tachycardie","pouls rapide":"Tachycardie",
+  "coeur qui bat lentement":"Bradycardie","bradycardie":"Bradycardie","pouls lent":"Bradycardie",
+  "palpitations":"Palpitations","coeur qui s'emballe":"Palpitations",
+  "pouls irrégulier":"Pouls irrégulier","arythmie":"Pouls irrégulier","fibrillation":"Pouls irrégulier",
+  "mal à la poitrine":"Douleurs thoraciques","douleur thoracique":"Douleurs thoraciques","étau dans la poitrine":"Douleurs thoraciques",
+  "tension haute":"Hypertension","hta":"Hypertension","hypertendu":"Hypertension",
+  "tension basse":"Hypotension","hypotendu":"Hypotension",
+  "jambes gonflées":"Gonflement des chevilles","pieds gonflés":"Gonflement des chevilles","oedème":"Gonflement des chevilles",
+  "phlébite":"Phlébite","caillot de sang":"Thrombose","thrombose":"Thrombose",
+  // Digestifs
+  "mal au ventre":"Douleurs abdominales","ventre qui fait mal":"Douleurs abdominales","coliques":"Douleurs abdominales",
+  "nausée":"Nausées","envie de vomir":"Nausées","barbouillé":"Nausées","mal au coeur":"Nausées",
+  "vomir":"Vomissements","vomi":"Vomissements",
+  "selles liquides":"Diarrhée","transit accéléré":"Diarrhée","ventre qui dérange":"Diarrhée",
+  "constipé":"Constipation","selles dures":"Selles dures","ne va pas à la selle":"Constipation",
+  "brûlures à l'estomac":"Brûlures gastriques","pyrosis":"Sensation de brûlure rétrosternale","remontées acides":"Régurgitation acide",
+  "jaunisse":"Jaunisse","peau jaune":"Jaunisse","yeux jaunes":"Jaunisse","ictère":"Jaunisse",
+  "ventre gonflé":"Ballonnements","ballonnements":"Ballonnements","gaz":"Gaz","flatulences":"Gaz",
+  "eau dans le ventre":"Ascite","ascite":"Ascite","ventre qui gonfle d'eau":"Ascite",
+  "foie gros":"Hépatomégalie","rate grosse":"Splénomégalie",
+  "sang dans les selles":"Sang dans les selles","rectorragie":"Saignements rectaux","selles noires":"Méléna",
+  "selles pâles":"Selles pâles","selles acholiques":"Selles pâles",
+  "rassasié rapidement":"Satiété précoce","estomac plein vite":"Satiété précoce",
+  "indigestion":"Indigestion","dyspepsie":"Indigestion","digestion difficile":"Indigestion",
+  "faux besoins":"Sensation d'évacuation incomplète","ténesme":"Sensation d'évacuation incomplète",
+  // Urinaires
+  "brûlure en urinant":"Brûlures mictionnelles","uriner fait mal":"Brûlures mictionnelles","dysurie":"Dysurie",
+  "uriner souvent":"Pollakiurie","pollakiurie":"Besoin fréquent d'uriner","mictions fréquentes":"Fréquence urinaire",
+  "ne fait plus pipi":"Anurie","pas d'urine":"Anurie","anurie":"Anurie",
+  "sang dans les urines":"Hématurie","urines rouges":"Hématurie","hématurie":"Hématurie",
+  "urines mousseuses":"Urine mousseuse","protéinurie":"Protéinurie",
+  "mauvaise haleine":"Haleine urémique","haleine d'urine":"Haleine urémique","halitose":"Haleine désagréable",
+  "urines foncées":"Urine foncée","pipi brun":"Urine foncée","urines sombres":"Urine foncée",
+  "urine trouble":"Urine trouble","pyurie":"Urine trouble",
+  "mal aux reins":"Douleur lombaire","douleur lombaire":"Douleur lombaire","lombalgie":"Douleur lombaire",
+  "fuites urinaires":"Incontinence","incontinence urinaire":"Incontinence",
+  "rétention urinaire":"Rétention urinaire","globe vésical":"Rétention urinaire",
+  "jet faible":"Flux faible","pipi lent":"Flux faible",
+  "uriner la nuit":"Nocturia","se lever la nuit pour uriner":"Nocturia",
+  // Cutanés
+  "boutons":"Éruption cutanée","rash":"Rash","rougeurs":"Éruption cutanée","plaques rouges":"Plaques rouges",
+  "peau qui gratte":"Prurit","démangeaisons":"Prurit","ça gratte":"Prurit",
+  "peau qui pèle":"Desquamation","squames":"Squames","squames argentées":"Squames argentées",
+  "ampoules":"Vésicules","cloques":"Vésicules","vésicules":"Vésicules","bulles":"Bulles",
+  "cicatrices":"Cicatrices","plaies qui ne guérissent pas":"Plaies lentes à cicatriser",
+  "doigts qui blanchissent":"Raynaud","doigts blancs puis bleus au froid":"Raynaud","phénomène de raynaud":"Raynaud",
+  "doigts qui blanchissent au froid":"Raynaud","doigts bleus au froid":"Raynaud",
+  "peau qui durcit":"Durcissement cutané","sclérose cutanée":"Durcissement cutané",
+  "taches brunes":"Hyperpigmentation","mélanodermie":"Hyperpigmentation",
+  "urticaire":"Urticaire","plaques qui gonflent":"Urticaire",
+  "peau dépigmentée":"Vitiligo","taches blanches sur la peau":"Vitiligo",
+  "acné":"Acné","boutons de jeunesse":"Acné",
+  "peau bleue":"Cyanose","lèvres bleues":"Cyanose","cyanose":"Cyanose",
+  "doigts bleus":"Cyanose distale","extrémités bleues":"Cyanose distale",
+  "candidose":"Candidose buccale","muguet":"Candidose buccale","champignons dans la bouche":"Candidose buccale",
+  // Articulaires
+  "rhumatisme":"Arthralgie","mal aux articulations":"Arthralgie","articulations douloureuses":"Arthralgie",
+  "articulations gonflées":"Arthrite","joint chaud et gonflé":"Arthrite",
+  "raideur au réveil":"Raideur matinale","corps raide au réveil":"Raideur matinale",
+  "acide urique élevé":"Hyperuricémie","hyperuricémie":"Hyperuricémie",
+  "gros orteil rouge":"Tophi","dépôt sous la peau":"Tophi",
+  "claudication":"Claudication","douleur en marchant":"Claudication","boiter":"Claudication",
+  "enthésite":"Enthésite","douleur insertion tendon":"Enthésite",
+  // Endocriniens
+  "très soif":"Polydipsie","boire beaucoup":"Polydipsie","soif excessive":"Polydipsie",
+  "uriner beaucoup":"Polyurie","faire beaucoup de pipi":"Polyurie",
+  "faim tout le temps":"Faim excessive","polyphagie":"Faim excessive",
+  "glycémie élevée":"Hyperglycémie","sucre dans le sang":"Hyperglycémie","diabète":"Hyperglycémie",
+  "glycémie basse":"Hypoglycémie","sucre bas":"Hypoglycémie",
+  "thyroïde gonflée":"Gonflement thyroïde","goitre":"Gonflement thyroïde",
+  "cheveux qui tombent":"Alopécie","perte de cheveux":"Alopécie",
+  "ongles cassants":"Ongles cassants","ongles fragiles":"Ongles cassants",
+  "toujours froid":"Intolérance au froid","frilosité":"Intolérance au froid",
+  "transpiration excessive":"Transpiration excessive","hyperhidrose":"Transpiration excessive",
+  "bosse dans le dos":"Bosse de bison","graisse dans le dos":"Bosse de bison",
+  "visage qui grossit":"Grossissement du visage","mains et pieds qui grandissent":"Agrandissement des mains/pieds",
+  // Ophtalmologiques
+  "voir flou":"Vision floue","vision trouble":"Vision floue","yeux qui brouillent":"Vision floue",
+  "yeux rouges":"Yeux rouges","conjonctivite":"Conjonctivite","yeux irrités":"Yeux rouges",
+  "yeux qui sortent":"Yeux saillants","exophtalmie":"Yeux saillants",
+  "yeux secs":"Sécheresse oculaire","oeil sec":"Œil sec","xérophtalmie":"Sécheresse oculaire",
+  "vision double":"Diplopie","voir en double":"Diplopie","diplopie":"Diplopie",
+  "halos autour des lumières":"Halos colorés","cercles autour des lampes":"Halos colorés",
+  "vision tunnel":"Vision tunnel","champ visuel rétréci":"Vision tunnel",
+  "éblouissement":"Éblouissement","sensible aux lumières vives":"Éblouissement",
+  "scotome":"Scotome","trou dans la vision":"Scotome",
+  "voir les objets déformés":"Métamorphopsies","métamorphopsies":"Lignes ondulées",
+  "paupières gonflées":"Gonflement des paupières","yeux enflés":"Gonflement des paupières",
+  "yeux qui coulent":"Larmoiement","larmoiement":"Larmoiement",
+  "ptosis":"Yeux plissés","plissement des yeux":"Plissement des yeux",
+  "névrite optique":"Névrite optique","nerf optique enflammé":"Névrite optique",
+  // Hématologiques
+  "peau pâle":"Pâleur","teint pâle":"Pâleur","anémié":"Pâleur",
+  "bleus sans raison":"Ecchymoses","hématomes spontanés":"Ecchymoses faciles",
+  "ganglions partout":"Lymphadénopathie","grosseurs sous les bras":"Adénopathie",
+  "petites taches rouges":"Pétéchies","purpura":"Purpura",
+  "sang dans l'articulation":"Hémarthrose",
+  "saignement abondant":"Saignement","tendance hémorragique":"Saignements",
+  "gencives qui saignent":"Saignement des gencives",
+  // IST
+  "plaie sur le sexe":"Ulcère génital","chancre":"Chancre",
+  "pertes vaginales":"Pertes vaginales anormales","leucorrhée":"Pertes vaginales anormales",
+  "écoulement urétral":"Écoulement urétral","pus du pénis":"Écoulement urétral",
+  "vésicules génitales":"Éruption génitale","herpès":"Éruption génitale",
+  "boutons de fièvre":"Herpès labial","feu sauvage":"Herpès labial",
+  "condylomes":"Condylomes","végétations":"Condylomes","verrues génitales":"Verrues génitales",
+  // Douleurs spécifiques
+  "douleur au cou":"Douleur au cou","cervicalgie":"Douleur au cou","torticolis":"Douleur au cou",
+  "douleur dans le dos":"Douleur lombaire","dorsalgie":"Douleur dorsale",
+  "douleur à l'effort":"Douleur à l'effort","douleur en montant les escaliers":"Douleur à l'effort",
+  "douleur en avalant":"Douleur à la déglutition","odynophagie":"Douleur à la déglutition",
+  "douleur après repas gras":"Douleur après repas gras",
+  "mâchoire douloureuse":"Douleur à la mâchoire",
+  "testicule douloureux":"Douleur testiculaire","orchialgie":"Douleur testiculaire",
+  "rapport sexuel douloureux":"Dyspareunie","vaginisme":"Dyspareunie",
+  "colique":"Douleur colique intense","douleur par vagues":"Douleur colique intense",
+  "pulsation dans la tête":"Pulsation céphalique","tête qui bat":"Pulsation céphalique",
+};
+
+// Construire la carte inverse locale : canonique → [synonymes]
+const SYNONYME_INVERSE_LOCAL: Record<string, string[]> = {};
+Object.entries(SYNONYMES_LOCAUX).forEach(([syn, canonique]) => {
+  if (!SYNONYME_INVERSE_LOCAL[canonique]) SYNONYME_INVERSE_LOCAL[canonique] = [];
+  SYNONYME_INVERSE_LOCAL[canonique].push(syn);
+});
 
 // ─── Exam suggestion engine ───────────────────────────────────────────────────
 
@@ -551,6 +735,24 @@ export default function ConsultationWorkflow() {
       setMedecinId(user.medecin_id);
     }
   }, [user]);
+
+  // Symptômes dynamiques chargés depuis le modèle ML (inclut nouvelles maladies)
+  const [dynamicSymptomes, setDynamicSymptomes] = useState<string[]>([]);
+  // Carte inverse : terme canonique → liste de synonymes (pour recherche bidirectionnelle)
+  const [synonymeInverse, setSynonymeInverse] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    // Charger la liste des symptômes
+    fetch('http://localhost:8000/api/ml/symptomes')
+      .then(r => r.ok ? r.json() : { symptomes: [] })
+      .then(d => { if (Array.isArray(d.symptomes) && d.symptomes.length > 0) setDynamicSymptomes(d.symptomes); })
+      .catch(() => {});
+    // Charger les synonymes pour la recherche bidirectionnelle
+    fetch('http://localhost:8000/api/ml/synonymes')
+      .then(r => r.ok ? r.json() : { inverse: {} })
+      .then(d => { if (d.inverse) setSynonymeInverse(d.inverse); })
+      .catch(() => {});
+  }, []);
 
   // State par étape
   const [patient, setPatient] = useState<PatientData>({ nom: '', prenoms: '', date_naissance: '', sexe: 'M', groupe_sanguin: '' });
@@ -1155,9 +1357,10 @@ export default function ConsultationWorkflow() {
   // La création en DB se fait au "Suivant" de l'étape 1 avec toutes les infos remplies
   const handleInfirmierQuickStart = () => {
     if (!medecinId) { showToast('Veuillez sélectionner un médecin avant de continuer', 'error'); return; }
-    // Pré-remplir le nom depuis la recherche
-    const nom = patientSearchQuery.trim().toUpperCase();
-    setPatient({ nom, prenoms: '', date_naissance: '', sexe: 'M', groupe_sanguin: '' });
+    const nom = quickStartNom.trim() || patientSearchQuery.trim().toUpperCase();
+    const prenoms = quickStartPrenoms.trim();
+    if (!nom) { showToast('Veuillez renseigner le nom du patient', 'error'); return; }
+    setPatient({ nom: nom.toUpperCase(), prenoms, date_naissance: '', sexe: 'M', groupe_sanguin: '' });
     setInfirmierPhase('workflow');
     setStep(1);
   };
@@ -1991,12 +2194,12 @@ export default function ConsultationWorkflow() {
               <div style={{ padding: '20px', background: '#EFF6FF', borderRadius: '10px', border: '1px solid #BFDBFE', marginBottom: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
                   <UserX size={22} style={{ color: '#2563EB', flexShrink: 0 }} />
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, color: '#1E3A8A', fontSize: '15px' }}>
                       {forceNewPatient ? 'Nouveau patient homonyme' : `Aucun dossier trouvé pour « ${patientSearchQuery} »`}
                     </div>
                     <div style={{ fontSize: '13px', color: '#1D4ED8', marginTop: '2px' }}>
-                      Créez un nouveau dossier patient en remplissant le formulaire complet.
+                      Vérifiez le nom et le prénom, puis démarrez la consultation.
                     </div>
                   </div>
                   {forceNewPatient && (
@@ -2005,11 +2208,54 @@ export default function ConsultationWorkflow() {
                     </button>
                   )}
                 </div>
+
+                {/* Séparateur nom / prénom avec bouton swap — identique au médecin */}
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', marginBottom: '16px' }}>
+                  <div className="sp-form-group" style={{ margin: 0, flex: 1 }}>
+                    <label className="sp-form-label" style={{ color: '#1E40AF', fontWeight: 700 }}>
+                      Nom de famille <span style={{ color: '#EF4444' }}>*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="sp-form-input"
+                      value={quickStartNom}
+                      onChange={e => setQuickStartNom(e.target.value.toUpperCase())}
+                      placeholder="DUPONT"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newNom = quickStartPrenoms.toUpperCase();
+                      const newPrenoms = quickStartNom.charAt(0).toUpperCase() + quickStartNom.slice(1).toLowerCase();
+                      setQuickStartNom(newNom);
+                      setQuickStartPrenoms(newPrenoms);
+                    }}
+                    title="Inverser nom et prénom"
+                    style={{ background: '#DBEAFE', border: '1px solid #93C5FD', borderRadius: '8px', padding: '8px 10px', cursor: 'pointer', color: '#1D4ED8', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1px', fontSize: '16px', flexShrink: 0 }}
+                  >
+                    ⇄
+                  </button>
+                  <div className="sp-form-group" style={{ margin: 0, flex: 1 }}>
+                    <label className="sp-form-label" style={{ color: '#1E40AF', fontWeight: 700 }}>Prénoms</label>
+                    <input
+                      type="text"
+                      className="sp-form-input"
+                      value={quickStartPrenoms}
+                      onChange={e => {
+                        const v = e.target.value;
+                        setQuickStartPrenoms(v.charAt(0).toUpperCase() + v.slice(1).toLowerCase());
+                      }}
+                      placeholder="Jean"
+                    />
+                  </div>
+                </div>
+
                 <button
                   onClick={handleInfirmierQuickStart}
-                  disabled={!medecinId}
+                  disabled={!medecinId || !quickStartNom.trim()}
                   className="sp-btn sp-btn-primary"
-                  style={{ width: '100%', opacity: !medecinId ? 0.5 : 1 }}
+                  style={{ width: '100%', opacity: (!medecinId || !quickStartNom.trim()) ? 0.5 : 1 }}
                   title={!medecinId ? 'Sélectionnez d\'abord un médecin' : ''}
                 >
                   <UserPlus size={15} /> Démarrer la consultation — nouveau patient
@@ -2323,25 +2569,56 @@ export default function ConsultationWorkflow() {
                         }}>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                             {(() => {
-                              const filtered = getSymptomesDisponibles(patient.sexe)
-                                .filter(sym => !s.nom.trim() || sym.toLowerCase().includes(s.nom.toLowerCase()));
+                              const terme = s.nom.trim().toLowerCase();
+                              // Fusion locale (toujours dispo) + API (si serveur redémarré)
+                              const getSyns = (sym: string): string[] => [
+                                ...(SYNONYME_INVERSE_LOCAL[sym] || []),
+                                ...(synonymeInverse[sym] || []),
+                              ];
+                              // Match si le synonyme contient le terme OU le terme contient le synonyme
+                              const synMatch = (syn: string) =>
+                                syn.toLowerCase().includes(terme) || terme.includes(syn.toLowerCase());
+                              const filtered = getSymptomesDisponibles(patient.sexe, dynamicSymptomes)
+                                .filter(sym => {
+                                  if (!terme) return true;
+                                  // 1. Recherche directe dans le terme canonique
+                                  if (sym.toLowerCase().includes(terme)) return true;
+                                  // 2. Recherche via synonymes (local + API)
+                                  return getSyns(sym).some(synMatch);
+                                })
+                                .map(sym => {
+                                  const syns = getSyns(sym);
+                                  const matchedSyn = !sym.toLowerCase().includes(terme)
+                                    ? syns.find(synMatch)
+                                    : undefined;
+                                  return { sym, matchedSyn };
+                                });
+
                               if (filtered.length === 0)
-                                return <span style={{ color: '#9CA3AF', fontSize: '13px' }}>Aucun symptôme trouvé</span>;
-                              return filtered.map((sym, idx) => (
+                                return <span style={{ color: '#9CA3AF', fontSize: '13px' }}>Aucun symptôme trouvé pour « {s.nom} »</span>;
+
+                              return filtered.map(({ sym, matchedSyn }, idx) => (
                                 <button
                                   key={idx}
                                   type="button"
                                   onMouseDown={e => { e.preventDefault(); editSymptome(i, 'nom', sym); setOpenSymptomIdx(null); }}
                                   style={{
                                     padding: '4px 12px', borderRadius: '999px', cursor: 'pointer',
-                                    border: `1px solid ${s.nom === sym ? '#4F46E5' : '#E5E7EB'}`,
-                                    background: s.nom === sym ? '#EEF2FF' : '#F9FAFB',
-                                    color: s.nom === sym ? '#4F46E5' : '#374151',
+                                    border: `1px solid ${s.nom === sym ? '#4F46E5' : matchedSyn ? '#A78BFA' : '#E5E7EB'}`,
+                                    background: s.nom === sym ? '#EEF2FF' : matchedSyn ? '#F5F3FF' : '#F9FAFB',
+                                    color: s.nom === sym ? '#4F46E5' : matchedSyn ? '#6D28D9' : '#374151',
                                     fontSize: '12px', fontWeight: s.nom === sym ? 600 : 400,
                                     whiteSpace: 'nowrap', transition: 'all 0.15s',
+                                    display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '1px',
                                   }}
+                                  title={matchedSyn ? `Correspond à "${matchedSyn}"` : sym}
                                 >
-                                  {sym}
+                                  <span>{sym}</span>
+                                  {matchedSyn && (
+                                    <span style={{ fontSize: '10px', opacity: 0.75, fontStyle: 'italic' }}>
+                                      ≈ {matchedSyn}
+                                    </span>
+                                  )}
                                 </button>
                               ));
                             })()}

@@ -3,7 +3,7 @@ import {
   Server, Brain, Database, Trash2, RefreshCw, Play, CheckCircle,
   XCircle, FileText, Cpu, Clock, ChevronDown,
   ChevronUp, Terminal, Package, Zap, Sliders, AlertTriangle,
-  BarChart2, Activity, History, TrendingUp,
+  BarChart2, Activity, History, TrendingUp, Plus, X, FlaskConical,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { adminAPI, type IAConfig } from '../services/api';
@@ -117,12 +117,102 @@ export default function AdminSystem() {
   const [aiStats, setAIStats] = useState<AIStats | null>(null);
   const [trainingHistory, setTrainingHistory] = useState<TrainingSession[]>([]);
 
+  // ── Ajout nouvelle maladie ──────────────────────────────────────────────────
+  const [newDiseaseName, setNewDiseaseName]       = useState('');
+  const [newDiseaseCateg, setNewDiseaseCateg]     = useState('Infectieuses');
+  const [newDiseaseSymptomes, setNewDiseaseSymptomes] = useState<string[]>([]);
+  const [newSymptomeInput, setNewSymptomeInput]   = useState('');
+  const [newDiseaseNCas, setNewDiseaseNCas]       = useState(80);
+  const [addDiseaseLoading, setAddDiseaseLoading] = useState(false);
+  const [addDiseaseResult, setAddDiseaseResult]   = useState<{ success: boolean; message: string; total?: number } | null>(null);
+  const [datasetStats, setDatasetStats]           = useState<{ total_maladies: number; total_cas: number } | null>(null);
+  const [maladiesExistantes, setMaladiesExistantes] = useState<string[]>([]);
+
+  const CATEGORIES = [
+    'Infectieuses', 'Cardiovasculaires', 'Respiratoires', 'Gastro-intestinales',
+    'Endocriniennes / Métaboliques', 'Hépatiques', 'Neurologiques', 'Rhumatologiques',
+    'Dermatologiques', 'Ophtalmologiques', 'Hématologiques', 'Rénales / Urinaires', 'Autres',
+  ];
+
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok });
     setTimeout(() => setToast(null), 4000);
+  };
+
+  const fetchDatasetStats = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch('http://localhost:8000/api/admin/dataset/maladies', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setDatasetStats({ total_maladies: d.total_maladies, total_cas: d.total_cas });
+        setMaladiesExistantes((d.maladies as { nom: string }[]).map(m => m.nom.toLowerCase().trim()));
+      }
+    } catch { /* silencieux */ }
+  }, [token]);
+
+  const diseaseAlreadyExists = maladiesExistantes.includes(newDiseaseName.trim().toLowerCase());
+
+  const handleAddSymptome = () => {
+    const s = newSymptomeInput.trim();
+    if (s && !newDiseaseSymptomes.includes(s)) {
+      setNewDiseaseSymptomes(prev => [...prev, s]);
+    }
+    setNewSymptomeInput('');
+  };
+
+  const handleRefreshSymptomes = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch('http://localhost:8000/api/admin/symptomes/refresh', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.detail || 'Erreur');
+      showToast(`Cache mis à jour — ${d.total} symptômes disponibles dans le dropdown`);
+    } catch (e: any) {
+      showToast(e.message, false);
+    }
+  };
+
+  const handleAddDisease = async () => {
+    if (!token) return;
+    if (!newDiseaseName.trim()) { showToast('Nom de la maladie requis', false); return; }
+    if (diseaseAlreadyExists) { showToast(`"${newDiseaseName}" existe déjà dans le dataset`, false); return; }
+    if (newDiseaseSymptomes.length < 2) { showToast('Ajoutez au moins 2 symptômes caractéristiques', false); return; }
+    setAddDiseaseLoading(true);
+    setAddDiseaseResult(null);
+    try {
+      const res = await fetch('http://localhost:8000/api/admin/dataset/add-disease', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          nom_maladie: newDiseaseName.trim(),
+          categorie: newDiseaseCateg,
+          symptomes: newDiseaseSymptomes,
+          n_cas: newDiseaseNCas,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Erreur serveur');
+      setAddDiseaseResult({ success: true, message: data.message, total: data.total_dataset });
+      setNewDiseaseName('');
+      setNewDiseaseSymptomes([]);
+      setNewDiseaseNCas(80);
+      fetchDatasetStats();
+      showToast(`${data.cas_ajoutes} cas ajoutés pour "${data.maladie}" !`);
+    } catch (e: any) {
+      setAddDiseaseResult({ success: false, message: e.message });
+      showToast(e.message, false);
+    } finally {
+      setAddDiseaseLoading(false);
+    }
   };
 
   const fetchStatus = useCallback(async () => {
@@ -196,8 +286,8 @@ export default function AdminSystem() {
   }, [training?.status, fetchStatus, token]);
 
   useEffect(() => {
-    if (!authLoading) { fetchStatus(); fetchExtras(); }
-  }, [fetchStatus, fetchExtras, authLoading]);
+    if (!authLoading) { fetchStatus(); fetchExtras(); fetchDatasetStats(); }
+  }, [fetchStatus, fetchExtras, fetchDatasetStats, authLoading]);
   useEffect(() => { if (logsOpen) fetchLogs(); }, [logsOpen, fetchLogs]);
 
   const startTraining = async () => {
@@ -1043,6 +1133,202 @@ export default function AdminSystem() {
           </Card>
         </>
       )}
+
+      {/* ── Ajouter une nouvelle maladie au dataset ──────────────────────────── */}
+      <Card title="Ajouter une maladie au dataset" icon={FlaskConical} accent="#7C3AED">
+        {/* Stats dataset */}
+        {datasetStats && (
+          <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
+            <div style={{ flex: 1, background: '#F5F3FF', borderRadius: 10, padding: '12px 16px', textAlign: 'center' }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: '#7C3AED' }}>{datasetStats.total_maladies}</div>
+              <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>Maladies dans le dataset</div>
+            </div>
+            <div style={{ flex: 1, background: '#EDE9FE', borderRadius: 10, padding: '12px 16px', textAlign: 'center' }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: '#6D28D9' }}>{datasetStats.total_cas.toLocaleString('fr-FR')}</div>
+              <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>Cas d'entraînement total</div>
+            </div>
+          </div>
+        )}
+
+        <div style={{ background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: 10, padding: '12px 16px', marginBottom: 20, display: 'flex', gap: 10 }}>
+          <AlertTriangle size={16} style={{ color: '#D97706', flexShrink: 0, marginTop: 1 }} />
+          <p style={{ fontSize: 13, color: '#92400E', margin: 0 }}>
+            Après l'ajout, lancez un <strong>réentraînement</strong> depuis la section ci-dessus pour que la nouvelle maladie soit détectable par le modèle.
+          </p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+          {/* Nom de la maladie */}
+          <div>
+            <label style={{ fontSize: 13, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6 }}>
+              Nom de la maladie <span style={{ color: '#EF4444' }}>*</span>
+            </label>
+            <input
+              type="text"
+              className="sp-form-input"
+              placeholder="Ex : Leishmaniose, Bilharziose…"
+              value={newDiseaseName}
+              onChange={e => { setNewDiseaseName(e.target.value); setAddDiseaseResult(null); }}
+              style={{ borderColor: diseaseAlreadyExists ? '#EF4444' : undefined }}
+            />
+            {diseaseAlreadyExists && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, padding: '6px 10px', background: '#FEF2F2', borderRadius: 6, border: '1px solid #FECACA' }}>
+                <XCircle size={14} style={{ color: '#DC2626', flexShrink: 0 }} />
+                <span style={{ fontSize: 12, color: '#B91C1C', fontWeight: 600 }}>
+                  Cette maladie existe déjà dans le dataset — choisissez un nom différent.
+                </span>
+              </div>
+            )}
+            {!diseaseAlreadyExists && newDiseaseName.trim().length >= 2 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, padding: '6px 10px', background: '#ECFDF5', borderRadius: 6, border: '1px solid #A7F3D0' }}>
+                <CheckCircle size={14} style={{ color: '#059669', flexShrink: 0 }} />
+                <span style={{ fontSize: 12, color: '#047857', fontWeight: 600 }}>
+                  Nom disponible — cette maladie n'existe pas encore dans le dataset.
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Catégorie */}
+          <div>
+            <label style={{ fontSize: 13, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6 }}>
+              Catégorie médicale <span style={{ color: '#EF4444' }}>*</span>
+            </label>
+            <select
+              className="sp-form-select"
+              value={newDiseaseCateg}
+              onChange={e => setNewDiseaseCateg(e.target.value)}
+            >
+              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Nombre de cas */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: 13, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6 }}>
+            Nombre de cas synthétiques à générer : <strong style={{ color: '#7C3AED' }}>{newDiseaseNCas}</strong>
+          </label>
+          <input
+            type="range" min={20} max={300} step={10}
+            value={newDiseaseNCas}
+            onChange={e => setNewDiseaseNCas(Number(e.target.value))}
+            style={{ width: '100%', accentColor: '#7C3AED' }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>
+            <span>20 (minimal)</span><span>80 (recommandé)</span><span>300 (maximum)</span>
+          </div>
+        </div>
+
+        {/* Symptômes */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: 13, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6 }}>
+            Symptômes caractéristiques <span style={{ color: '#EF4444' }}>*</span>
+            <span style={{ fontWeight: 400, color: '#6B7280', marginLeft: 8 }}>({newDiseaseSymptomes.length} ajouté{newDiseaseSymptomes.length > 1 ? 's' : ''})</span>
+          </label>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+            <input
+              type="text"
+              className="sp-form-input"
+              placeholder="Ex : Fièvre, Douleurs articulaires, Éruption cutanée…"
+              value={newSymptomeInput}
+              onChange={e => setNewSymptomeInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddSymptome(); } }}
+              style={{ flex: 1 }}
+            />
+            <button
+              type="button"
+              onClick={handleAddSymptome}
+              disabled={!newSymptomeInput.trim()}
+              className="sp-btn sp-btn-primary"
+              style={{ padding: '0 16px', background: '#7C3AED', opacity: !newSymptomeInput.trim() ? 0.5 : 1 }}
+            >
+              <Plus size={14} /> Ajouter
+            </button>
+          </div>
+
+          {/* Tags symptômes */}
+          {newDiseaseSymptomes.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {newDiseaseSymptomes.map(s => (
+                <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#EDE9FE', color: '#5B21B6', borderRadius: 99, padding: '4px 12px', fontSize: 13, fontWeight: 600 }}>
+                  {s}
+                  <button
+                    type="button"
+                    onClick={() => setNewDiseaseSymptomes(prev => prev.filter(x => x !== s))}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7C3AED', display: 'flex', padding: 0 }}
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {newDiseaseSymptomes.length === 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', background: '#FFF7ED', borderRadius: 6, border: '1px solid #FED7AA' }}>
+              <AlertTriangle size={13} style={{ color: '#D97706', flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: '#92400E' }}>
+                Aucun symptôme ajouté — minimum 2 requis. Appuyez sur <strong>Entrée</strong> pour ajouter rapidement.
+              </span>
+            </div>
+          )}
+          {newDiseaseSymptomes.length === 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', background: '#FFF7ED', borderRadius: 6, border: '1px solid #FED7AA' }}>
+              <AlertTriangle size={13} style={{ color: '#D97706', flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: '#92400E' }}>
+                1 symptôme ajouté — il en faut au moins <strong>2</strong> pour générer des cas représentatifs.
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Résultat */}
+        {addDiseaseResult && (
+          <div style={{
+            padding: '12px 16px', borderRadius: 10, marginBottom: 16,
+            background: addDiseaseResult.success ? '#ECFDF5' : '#FEF2F2',
+            border: `1px solid ${addDiseaseResult.success ? '#A7F3D0' : '#FECACA'}`,
+            display: 'flex', alignItems: 'flex-start', gap: 10,
+          }}>
+            {addDiseaseResult.success
+              ? <CheckCircle size={16} style={{ color: '#059669', flexShrink: 0, marginTop: 1 }} />
+              : <XCircle size={16} style={{ color: '#DC2626', flexShrink: 0, marginTop: 1 }} />}
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 600, color: addDiseaseResult.success ? '#065F46' : '#991B1B', margin: '0 0 2px' }}>
+                {addDiseaseResult.success ? 'Maladie ajoutée avec succès' : 'Erreur'}
+              </p>
+              <p style={{ fontSize: 12, color: addDiseaseResult.success ? '#047857' : '#B91C1C', margin: 0 }}>
+                {addDiseaseResult.message}
+                {addDiseaseResult.total && ` — Dataset total : ${addDiseaseResult.total.toLocaleString('fr-FR')} cas`}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Bouton mise à jour cache symptômes */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', background: '#F0FDF4', borderRadius: 10, border: '1px solid #BBF7D0', marginBottom: 12 }}>
+          <CheckCircle size={15} style={{ color: '#16A34A', flexShrink: 0 }} />
+          <p style={{ fontSize: 13, color: '#15803D', margin: 0, flex: 1 }}>
+            Après l'ajout d'une maladie et un réentraînement, cliquez ici pour que les nouveaux symptômes apparaissent dans le dropdown de consultation.
+          </p>
+          <button onClick={handleRefreshSymptomes} className="sp-btn" style={{ background: '#16A34A', color: '#fff', padding: '6px 14px', fontSize: 12, flexShrink: 0 }}>
+            <RefreshCw size={13} /> Actualiser les symptômes
+          </button>
+        </div>
+
+        <button
+          onClick={handleAddDisease}
+          disabled={addDiseaseLoading || !newDiseaseName.trim() || newDiseaseSymptomes.length < 2 || diseaseAlreadyExists}
+          className="sp-btn sp-btn-primary"
+          style={{ width: '100%', justifyContent: 'center', background: '#7C3AED', opacity: (addDiseaseLoading || !newDiseaseName.trim() || newDiseaseSymptomes.length < 2 || diseaseAlreadyExists) ? 0.6 : 1 }}
+          title={diseaseAlreadyExists ? `"${newDiseaseName}" existe déjà dans le dataset` : newDiseaseSymptomes.length < 2 ? 'Ajoutez au moins 2 symptômes' : ''}
+        >
+          {addDiseaseLoading
+            ? <><RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> Génération en cours…</>
+            : <><FlaskConical size={15} /> Ajouter la maladie au dataset</>}
+        </button>
+      </Card>
 
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

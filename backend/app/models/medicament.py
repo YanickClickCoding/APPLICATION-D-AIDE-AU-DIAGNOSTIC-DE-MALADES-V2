@@ -6,7 +6,7 @@ from ..database import Base
 
 class Medicament(Base):
     __tablename__ = "medicaments"
-    medicament_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    medicament_id = Column(Integer, primary_key=True, autoincrement=True)
     ordonnance_id = Column(Integer, ForeignKey("ordonnances.ordonnance_id"), nullable=False)
     nom_commercial = Column(String(255), nullable=False)
     denomination_commune = Column(String(255))

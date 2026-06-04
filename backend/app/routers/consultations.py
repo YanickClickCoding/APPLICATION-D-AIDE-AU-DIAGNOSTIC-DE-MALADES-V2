@@ -113,7 +113,7 @@ def list_consultations(skip: int = 0, limit: int = 100, db: Session = Depends(ge
     """
     Liste toutes les consultations
     """
-    consultations = db.query(Consultation).offset(skip).limit(limit).all()
+    consultations = db.query(Consultation).order_by(Consultation.date_heure.desc()).offset(skip).limit(limit).all()
     return consultations
 
 
@@ -489,6 +489,7 @@ def create_consultation_workflow(data: dict, db: Session = Depends(get_db)):
             confiance = ref.get('confiance', 0.0)
             statut_diag = 'CONFIRMÉ' if validation_type == 'confirme' else 'REJETÉ'
             ia_suggestion = ref.get('maladie_predite', 'N/A')
+            severite_diag = 'CRITIQUE' if confiance >= 0.75 else 'GRAVE' if confiance >= 0.50 else 'MODERE'
             db.add(Diagnostic(
                 consultation_id=cid_int,
                 analyse_ia_id=finale_analyse_id or prelim_analyse_id,
@@ -502,6 +503,7 @@ def create_consultation_workflow(data: dict, db: Session = Depends(get_db)):
                 ),
                 certitude=confiance,
                 statut=statut_diag,
+                severite=severite_diag,
                 date_validation=datetime.now().date(),
             ))
 
@@ -573,18 +575,22 @@ def create_consultation_workflow(data: dict, db: Session = Depends(get_db)):
             ).order_by(Diagnostic.diagnostic_id.desc()).first()
             ts = datetime.now().strftime('%Y%m%d%H%M%S%f')[:17]
             medecin_id_suivi = db_consultation.medecin_id or data.get('medecin_id')
-            db.add(Suivi(
-                patient_id=patient.patient_id,
-                medecin_id=medecin_id_suivi,
-                consultation_id=cid_int,
-                diagnostic_id=diag_obj_for_suivi.diagnostic_id if diag_obj_for_suivi else None,
-                traitement_id=traitement_obj.traitement_id if traitement_obj else None,
-                dossier_id=dossier.dossier_id,
-                numero_suivi=f"SV-{ts}-{cid_int}",
-                date_suivi=datetime.now().date(),
-                prochaine_consultation=rdv_date,
-                statut='EN_COURS',
-            ))
+            # MySQL: medecin_id dans `suivis` est NON NULL.
+            # Si aucun médecin n'est connu au moment du suivi, on n'insère pas le suivi
+            # (on évite de casser tout le workflow de consultation).
+            if medecin_id_suivi is not None:
+                db.add(Suivi(
+                    patient_id=patient.patient_id,
+                    medecin_id=medecin_id_suivi,
+                    consultation_id=cid_int,
+                    diagnostic_id=diag_obj_for_suivi.diagnostic_id if diag_obj_for_suivi else None,
+                    traitement_id=traitement_obj.traitement_id if traitement_obj else None,
+                    dossier_id=dossier.dossier_id,
+                    numero_suivi=f"SV-{ts}-{cid_int}",
+                    date_suivi=datetime.now().date(),
+                    prochaine_consultation=rdv_date,
+                    statut='EN_COURS',
+                ))
 
         # ── 12. Historique des prédictions ML ───────────────────────────────────
         ref_analyse = analyse_finale or analyse_prelim or {}
@@ -1120,6 +1126,7 @@ def complete_consultation_medecin(consultation_id: int, data: dict, db: Session 
             confiance    = (analyse_finale or {}).get('confiance', 0.0)
             statut_diag  = 'CONFIRMÉ' if validation_type == 'confirme' else 'REJETÉ'
             ia_sugg      = (analyse_finale or {}).get('maladie_predite', 'N/A')
+            severite_diag = 'CRITIQUE' if confiance >= 0.75 else 'GRAVE' if confiance >= 0.50 else 'MODERE'
             db.add(Diagnostic(
                 consultation_id=consultation_id,
                 analyse_ia_id=finale_id,
@@ -1133,6 +1140,7 @@ def complete_consultation_medecin(consultation_id: int, data: dict, db: Session 
                 ),
                 certitude=confiance,
                 statut=statut_diag,
+                severite=severite_diag,
                 date_validation=datetime.now().date(),
             ))
 

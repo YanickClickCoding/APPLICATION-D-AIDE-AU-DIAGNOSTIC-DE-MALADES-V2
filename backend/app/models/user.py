@@ -13,7 +13,7 @@ class User(Base):
     __tablename__ = "utilisateurs"
     
     # Primary Key
-    utilisateur_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    utilisateur_id = Column(Integer, primary_key=True, autoincrement=True)
     
     # Personal Information
     nom = Column(String(100), nullable=False)

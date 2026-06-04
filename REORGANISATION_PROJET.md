@@ -5,6 +5,50 @@
 
 ---
 
+## 🏗️ Architecture du Projet
+
+### Pattern : MVS — Model, View, Service (Architecture 3-Tiers)
+
+À la manière de MVC (Model-View-Controller) ou MVT (Model-View-Template), notre application suit le pattern **MVS** où le "Controller" est remplacé par une couche **Service** exposée via une API REST.
+
+| Couche | Technologie | Rôle |
+|--------|-------------|------|
+| **Model** | SQLAlchemy + MySQL | Données — 18 tables ORM |
+| **View** | React + TypeScript | Interface utilisateur — 13 pages |
+| **Service** | FastAPI + Python | Logique métier — 31+ endpoints |
+
+### Architecture Client-Serveur 3-Tiers
+
+```
+┌─────────────────────┐
+│   TIER 1 — CLIENT   │  React (navigateur)
+│   Présentation      │  Pages, composants, état UI
+└────────┬────────────┘
+         │ HTTP REST (JSON)
+┌────────▼────────────┐
+│   TIER 2 — SERVEUR  │  FastAPI (Python)
+│   Logique métier    │  Auth JWT, workflows, ML
+└────────┬────────────┘
+         │ SQLAlchemy ORM
+┌────────▼────────────┐
+│   TIER 3 — DONNÉES  │  MySQL
+│   Persistance       │  18 tables, 3 600+ connexions/h
+└─────────────────────┘
+```
+
+### Avec la couche ML → Architecture 4-Tiers
+
+```
+Présentation  →  API REST  →  Moteur IA      →  Base de données
+  (React)       (FastAPI)   (Random Forest)      (MySQL)
+```
+
+> Le "Controller" classique de MVC est ici divisé en deux :
+> - **API FastAPI** → routage des requêtes + logique métier
+> - **Model ML** → intelligence artificielle (Random Forest, 122 maladies, 411 features)
+
+---
+
 ## 🎯 Objectif
 
 Séparer le frontend et le backend dans des dossiers distincts pour une meilleure organisation du projet.

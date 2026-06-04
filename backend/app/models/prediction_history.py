@@ -17,7 +17,7 @@ class PredictionHistory(Base):
     __tablename__ = "historique_prediction"
     
     # Clé primaire
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     
     # Relations
     patient_id = Column(Integer, ForeignKey("patients.patient_id"), nullable=False, index=True)

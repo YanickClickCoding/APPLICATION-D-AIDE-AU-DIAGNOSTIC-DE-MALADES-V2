@@ -13,7 +13,7 @@ class Consultation(Base):
     __tablename__ = "consultations"
     
     # Primary Key
-    consultation_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    consultation_id = Column(Integer, primary_key=True, autoincrement=True)
     
     # Patient Info
     patient_id = Column(Integer, ForeignKey("patients.patient_id"), nullable=True, index=True)  # Lien vers le patient (INT)

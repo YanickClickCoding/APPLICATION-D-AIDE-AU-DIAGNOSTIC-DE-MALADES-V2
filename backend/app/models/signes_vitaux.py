@@ -13,7 +13,7 @@ class SignesVitaux(Base):
     __tablename__ = "signes_vitaux"
 
     # Primary Key
-    signes_vitaux_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    signes_vitaux_id = Column(Integer, primary_key=True, autoincrement=True)
 
     # Foreign Keys
     consultation_id = Column(Integer, ForeignKey("consultations.consultation_id"), nullable=False, index=True)

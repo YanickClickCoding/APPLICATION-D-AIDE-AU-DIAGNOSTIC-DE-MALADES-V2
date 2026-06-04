@@ -13,7 +13,7 @@ class DossierMedical(Base):
     __tablename__ = "dossiers_medicaux"
     
     # Primary Key
-    dossier_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    dossier_id = Column(Integer, primary_key=True, autoincrement=True)
     
     # Foreign Key
     patient_id = Column(Integer, ForeignKey("patients.patient_id"), nullable=False, unique=True)

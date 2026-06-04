@@ -13,7 +13,7 @@ class Symptome(Base):
     __tablename__ = "symptomes"
 
     # Primary Key
-    symptome_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    symptome_id = Column(Integer, primary_key=True, autoincrement=True)
 
     # Foreign Key
     consultation_id = Column(Integer, ForeignKey("consultations.consultation_id"), nullable=False, index=True)

@@ -14,7 +14,7 @@ class Infirmier(Base):
     __tablename__ = "infirmiers"
     
     # Primary Key
-    infirmier_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    infirmier_id = Column(Integer, primary_key=True, autoincrement=True)
     
     # Infirmier Info
     nom = Column(String(100), nullable=False)

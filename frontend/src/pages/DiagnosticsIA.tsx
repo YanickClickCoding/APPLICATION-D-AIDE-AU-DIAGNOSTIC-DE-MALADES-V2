@@ -235,21 +235,27 @@ const DiagnosticsIA = () => {
               <span style={{ fontWeight: 600, color: '#1F2937', fontSize: '14px' }}>Performance par sévérité</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {[
-                { label: 'Cas critiques confirmés', val: perf?.par_confiance?.high ?? 0, bg: '#FEE2E2', fg: '#EF4444', w: '70%' },
-                { label: 'Cas graves confirmés',    val: perf?.par_confiance?.medium ?? 0, bg: '#FEF3C7', fg: '#F59E0B', w: '50%' },
-                { label: 'Cas modérés confirmés',   val: perf?.par_confiance?.low ?? 0, bg: '#D1FAE5', fg: '#10B981', w: '80%' },
-              ].map(({ label, val, bg, fg, w }) => (
-                <div key={label}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <span style={{ fontSize: '13px', color: '#6B7280' }}>{label}</span>
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: fg }}>{val}</span>
+              {(() => {
+                const high   = perf?.par_confiance?.high   ?? 0;
+                const medium = perf?.par_confiance?.medium ?? 0;
+                const low    = perf?.par_confiance?.low    ?? 0;
+                const maxVal = Math.max(high, medium, low, 1);
+                return [
+                  { label: 'Cas critiques confirmés', val: high,   bg: '#FEE2E2', fg: '#EF4444' },
+                  { label: 'Cas graves confirmés',    val: medium, bg: '#FEF3C7', fg: '#F59E0B' },
+                  { label: 'Cas modérés confirmés',   val: low,    bg: '#D1FAE5', fg: '#10B981' },
+                ].map(({ label, val, bg, fg }) => (
+                  <div key={label}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '13px', color: '#6B7280' }}>{label}</span>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: fg }}>{val}</span>
+                    </div>
+                    <div style={{ height: '6px', background: bg, borderRadius: '3px' }}>
+                      <div style={{ height: '100%', width: `${(val / maxVal) * 100}%`, background: fg, borderRadius: '3px', transition: 'width 0.6s ease' }} />
+                    </div>
                   </div>
-                  <div style={{ height: '6px', background: bg, borderRadius: '3px' }}>
-                    <div style={{ height: '100%', width: val ? w : '0%', background: fg, borderRadius: '3px', transition: 'width 0.6s ease' }} />
-                  </div>
-                </div>
-              ))}
+                ));
+              })()}
             </div>
           </div>
 
