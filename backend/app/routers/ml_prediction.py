@@ -371,3 +371,54 @@ def get_symptomes_list():
         if feat.startswith("symptom_")
     })
     return {"symptomes": symptomes, "total": len(symptomes), "source": "model"}
+
+
+@router.get("/antecedents", dependencies=[])
+def get_antecedents_list():
+    """
+    Retourne :
+    - maladies  : les 122+ maladies du modèle ML (pour antécédents perso/familiaux)
+    - allergenes: liste standardisée d'allergènes médicaux et environnementaux
+    Sans authentification requise.
+    """
+    # Maladies du modèle (antécédents)
+    if model_manager.model_loaded and model_manager.predictor:
+        maladies = sorted(model_manager.predictor.label_encoder.classes_.tolist())
+    else:
+        maladies = []
+
+    # Allergènes standardisés (médicaments + environnement + alimentaire)
+    allergenes = sorted([
+        # Médicaments
+        "Amoxicilline", "Ampicilline", "Aspirine", "Atropine",
+        "Carbamazépine", "Ciprofloxacine", "Codéine",
+        "Diclofénac", "Érythromycine",
+        "Ibuprofène", "Iode (produit de contraste)",
+        "Kétoprofène", "Latex",
+        "Méthotrexate", "Morphine",
+        "Naproxène", "AINS (anti-inflammatoires non stéroïdiens)",
+        "Pénicilline", "Phénobarbital", "Phénytoïne",
+        "Quinolones", "Rifampicine",
+        "Streptomycine", "Sulfamides", "Sulfonamides",
+        "Tétracyclines",
+        # Environnement
+        "Acariens", "Abeilles (venin)", "Blattes",
+        "Guêpes (venin)",
+        "Moisissures", "Nickel",
+        "Plumes d'oiseaux", "Pollens de graminées", "Pollens d'arbres",
+        "Poils de chat", "Poils de chien", "Poils d'animaux",
+        # Alimentaire
+        "Arachides", "Céleri", "Crustacés",
+        "Fruits à coque", "Fruits de mer",
+        "Gluten (céréales)", "Graines de sésame",
+        "Lait de vache", "Lupin",
+        "Moutarde", "Mollusques",
+        "Noix", "Œufs", "Poisson", "Soja",
+    ])
+
+    return {
+        "maladies": maladies,
+        "allergenes": allergenes,
+        "total_maladies": len(maladies),
+        "total_allergenes": len(allergenes),
+    }

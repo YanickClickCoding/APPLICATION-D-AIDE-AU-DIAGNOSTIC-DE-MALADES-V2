@@ -60,6 +60,105 @@ interface PatientSearchResult {
   consultation_en_attente_medecin_id?: number | null;
 }
 
+// ─── TagsInput — autocomplete avec tags (antécédents & allergies) ─────────────
+interface TagsInputProps {
+  label: string;
+  placeholder: string;
+  suggestions: string[];
+  value: string;
+  onChange: (val: string) => void;
+  accentColor?: string;
+  borderColor?: string;
+}
+
+function TagsInput({ label, placeholder, suggestions, value, onChange, accentColor = '#4F46E5', borderColor = '#E5E7EB' }: TagsInputProps) {
+  const [input, setInput] = useState('');
+  const [open, setOpen] = useState(false);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  const tags = value ? value.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+  const terme = input.trim().toLowerCase();
+  const filtered = suggestions.filter(s =>
+    s.toLowerCase().includes(terme) && !tags.includes(s)
+  ).slice(0, 12);
+
+  const addTag = (tag: string) => {
+    const newTags = [...tags, tag];
+    onChange(newTags.join(', '));
+    setInput('');
+    setOpen(false);
+    inputRef.current?.focus();
+  };
+
+  const removeTag = (tag: string) => {
+    onChange(tags.filter(t => t !== tag).join(', '));
+  };
+
+  const handleKey = (e: React.KeyboardEvent) => {
+    if ((e.key === 'Enter' || e.key === ',') && input.trim()) {
+      e.preventDefault();
+      const match = suggestions.find(s => s.toLowerCase() === input.trim().toLowerCase());
+      addTag(match || input.trim());
+    }
+    if (e.key === 'Backspace' && !input && tags.length > 0) {
+      removeTag(tags[tags.length - 1]);
+    }
+    if (e.key === 'Escape') setOpen(false);
+  };
+
+  return (
+    <div className="sp-form-group" style={{ margin: 0 }}>
+      <label className="sp-form-label" style={{ color: label.startsWith('⚠') ? '#DC2626' : undefined }}>{label}</label>
+      <div
+        style={{ minHeight: '44px', padding: '4px 8px', borderRadius: '8px', border: `1px solid ${borderColor}`, background: '#fff', display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center', cursor: 'text' }}
+        onClick={() => inputRef.current?.focus()}
+      >
+        {tags.map(tag => (
+          <span key={tag} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '999px', background: label.startsWith('⚠') ? '#FEE2E2' : '#EEF2FF', color: label.startsWith('⚠') ? '#991B1B' : '#3730A3', fontSize: '12px', fontWeight: 600, border: `1px solid ${label.startsWith('⚠') ? '#FECACA' : '#C7D2FE'}` }}>
+            {tag}
+            <button type="button" onMouseDown={e => { e.preventDefault(); removeTag(tag); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1, color: 'inherit', fontSize: '14px', opacity: 0.7 }}>×</button>
+          </span>
+        ))}
+        <div style={{ position: 'relative', flex: 1, minWidth: '140px' }}>
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={e => { setInput(e.target.value); setOpen(true); }}
+            onFocus={() => setOpen(true)}
+            onBlur={() => setTimeout(() => setOpen(false), 150)}
+            onKeyDown={handleKey}
+            placeholder={tags.length === 0 ? placeholder : 'Ajouter…'}
+            style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: '13px', color: '#374151', padding: '4px 2px' }}
+          />
+          {open && (terme.length > 0 || filtered.length > 0) && filtered.length > 0 && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid #E5E7EB', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.12)', maxHeight: '220px', overflowY: 'auto', marginTop: '4px' }}>
+              {filtered.map(s => (
+                <button
+                  key={s}
+                  type="button"
+                  onMouseDown={e => { e.preventDefault(); addTag(s); }}
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 12px', border: 'none', background: 'none', cursor: 'pointer', fontSize: '13px', color: '#1F2937' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#EEF2FF')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                >
+                  {(() => {
+                    const idx = s.toLowerCase().indexOf(terme);
+                    if (idx === -1 || !terme) return s;
+                    return <><span>{s.slice(0, idx)}</span><strong style={{ color: accentColor }}>{s.slice(idx, idx + terme.length)}</strong><span>{s.slice(idx + terme.length)}</span></>;
+                  })()}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      {tags.length === 0 && <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '3px 0 0' }}>Tapez pour filtrer — Entrée ou virgule pour confirmer</p>}
+    </div>
+  );
+}
+
 // ─── Symptom autocomplete list ────────────────────────────────────────────────
 
 // Symptômes exclusivement masculins (anatomie mâle)
@@ -747,6 +846,9 @@ export default function ConsultationWorkflow() {
   const [editAntPerso, setEditAntPerso] = useState('');
   const [editAntFam, setEditAntFam] = useState('');
   const [editAllergies, setEditAllergies] = useState('');
+  // Listes autocomplete antécédents & allergènes
+  const [maladiesList, setMaladiesList] = useState<string[]>([]);
+  const [allergenesList, setAllergenesList] = useState<string[]>([]);
 
   // Symptômes dynamiques chargés depuis le modèle ML (inclut nouvelles maladies)
   const [dynamicSymptomes, setDynamicSymptomes] = useState<string[]>([]);
@@ -1020,6 +1122,19 @@ export default function ConsultationWorkflow() {
     document.body.style.overflow = showDonneesModal ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [showDonneesModal]);
+
+  // Charger les listes autocomplete antécédents & allergènes (au montage)
+  useEffect(() => {
+    fetch('http://localhost:8000/api/ml/antecedents')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d) {
+          setMaladiesList(d.maladies || []);
+          setAllergenesList(d.allergenes || []);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Charger le dossier médical dès qu'on a le patient_id (antécédents + allergies)
   useEffect(() => {
@@ -2649,42 +2764,33 @@ export default function ConsultationWorkflow() {
                 {editingAntecedents && (
                   <>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '14px' }}>
-                      <div className="sp-form-group" style={{ margin: 0 }}>
-                        <label className="sp-form-label">Antécédents personnels</label>
-                        <textarea
-                          value={editAntPerso}
-                          onChange={e => setEditAntPerso(e.target.value)}
-                          placeholder="Ex: diabète type 2, HTA, asthme, tuberculose..."
-                          rows={4}
-                          className="sp-form-input"
-                          style={{ resize: 'vertical', height: 'auto' }}
-                        />
-                      </div>
-                      <div className="sp-form-group" style={{ margin: 0 }}>
-                        <label className="sp-form-label">Antécédents familiaux</label>
-                        <textarea
-                          value={editAntFam}
-                          onChange={e => setEditAntFam(e.target.value)}
-                          placeholder="Ex: père diabète, mère cardiopathie..."
-                          rows={4}
-                          className="sp-form-input"
-                          style={{ resize: 'vertical', height: 'auto' }}
-                        />
-                      </div>
-                      <div className="sp-form-group" style={{ margin: 0 }}>
-                        <label className="sp-form-label" style={{ color: '#DC2626' }}>
-                          <AlertCircle size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
-                          Allergies
-                        </label>
-                        <textarea
-                          value={editAllergies}
-                          onChange={e => setEditAllergies(e.target.value)}
-                          placeholder="Ex: pénicilline, AINS, iode, acariens..."
-                          rows={4}
-                          className="sp-form-input"
-                          style={{ resize: 'vertical', height: 'auto', borderColor: '#FECACA' }}
-                        />
-                      </div>
+                      <TagsInput
+                        label="Antécédents personnels"
+                        placeholder="Ex: Diabète Type 2, Asthme…"
+                        suggestions={maladiesList}
+                        value={editAntPerso}
+                        onChange={setEditAntPerso}
+                        accentColor="#4F46E5"
+                        borderColor="#C7D2FE"
+                      />
+                      <TagsInput
+                        label="Antécédents familiaux"
+                        placeholder="Ex: Hypertension, Infarctus…"
+                        suggestions={maladiesList}
+                        value={editAntFam}
+                        onChange={setEditAntFam}
+                        accentColor="#4F46E5"
+                        borderColor="#C7D2FE"
+                      />
+                      <TagsInput
+                        label="⚠️ Allergies"
+                        placeholder="Ex: Pénicilline, Acariens…"
+                        suggestions={allergenesList}
+                        value={editAllergies}
+                        onChange={setEditAllergies}
+                        accentColor="#DC2626"
+                        borderColor="#FECACA"
+                      />
                     </div>
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
                       {!patient.patient_id && (
