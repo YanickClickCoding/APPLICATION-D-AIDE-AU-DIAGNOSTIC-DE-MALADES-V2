@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { registerNavigationGuard, unregisterNavigationGuard } from '../utils/navigationGuard';
 import { useToast } from '../components/Toast';
