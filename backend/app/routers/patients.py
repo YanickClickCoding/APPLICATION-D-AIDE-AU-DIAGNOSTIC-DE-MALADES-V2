@@ -8,19 +8,65 @@ from typing import List
 from uuid import UUID
 
 from ..database import get_db
+from pydantic import BaseModel
+from typing import Optional
 from ..models import (
     Patient, Consultation, Symptome, SignesVitaux,
     AnalyseIA, Diagnostic, Examen, Traitement, Ordonnance, Medicament, Suivi
 )
 from ..models.prediction_history import PredictionHistory
+from ..models.dossier_medical import DossierMedical
 from ..schemas.patient_schema import PatientCreate, PatientResponse, PatientUpdate
 from .auth import get_current_non_admin, get_current_user
+
+
+class DossierUpdate(BaseModel):
+    antecedents_personnels: Optional[str] = None
+    antecedents_familiaux: Optional[str] = None
+    allergies: Optional[str] = None
 
 router = APIRouter(
     prefix="/patients",
     tags=["Patients"],
     dependencies=[Depends(get_current_non_admin)],
 )
+
+
+@router.get("/{patient_id}/dossier")
+def get_dossier(patient_id: int, db: Session = Depends(get_db)):
+    """Retourne le dossier médical d'un patient (antécédents + allergies)."""
+    dossier = db.query(DossierMedical).filter(DossierMedical.patient_id == patient_id).first()
+    if not dossier:
+        raise HTTPException(status_code=404, detail="Dossier médical introuvable")
+    return {
+        "dossier_id": dossier.dossier_id,
+        "numero_dossier": dossier.numero_dossier,
+        "antecedents_personnels": dossier.antecedents_personnels,
+        "antecedents_familiaux": dossier.antecedents_familiaux,
+        "allergies": dossier.allergies,
+    }
+
+
+@router.patch("/{patient_id}/dossier")
+def update_dossier(patient_id: int, payload: DossierUpdate, db: Session = Depends(get_db)):
+    """Met à jour les antécédents et allergies du dossier médical d'un patient."""
+    dossier = db.query(DossierMedical).filter(DossierMedical.patient_id == patient_id).first()
+    if not dossier:
+        raise HTTPException(status_code=404, detail="Dossier médical introuvable")
+    if payload.antecedents_personnels is not None:
+        dossier.antecedents_personnels = payload.antecedents_personnels or None
+    if payload.antecedents_familiaux is not None:
+        dossier.antecedents_familiaux = payload.antecedents_familiaux or None
+    if payload.allergies is not None:
+        dossier.allergies = payload.allergies or None
+    db.commit()
+    db.refresh(dossier)
+    return {
+        "success": True,
+        "antecedents_personnels": dossier.antecedents_personnels,
+        "antecedents_familiaux": dossier.antecedents_familiaux,
+        "allergies": dossier.allergies,
+    }
 
 
 @router.get("/search")

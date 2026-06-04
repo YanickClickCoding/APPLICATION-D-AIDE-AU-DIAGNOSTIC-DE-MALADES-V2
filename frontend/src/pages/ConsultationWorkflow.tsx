@@ -9,7 +9,7 @@ import {
   ArrowRight, ArrowLeft, X, AlertCircle, Thermometer,
   Heart, Wind, Droplet, Weight, Ruler, FlaskConical,
   Pill, Calendar, Plus, Lightbulb, RefreshCw, ClipboardList,
-  UserCheck, Send, Search, UserX, UserPlus
+  UserCheck, Send, Search, UserX, UserPlus, FileText
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -736,6 +736,18 @@ export default function ConsultationWorkflow() {
     }
   }, [user]);
 
+  // Dossier médical du patient (antécédents + allergies)
+  const [dossierMedical, setDossierMedical] = useState<{
+    antecedents_personnels?: string;
+    antecedents_familiaux?: string;
+    allergies?: string;
+  }>({});
+  const [editingAntecedents, setEditingAntecedents] = useState(false);
+  const [savingAntecedents, setSavingAntecedents] = useState(false);
+  const [editAntPerso, setEditAntPerso] = useState('');
+  const [editAntFam, setEditAntFam] = useState('');
+  const [editAllergies, setEditAllergies] = useState('');
+
   // Symptômes dynamiques chargés depuis le modèle ML (inclut nouvelles maladies)
   const [dynamicSymptomes, setDynamicSymptomes] = useState<string[]>([]);
   // Carte inverse : terme canonique → liste de synonymes (pour recherche bidirectionnelle)
@@ -945,7 +957,46 @@ export default function ConsultationWorkflow() {
       examens: withExams
         ? examens.filter(e => e.valeur_numerique != null && e.nom.trim()).map(e => ({ nom: e.nom, valeur_numerique: e.valeur_numerique, unite_mesure: e.unite_mesure || '' }))
         : [],
+      antecedents_personnels: dossierMedical.antecedents_personnels || null,
+      antecedents_familiaux: dossierMedical.antecedents_familiaux || null,
+      allergies: dossierMedical.allergies || null,
     };
+  };
+
+  const openEditAntecedents = () => {
+    setEditAntPerso(dossierMedical.antecedents_personnels || '');
+    setEditAntFam(dossierMedical.antecedents_familiaux || '');
+    setEditAllergies(dossierMedical.allergies || '');
+    setEditingAntecedents(true);
+  };
+
+  const saveAntecedents = async () => {
+    if (!patient.patient_id) return;
+    setSavingAntecedents(true);
+    try {
+      const res = await apiFetch(`http://localhost:8000/api/patients/${patient.patient_id}/dossier`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          antecedents_personnels: editAntPerso || null,
+          antecedents_familiaux: editAntFam || null,
+          allergies: editAllergies || null,
+        }),
+      });
+      if (!res.ok) throw new Error('Erreur sauvegarde');
+      // Mettre à jour l'état local → buildPayload utilisera les nouvelles valeurs immédiatement
+      setDossierMedical({
+        antecedents_personnels: editAntPerso || undefined,
+        antecedents_familiaux: editAntFam || undefined,
+        allergies: editAllergies || undefined,
+      });
+      setEditingAntecedents(false);
+      showToast('Antécédents enregistrés dans le dossier patient');
+    } catch {
+      showToast('Erreur lors de la sauvegarde des antécédents');
+    } finally {
+      setSavingAntecedents(false);
+    }
   };
 
   const callIA = async (withExams: boolean): Promise<AnalyseIA> => {
@@ -969,6 +1020,22 @@ export default function ConsultationWorkflow() {
     document.body.style.overflow = showDonneesModal ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [showDonneesModal]);
+
+  // Charger le dossier médical dès qu'on a le patient_id (antécédents + allergies)
+  useEffect(() => {
+    const pid = patient.patient_id;
+    if (!pid) return;
+    apiFetch(`http://localhost:8000/api/patients/${pid}/dossier`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d) setDossierMedical({
+          antecedents_personnels: d.antecedents_personnels || '',
+          antecedents_familiaux: d.antecedents_familiaux || '',
+          allergies: d.allergies || '',
+        });
+      })
+      .catch(() => {});
+  }, [patient.patient_id]);
 
   // Infirmier : charger la liste des médecins
   useEffect(() => {
@@ -2529,6 +2596,119 @@ export default function ConsultationWorkflow() {
                 </div>
               )}
 
+              {/* ── Anamnèse : Antécédents médicaux ── */}
+              <div style={{ marginBottom: '24px', padding: '18px', background: '#F9FAFB', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
+                {/* En-tête identique aux autres sections */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#374151', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <ClipboardList size={15} style={{ color: '#4F46E5' }} /> Anamnèse — Antécédents &amp; Allergies
+                  </h3>
+                  {!editingAntecedents && (
+                    <button type="button" onClick={openEditAntecedents} className="sp-btn sp-btn-primary" style={{ fontSize: '12px', padding: '5px 12px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <FileText size={13} /> {(dossierMedical.antecedents_personnels || dossierMedical.antecedents_familiaux || dossierMedical.allergies) ? 'Modifier' : 'Renseigner'}
+                    </button>
+                  )}
+                </div>
+
+                {/* Mode affichage */}
+                {!editingAntecedents && (
+                  <>
+                    {!(dossierMedical.antecedents_personnels || dossierMedical.antecedents_familiaux || dossierMedical.allergies) ? (
+                      <p style={{ fontSize: '13px', color: '#9CA3AF', fontStyle: 'italic', margin: 0 }}>
+                        Aucun antécédent renseigné — cliquez sur "Renseigner" pour compléter l'anamnèse du patient.
+                      </p>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                        <div className="sp-form-group" style={{ margin: 0 }}>
+                          <label className="sp-form-label">Antécédents personnels</label>
+                          <p style={{ fontSize: '13px', color: '#374151', background: '#fff', padding: '8px 10px', borderRadius: '8px', margin: 0, border: '1px solid #E5E7EB', lineHeight: '1.5', minHeight: '38px' }}>
+                            {dossierMedical.antecedents_personnels || <em style={{ color: '#D1D5DB' }}>—</em>}
+                          </p>
+                        </div>
+                        <div className="sp-form-group" style={{ margin: 0 }}>
+                          <label className="sp-form-label">Antécédents familiaux</label>
+                          <p style={{ fontSize: '13px', color: '#374151', background: '#fff', padding: '8px 10px', borderRadius: '8px', margin: 0, border: '1px solid #E5E7EB', lineHeight: '1.5', minHeight: '38px' }}>
+                            {dossierMedical.antecedents_familiaux || <em style={{ color: '#D1D5DB' }}>—</em>}
+                          </p>
+                        </div>
+                        <div className="sp-form-group" style={{ margin: 0 }}>
+                          <label className="sp-form-label" style={{ color: dossierMedical.allergies ? '#DC2626' : undefined }}>
+                            <AlertCircle size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
+                            Allergies
+                          </label>
+                          <p style={{ fontSize: '13px', color: dossierMedical.allergies ? '#991B1B' : '#374151', background: dossierMedical.allergies ? '#FEF2F2' : '#fff', padding: '8px 10px', borderRadius: '8px', margin: 0, border: `1px solid ${dossierMedical.allergies ? '#FECACA' : '#E5E7EB'}`, fontWeight: dossierMedical.allergies ? 600 : 400, lineHeight: '1.5', minHeight: '38px' }}>
+                            {dossierMedical.allergies || <em style={{ color: '#D1D5DB', fontWeight: 400 }}>Aucune</em>}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Mode édition inline */}
+                {editingAntecedents && (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+                      <div className="sp-form-group" style={{ margin: 0 }}>
+                        <label className="sp-form-label">Antécédents personnels</label>
+                        <textarea
+                          value={editAntPerso}
+                          onChange={e => setEditAntPerso(e.target.value)}
+                          placeholder="Ex: diabète type 2, HTA, asthme, tuberculose..."
+                          rows={4}
+                          className="sp-form-input"
+                          style={{ resize: 'vertical', height: 'auto' }}
+                        />
+                      </div>
+                      <div className="sp-form-group" style={{ margin: 0 }}>
+                        <label className="sp-form-label">Antécédents familiaux</label>
+                        <textarea
+                          value={editAntFam}
+                          onChange={e => setEditAntFam(e.target.value)}
+                          placeholder="Ex: père diabète, mère cardiopathie..."
+                          rows={4}
+                          className="sp-form-input"
+                          style={{ resize: 'vertical', height: 'auto' }}
+                        />
+                      </div>
+                      <div className="sp-form-group" style={{ margin: 0 }}>
+                        <label className="sp-form-label" style={{ color: '#DC2626' }}>
+                          <AlertCircle size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
+                          Allergies
+                        </label>
+                        <textarea
+                          value={editAllergies}
+                          onChange={e => setEditAllergies(e.target.value)}
+                          placeholder="Ex: pénicilline, AINS, iode, acariens..."
+                          rows={4}
+                          className="sp-form-input"
+                          style={{ resize: 'vertical', height: 'auto', borderColor: '#FECACA' }}
+                        />
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                      {!patient.patient_id && (
+                        <p style={{ fontSize: '12px', color: '#EF4444', margin: '0 auto 0 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <AlertCircle size={13} /> Patient non encore enregistré — sauvegarde disponible après création.
+                        </p>
+                      )}
+                      <button type="button" onClick={() => setEditingAntecedents(false)} className="sp-btn" style={{ fontSize: '13px' }}>
+                        Annuler
+                      </button>
+                      <button
+                        type="button"
+                        onClick={saveAntecedents}
+                        disabled={savingAntecedents || !patient.patient_id}
+                        className="sp-btn sp-btn-primary"
+                        style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', opacity: !patient.patient_id ? 0.5 : 1 }}
+                      >
+                        <CheckCircle size={14} /> {savingAntecedents ? 'Enregistrement...' : 'Enregistrer dans le dossier'}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
               {/* Symptômes */}
               <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#374151', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Activity size={15} style={{ color: '#4F46E5' }} /> Symptômes
@@ -2758,6 +2938,12 @@ export default function ConsultationWorkflow() {
                   <p style={{ color: '#6B7280', marginBottom: '24px', fontSize: '14px' }}>
                     L'IA va formuler des hypothèses diagnostiques et vous suggérer les examens les plus pertinents à réaliser.
                   </p>
+                  {editingAntecedents && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', color: '#92400E' }}>
+                      <AlertCircle size={15} style={{ color: '#F59E0B', flexShrink: 0 }} />
+                      <span><strong>Antécédents non enregistrés</strong> — cliquez sur "Enregistrer dans le dossier" à l'étape 2 avant de lancer l'analyse, sinon ils ne seront pas pris en compte par le modèle.</span>
+                    </div>
+                  )}
                   <button
                     onClick={handleAnalysePreliminaire}
                     disabled={loading || symptomes.filter(s => s.nom.trim()).length === 0 || (isQuickStart && !manualAge)}
@@ -2995,6 +3181,12 @@ export default function ConsultationWorkflow() {
                   <p style={{ color: '#6B7280', marginBottom: '24px', fontSize: '13px' }}>
                     L'IA intègre tous les résultats d'examens pour affiner le diagnostic.
                   </p>
+                  {editingAntecedents && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', color: '#92400E' }}>
+                      <AlertCircle size={15} style={{ color: '#F59E0B', flexShrink: 0 }} />
+                      <span><strong>Antécédents non enregistrés</strong> — retournez à l'étape 2 et cliquez "Enregistrer dans le dossier" avant de lancer le diagnostic final.</span>
+                    </div>
+                  )}
                   <button onClick={handleAnalyseFinale} disabled={loading} className="sp-btn sp-btn-primary" style={{ minWidth: '220px', background: 'linear-gradient(135deg,#7C3AED,#EC4899)', border: 'none' }}>
                     {loading ? <><RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Analyse finale...</> : <><Brain size={16} /> Lancer le diagnostic final</>}
                   </button>

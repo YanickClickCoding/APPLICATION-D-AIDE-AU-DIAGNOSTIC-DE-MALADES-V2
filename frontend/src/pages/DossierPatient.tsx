@@ -1,10 +1,140 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, Activity, FileText, Pill, AlertCircle, User, Phone, Mail, MapPin, Cake, Edit, Brain, CheckCircle, XCircle, Droplet, Printer, Download, Clipboard, Eye, ClipboardCheck, Save, Plus } from 'lucide-react';
+import { ArrowLeft, Calendar, Activity, FileText, Pill, AlertCircle, User, Phone, Mail, MapPin, Cake, Edit, Brain, CheckCircle, XCircle, Droplet, Printer, Download, Clipboard, Eye, ClipboardCheck, Save, Plus, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { patientsAPI, consultationsAPI } from '../services/api';
 import { MedicalDisclaimerBanner } from '../components/MedicalDisclaimerBanner';
+
+// ── Composant édition des antécédents et allergies ───────────────────────────
+function AntecedentsEditor({ patientId, dossier }: {
+  patientId: number;
+  dossier?: { antecedents_personnels?: string; antecedents_familiaux?: string; allergies?: string };
+}) {
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [antPerso, setAntPerso] = useState(dossier?.antecedents_personnels || '');
+  const [antFam, setAntFam] = useState(dossier?.antecedents_familiaux || '');
+  const [allergies, setAllergies] = useState(dossier?.allergies || '');
+  const { showToast } = useToast();
+  const token = localStorage.getItem('sp_token');
+
+  const hasData = antPerso || antFam || allergies;
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`http://localhost:8000/api/patients/${patientId}/dossier`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          antecedents_personnels: antPerso || null,
+          antecedents_familiaux: antFam || null,
+          allergies: allergies || null,
+        }),
+      });
+      if (!res.ok) throw new Error('Erreur lors de la sauvegarde');
+      showToast('Antécédents mis à jour', 'success');
+      setEditing(false);
+    } catch {
+      showToast('Erreur lors de la sauvegarde', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <div style={{ marginTop: '20px', padding: '16px', background: '#F8FAFC', borderRadius: '10px', border: '1px solid #CBD5E1' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <span style={{ fontWeight: 700, fontSize: '13px', color: '#1E40AF', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <FileText size={14} /> Modifier les antécédents et allergies
+          </span>
+          <button onClick={() => setEditing(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280' }}>
+            <X size={16} />
+          </button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>
+              Antécédents personnels
+            </label>
+            <textarea
+              value={antPerso}
+              onChange={e => setAntPerso(e.target.value)}
+              placeholder="Ex : diabète type 2, HTA, asthme, tuberculose..."
+              rows={3}
+              style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', resize: 'vertical', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '4px' }}>
+              Antécédents familiaux
+            </label>
+            <textarea
+              value={antFam}
+              onChange={e => setAntFam(e.target.value)}
+              placeholder="Ex : père diabète, mère cardiopathie, cancer colorectal familial..."
+              rows={3}
+              style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px', resize: 'vertical', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: '#DC2626', display: 'block', marginBottom: '4px' }}>
+              ⚠️ Allergies
+            </label>
+            <textarea
+              value={allergies}
+              onChange={e => setAllergies(e.target.value)}
+              placeholder="Ex : pénicilline, AINS, iode, acariens..."
+              rows={2}
+              style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #FCA5A5', fontSize: '13px', resize: 'vertical', background: '#FFF5F5', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <button onClick={() => setEditing(false)} style={{ padding: '7px 16px', borderRadius: '6px', border: '1px solid #D1D5DB', background: '#fff', cursor: 'pointer', fontSize: '13px' }}>
+              Annuler
+            </button>
+            <button onClick={handleSave} disabled={saving} style={{ padding: '7px 16px', borderRadius: '6px', border: 'none', background: '#2563EB', color: '#fff', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Save size={13} /> {saving ? 'Enregistrement...' : 'Enregistrer'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ marginTop: '20px' }}>
+      {/* Allergies */}
+      {allergies && (
+        <div style={{ padding: '10px 12px', background: '#FEF3C7', borderRadius: '8px', border: '1px solid #FCD34D', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#92400E', fontSize: '12px', fontWeight: 700, marginBottom: '3px' }}>
+            <AlertCircle size={13} /> ALLERGIES
+          </div>
+          <div style={{ fontSize: '13px', color: '#78350F' }}>{allergies}</div>
+        </div>
+      )}
+      {/* Antécédents */}
+      {(antPerso || antFam) && (
+        <div style={{ padding: '10px 12px', background: '#DBEAFE', borderRadius: '8px', border: '1px solid #93C5FD', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1E40AF', fontSize: '12px', fontWeight: 700, marginBottom: '3px' }}>
+            <FileText size={13} /> ANTÉCÉDENTS MÉDICAUX
+          </div>
+          {antPerso && <div style={{ fontSize: '13px', color: '#1E3A8A', marginBottom: '2px' }}><strong>Personnels : </strong>{antPerso}</div>}
+          {antFam && <div style={{ fontSize: '13px', color: '#1E3A8A' }}><strong>Familiaux : </strong>{antFam}</div>}
+        </div>
+      )}
+      {/* Bouton modifier */}
+      <button
+        onClick={() => setEditing(true)}
+        style={{ marginTop: hasData ? '8px' : '0', padding: '6px 14px', borderRadius: '6px', border: '1px dashed #93C5FD', background: '#EFF6FF', color: '#2563EB', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+      >
+        <Edit size={12} /> {hasData ? 'Modifier antécédents / allergies' : 'Ajouter antécédents et allergies'}
+      </button>
+    </div>
+  );
+}
 
 interface DossierMedicalInfo {
   dossier_id: number;
@@ -394,38 +524,8 @@ const DossierPatient = () => {
               )}
             </div>
 
-            {/* Allergies */}
-            {patient.dossier_medical?.allergies && (
-              <div style={{ marginTop: '24px', padding: '12px', background: '#FEF3C7', borderRadius: '8px', border: '1px solid #FCD34D' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#92400E', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
-                  <AlertCircle size={14} />
-                  <span>ALLERGIES</span>
-                </div>
-                <div style={{ fontSize: '13px', color: '#78350F' }}>
-                  {patient.dossier_medical.allergies}
-                </div>
-              </div>
-            )}
-
-            {/* Antécédents */}
-            {(patient.dossier_medical?.antecedents_personnels || patient.dossier_medical?.antecedents_familiaux) && (
-              <div style={{ marginTop: '16px', padding: '12px', background: '#DBEAFE', borderRadius: '8px', border: '1px solid #93C5FD' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1E40AF', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
-                  <FileText size={14} />
-                  <span>ANTÉCÉDENTS MÉDICAUX</span>
-                </div>
-                {patient.dossier_medical?.antecedents_personnels && (
-                  <div style={{ fontSize: '13px', color: '#1E3A8A', marginBottom: '4px' }}>
-                    <strong>Personnels : </strong>{patient.dossier_medical.antecedents_personnels}
-                  </div>
-                )}
-                {patient.dossier_medical?.antecedents_familiaux && (
-                  <div style={{ fontSize: '13px', color: '#1E3A8A' }}>
-                    <strong>Familiaux : </strong>{patient.dossier_medical.antecedents_familiaux}
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Antécédents & Allergies — affichage + édition */}
+            <AntecedentsEditor patientId={patient.patient_id} dossier={patient.dossier_medical} />
           </div>
         </div>
 

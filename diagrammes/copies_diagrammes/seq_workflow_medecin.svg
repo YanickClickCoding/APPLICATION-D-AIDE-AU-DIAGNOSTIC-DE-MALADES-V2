@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="1440" viewBox="0 0 1120 1440" font-family="Arial, Helvetica, sans-serif">
+<defs>
+  <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="#333"/>
+  </marker>
+  <marker id="arr-open" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="white" stroke="#555" stroke-width="1"/>
+  </marker>
+</defs>
+
+<!-- Background -->
+<rect width="1120" height="1440" fill="#FAFAFA"/>
+
+<!-- Title -->
+<text x="560" y="18" text-anchor="middle" font-size="13" font-weight="bold" fill="#222">Diagramme de Séquence — Workflow Médecin</text>
+<text x="560" y="33" text-anchor="middle" font-size="10" fill="#555">(Consultation, Analyse IA, Diagnostic, Ordonnance, Suivi — toutes phases)</text>
+
+<!-- ═══ Participant Boxes ═══ -->
+<!-- Médecin (cx=115) -->
+<rect x="35"  y="42" width="160" height="42" fill="#DAE8FC" stroke="#6C8EBF" stroke-width="1.5"/>
+<text x="115" y="68" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">Médecin</text>
+
+<!-- Frontend React (cx=310) -->
+<rect x="230" y="42" width="160" height="42" fill="#D5E8D4" stroke="#82B366" stroke-width="1.5"/>
+<text x="310" y="68" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">Frontend React</text>
+
+<!-- Backend FastAPI (cx=510) -->
+<rect x="430" y="42" width="160" height="42" fill="#FFE6CC" stroke="#D79B00" stroke-width="1.5"/>
+<text x="510" y="68" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">Backend FastAPI</text>
+
+<!-- Modèle ML (cx=720) -->
+<rect x="640" y="42" width="160" height="42" fill="#E1D5E7" stroke="#9673A6" stroke-width="1.5"/>
+<text x="720" y="64" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">Modèle ML</text>
+<text x="720" y="78" text-anchor="middle" font-size="9"  font-weight="bold" fill="#555">(RandomForest)</text>
+
+<!-- Base de Données (cx=935) -->
+<rect x="855" y="42" width="160" height="42" fill="#F8CECC" stroke="#B85450" stroke-width="1.5"/>
+<text x="935" y="68" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">Base de Données</text>
+
+<!-- ═══ Lifelines ═══ -->
+<line x1="115" y1="84" x2="115" y2="1435" stroke="#6C8EBF" stroke-width="1" stroke-dasharray="6,4"/>
+<line x1="310" y1="84" x2="310" y2="1435" stroke="#82B366" stroke-width="1" stroke-dasharray="6,4"/>
+<line x1="510" y1="84" x2="510" y2="1435" stroke="#D79B00" stroke-width="1" stroke-dasharray="6,4"/>
+<line x1="720" y1="84" x2="720" y2="1435" stroke="#9673A6" stroke-width="1" stroke-dasharray="6,4"/>
+<line x1="935" y1="84" x2="935" y2="1435" stroke="#B85450" stroke-width="1" stroke-dasharray="6,4"/>
+
+<!-- ═══ Alt Frames ═══ -->
+<!-- CONFIRME -->
+<rect x="25" y="752" width="1080" height="335" fill="#F0FFF0" fill-opacity="0.6" stroke="#008800" stroke-width="1.5" stroke-dasharray="7,3"/>
+<text x="31" y="766" font-size="9" font-weight="bold" fill="#008800">alt  [Médecin CONFIRME le diagnostic IA]</text>
+
+<!-- REJETTE -->
+<rect x="25" y="1098" width="1080" height="295" fill="#FFF8F0" fill-opacity="0.6" stroke="#CC6600" stroke-width="1.5" stroke-dasharray="7,3"/>
+<text x="31" y="1112" font-size="9" font-weight="bold" fill="#CC6600">alt  [Médecin REJETTE le diagnostic IA — saisit son propre diagnostic]</text>
+
+<!-- ═══ Activation Bars (barres d'activation) ═══ -->
+
+<!-- Backend — Phase 1 GET consultations : reçoit (y=148) → envoie 200 OK (y=232) -->
+<rect x="504" y="148" width="12" height="84"  fill="white" stroke="#D79B00" stroke-width="1.5"/>
+<!-- DB — SELECT consultations : reçoit (y=178) → retourne (y=205) -->
+<rect x="929" y="178" width="12" height="27"  fill="white" stroke="#B85450" stroke-width="1.5"/>
+
+<!-- Backend — Phase 2 GET dossier : reçoit (y=330) → envoie 200 OK (y=415) -->
+<rect x="504" y="330" width="12" height="85"  fill="white" stroke="#D79B00" stroke-width="1.5"/>
+<!-- DB — Charge données : reçoit (y=360) → retourne (y=388) -->
+<rect x="929" y="360" width="12" height="28"  fill="white" stroke="#B85450" stroke-width="1.5"/>
+
+<!-- Backend — Phase 3 examens+IA : reçoit POST (y=545) → envoie 200 OK (y=692) -->
+<rect x="504" y="545" width="12" height="147" fill="white" stroke="#D79B00" stroke-width="1.5"/>
+<!-- DB — INSERT examens + analyses_ia : (y=575) → (y=665) -->
+<rect x="929" y="575" width="12" height="90"  fill="white" stroke="#B85450" stroke-width="1.5"/>
+<!-- ML — analyze_full : reçoit (y=605) → retourne (y=635) -->
+<rect x="714" y="605" width="12" height="30"  fill="white" stroke="#9673A6" stroke-width="1.5"/>
+
+<!-- Backend — CONFIRME workflow-complet : reçoit (y=810) → envoie 200 OK (y=980) -->
+<rect x="504" y="810" width="12" height="170" fill="white" stroke="#D79B00" stroke-width="1.5"/>
+<!-- DB — INSERTs confirmation : (y=840) → UPDATE (y=952) -->
+<rect x="929" y="840" width="12" height="112" fill="white" stroke="#B85450" stroke-width="1.5"/>
+
+<!-- Backend — REJETTE workflow-complet : reçoit (y=1154) → envoie 200 OK (y=1322) -->
+<rect x="504" y="1154" width="12" height="168" fill="white" stroke="#D79B00" stroke-width="1.5"/>
+<!-- DB — INSERTs rejet : (y=1182) → UPDATE (y=1294) -->
+<rect x="929" y="1182" width="12" height="112" fill="white" stroke="#B85450" stroke-width="1.5"/>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--     PHASE 1 — CONSULTATIONS EN ATTENTE         -->
+<!-- ═══════════════════════════════════════════════ -->
+<text x="560" y="100" text-anchor="middle" font-size="10" font-style="italic" fill="#555">— Phase 1 : Consultations en attente —</text>
+
+<!-- 1. M → F -->
+<line x1="115" y1="118" x2="305" y2="118" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="212" y="113" text-anchor="middle" font-size="9" fill="#333">1. Accède aux consultations en attente</text>
+
+<!-- 2. F → B : GET consultations -->
+<line x1="310" y1="148" x2="504" y2="148" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="407" y="143" text-anchor="middle" font-size="9" fill="#333">2. GET /api/consultations/en-attente?medecin_id={id}</text>
+
+<!-- 3. B → DB : SELECT -->
+<line x1="516" y1="178" x2="929" y2="178" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="722" y="173" text-anchor="middle" font-size="9" fill="#333">3. SELECT consultations WHERE statut='en_attente_medecin' AND medecin_id=?</text>
+
+<!-- 4. DB → B : retour liste -->
+<line x1="929" y1="205" x2="521" y2="205" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-open)"/>
+<text x="722" y="200" text-anchor="middle" font-size="9" fill="#555">4. Liste consultations en attente</text>
+
+<!-- 5. B → F : 200 OK -->
+<line x1="504" y1="232" x2="310" y2="232" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-open)"/>
+<text x="407" y="227" text-anchor="middle" font-size="9" fill="#555">5. 200 OK  { consultations: [{ id, nom_patient, motif, date_heure }] }</text>
+
+<!-- 6. F → M : affiche liste -->
+<line x1="310" y1="258" x2="115" y2="258" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-open)"/>
+<text x="212" y="253" text-anchor="middle" font-size="9" fill="#555">6. Affiche liste des consultations en attente</text>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--     PHASE 2 — CHARGEMENT DOSSIER               -->
+<!-- ═══════════════════════════════════════════════ -->
+<line x1="25" y1="274" x2="1095" y2="274" stroke="#CCCCCC" stroke-width="0.8" stroke-dasharray="3,3"/>
+<text x="560" y="290" text-anchor="middle" font-size="10" font-style="italic" fill="#555">— Phase 2 : Chargement des données de la consultation —</text>
+
+<!-- 7. M → F : sélectionne consultation -->
+<line x1="115" y1="300" x2="305" y2="300" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="212" y="295" text-anchor="middle" font-size="9" fill="#333">7. Sélectionne une consultation</text>
+
+<!-- 8. F → B : GET dossier-resume -->
+<line x1="310" y1="330" x2="504" y2="330" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="407" y="325" text-anchor="middle" font-size="9" fill="#333">8. GET /api/consultations/{id}/donnees-resume</text>
+
+<!-- 9. B → DB : Charge données complètes -->
+<line x1="516" y1="360" x2="929" y2="360" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="722" y="355" text-anchor="middle" font-size="9" fill="#333">9. Charge consultation + patient + symptômes + signes_vitaux + analyse_ia_préliminaire</text>
+
+<!-- 10. DB → B : données complètes -->
+<line x1="929" y1="388" x2="521" y2="388" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-open)"/>
+<text x="722" y="383" text-anchor="middle" font-size="9" fill="#555">10. Données complètes</text>
+
+<!-- 11. B → F : 200 OK résumé -->
+<line x1="504" y1="415" x2="310" y2="415" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-open)"/>
+<text x="407" y="410" text-anchor="middle" font-size="9" fill="#555">11. 200 OK  { patient, symptomes[], signes_vitaux, analyse_prelim: { maladie, confiance } }</text>
+
+<!-- 12. F → M : affiche dossier -->
+<line x1="310" y1="442" x2="115" y2="442" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-open)"/>
+<text x="212" y="437" text-anchor="middle" font-size="9" fill="#555">12. Affiche dossier patient + suggestion IA préliminaire</text>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--     PHASE 3 — EXAMENS + ANALYSE IA FINALE      -->
+<!-- ═══════════════════════════════════════════════ -->
+<line x1="25" y1="458" x2="1095" y2="458" stroke="#CCCCCC" stroke-width="0.8" stroke-dasharray="3,3"/>
+<text x="560" y="473" text-anchor="middle" font-size="10" font-style="italic" fill="#555">— Phase 3 : Examens complémentaires + Analyse IA Finale —</text>
+
+<!-- 13. M → F : saisit examens -->
+<line x1="115" y1="484" x2="305" y2="484" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="212" y="479" text-anchor="middle" font-size="9" fill="#333">13. Saisit résultats d'examens (type, nom, résultats, valeur, date)</text>
+
+<!-- 14. M → F : lance analyse IA -->
+<line x1="115" y1="514" x2="305" y2="514" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="212" y="509" text-anchor="middle" font-size="9" fill="#333">14. Lance l'analyse IA finale</text>
+
+<!-- 15. F → B : POST workflow-complet phase examens -->
+<line x1="310" y1="545" x2="504" y2="545" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="407" y="537" text-anchor="middle" font-size="9" fill="#333">15. POST /api/consultations/{id}/workflow-complet  [phase examens]</text>
+<text x="407" y="550" text-anchor="middle" font-size="9" fill="#555">     { examens[] }</text>
+
+<!-- 16. B → DB : INSERT examens -->
+<line x1="516" y1="575" x2="929" y2="575" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="722" y="570" text-anchor="middle" font-size="9" fill="#333">16. INSERT INTO examens  (type, nom, résultats, is_suggested, date_examen)</text>
+
+<!-- 17. B → ML : analyze_full -->
+<line x1="516" y1="605" x2="714" y2="605" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="615" y="600" text-anchor="middle" font-size="9" fill="#333">17. analyze_full(symptomes, signes_vitaux, examens, sexe, age)</text>
+
+<!-- 18. ML → B : résultat analyse finale -->
+<line x1="714" y1="635" x2="521" y2="635" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-open)"/>
+<text x="615" y="630" text-anchor="middle" font-size="9" fill="#555">18. Analyse finale  { maladie_predite, confiance, top_predictions }</text>
+
+<!-- 19. B → DB : INSERT analyses_ia finale -->
+<line x1="516" y1="665" x2="929" y2="665" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="722" y="660" text-anchor="middle" font-size="9" fill="#333">19. INSERT INTO analyses_ia  (modele='RandomForest_Finale', probabilite, diagnostics_suggeres)</text>
+
+<!-- 20. B → F : analyse disponible -->
+<line x1="504" y1="692" x2="310" y2="692" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-open)"/>
+<text x="407" y="687" text-anchor="middle" font-size="9" fill="#555">20. Analyse IA finale disponible</text>
+
+<!-- 21. F → M : affiche résultats IA -->
+<line x1="310" y1="718" x2="115" y2="718" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-open)"/>
+<text x="212" y="713" text-anchor="middle" font-size="9" fill="#555">21. Affiche analyse IA finale + top prédictions</text>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--     PHASE 4 — DÉCISION MÉDICALE                -->
+<!-- ═══════════════════════════════════════════════ -->
+<line x1="25" y1="734" x2="1095" y2="734" stroke="#CCCCCC" stroke-width="0.8" stroke-dasharray="3,3"/>
+<text x="560" y="749" text-anchor="middle" font-size="10" font-style="italic" fill="#555">— Phase 4 : Décision médicale —</text>
+
+<!-- ═══ ALT CONFIRME ═══ -->
+
+<!-- 22a. M → F : confirme -->
+<line x1="115" y1="778" x2="305" y2="778" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="212" y="773" text-anchor="middle" font-size="9" fill="#333">22a. Confirme diagnostic IA + saisit ordonnance + plan de suivi</text>
+
+<!-- 23a. F → B : POST workflow-complet CONFIRME -->
+<line x1="310" y1="810" x2="504" y2="810" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="407" y="802" text-anchor="middle" font-size="9" fill="#333">23a. POST /api/consultations/{id}/workflow-complet</text>
+<text x="407" y="815" text-anchor="middle" font-size="9" fill="#555">      { validation_type:'confirme', diagnostic_final, ordonnance[], suivi }</text>
+
+<!-- 24a. B → DB : INSERT diagnostics CONFIRMÉ -->
+<line x1="516" y1="840" x2="929" y2="840" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="722" y="835" text-anchor="middle" font-size="9" fill="#333">24a. INSERT INTO diagnostics  (statut='CONFIRMÉ', nom_maladie, certitude, severite)</text>
+
+<!-- 25a. B → DB : INSERT traitements + ordonnances + medicaments -->
+<line x1="516" y1="868" x2="929" y2="868" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="722" y="863" text-anchor="middle" font-size="9" fill="#333">25a. INSERT INTO traitements + ordonnances + medicaments[]</text>
+
+<!-- 26a. B → DB : INSERT suivis -->
+<line x1="516" y1="896" x2="929" y2="896" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="722" y="891" text-anchor="middle" font-size="9" fill="#333">26a. INSERT INTO suivis  (num=SV-{ts}-{id}, prochaine_consultation, statut='EN_COURS')</text>
+
+<!-- 27a. B → DB : INSERT prediction_history -->
+<line x1="516" y1="924" x2="929" y2="924" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="722" y="919" text-anchor="middle" font-size="9" fill="#333">27a. INSERT INTO prediction_history  (is_validated=1, actual_disease=diagnostic_final)</text>
+
+<!-- 28a. B → DB : UPDATE statut terminée -->
+<line x1="516" y1="952" x2="929" y2="952" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="722" y="947" text-anchor="middle" font-size="9" fill="#333">28a. UPDATE consultations SET statut='terminée'</text>
+
+<!-- 29a. B → F : 200 OK -->
+<line x1="504" y1="980" x2="310" y2="980" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-open)"/>
+<text x="407" y="975" text-anchor="middle" font-size="9" fill="#555">29a. 200 OK  { success: true, consultation_id, diagnostic_id, ordonnance_id }</text>
+
+<!-- 30a. F → M : résumé CONFIRME -->
+<line x1="310" y1="1055" x2="115" y2="1055" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-open)"/>
+<text x="212" y="1050" text-anchor="middle" font-size="9" fill="#555">30a. Consultation terminée — résumé (diagnostic confirmé, ordonnance, prochain RDV)</text>
+
+<!-- Notes CONFIRME -->
+<rect x="1025" y="840" width="83" height="48" fill="#FFF2CC" stroke="#D6B656" stroke-width="1"/>
+<polygon points="1025,840 1039,840 1039,854 1025,854" fill="#E6C030"/>
+<text x="1031" y="854" font-size="8" fill="#555">DossierMedical</text>
+<text x="1031" y="866" font-size="8" fill="#555">auto-créé si ∅ :</text>
+<text x="1031" y="878" font-size="8" fill="#555">DM-{ts}-{pid}</text>
+
+<rect x="1025" y="896" width="83" height="56" fill="#FFF2CC" stroke="#D6B656" stroke-width="1"/>
+<polygon points="1025,896 1039,896 1039,910 1025,910" fill="#E6C030"/>
+<text x="1031" y="910" font-size="8" fill="#555">Médicament :</text>
+<text x="1031" y="922" font-size="8" fill="#555">nom, dosage,</text>
+<text x="1031" y="934" font-size="8" fill="#555">fréquence, durée,</text>
+<text x="1031" y="946" font-size="8" fill="#555">forme, voie</text>
+
+<!-- ═══ ALT REJETTE ═══ -->
+
+<!-- 22b. M → F : rejette -->
+<line x1="115" y1="1122" x2="305" y2="1122" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="212" y="1117" text-anchor="middle" font-size="9" fill="#333">22b. Rejette diagnostic IA + saisit diagnostic propre + ordonnance + suivi</text>
+
+<!-- 23b. F → B : POST workflow-complet REJETTE -->
+<line x1="310" y1="1154" x2="504" y2="1154" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="407" y="1146" text-anchor="middle" font-size="9" fill="#333">23b. POST /api/consultations/{id}/workflow-complet</text>
+<text x="407" y="1159" text-anchor="middle" font-size="9" fill="#555">      { validation_type:'rejete', diagnostic_final (propre), ordonnance[], suivi }</text>
+
+<!-- 24b. B → DB : INSERT diagnostics REJETÉ -->
+<line x1="516" y1="1182" x2="929" y2="1182" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="722" y="1177" text-anchor="middle" font-size="9" fill="#333">24b. INSERT INTO diagnostics  (statut='REJETÉ', nom_maladie=diagnostic_propre, certitude)</text>
+
+<!-- 25b. B → DB : INSERT traitements + ord + meds -->
+<line x1="516" y1="1210" x2="929" y2="1210" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="722" y="1205" text-anchor="middle" font-size="9" fill="#333">25b. INSERT INTO traitements + ordonnances + medicaments[]</text>
+
+<!-- 26b. B → DB : INSERT suivis -->
+<line x1="516" y1="1238" x2="929" y2="1238" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="722" y="1233" text-anchor="middle" font-size="9" fill="#333">26b. INSERT INTO suivis  (statut='EN_COURS')</text>
+
+<!-- 27b. B → DB : INSERT prediction_history -->
+<line x1="516" y1="1266" x2="929" y2="1266" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="722" y="1261" text-anchor="middle" font-size="9" fill="#333">27b. INSERT INTO prediction_history  (is_validated=−1, actual_disease=diagnostic_propre)</text>
+
+<!-- 28b. B → DB : UPDATE statut terminée -->
+<line x1="516" y1="1294" x2="929" y2="1294" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="722" y="1289" text-anchor="middle" font-size="9" fill="#333">28b. UPDATE consultations SET statut='terminée'</text>
+
+<!-- 29b. B → F : 200 OK -->
+<line x1="504" y1="1322" x2="310" y2="1322" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-open)"/>
+<text x="407" y="1317" text-anchor="middle" font-size="9" fill="#555">29b. 200 OK  { success: true, diagnostic_id, ordonnance_id }</text>
+
+<!-- 30b. F → M : résumé REJETTE -->
+<line x1="310" y1="1380" x2="115" y2="1380" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-open)"/>
+<text x="212" y="1375" text-anchor="middle" font-size="9" fill="#555">30b. Consultation terminée — résumé (diagnostic rejeté, diagnostic propre, ordonnance)</text>
+
+<!-- Note finale : cycle d'amélioration -->
+<rect x="30" y="1400" width="300" height="32" fill="#E1D5E7" stroke="#9673A6" stroke-width="1"/>
+<text x="36" y="1414" font-size="9" fill="#555" font-style="italic">is_validated=−1 → ces rejets alimentent la base d'apprentissage</text>
+<text x="36" y="1426" font-size="9" fill="#555" font-style="italic">pour le prochain réentraînement du modèle RandomForest.</text>
+
+</svg>

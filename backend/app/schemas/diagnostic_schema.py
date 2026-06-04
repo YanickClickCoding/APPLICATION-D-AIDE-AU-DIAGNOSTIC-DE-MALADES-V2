@@ -28,6 +28,10 @@ class DirectPredictionRequest(BaseModel):
     vitaux: Dict[str, Any] = {}
     symptomes: List[str] = []
     examens: List[ExamenInput] = []
+    # Antécédents médicaux du dossier patient
+    antecedents_personnels: Optional[str] = None
+    antecedents_familiaux: Optional[str] = None
+    allergies: Optional[str] = None
 
 
 class AlternativeDiagnostic(BaseModel):

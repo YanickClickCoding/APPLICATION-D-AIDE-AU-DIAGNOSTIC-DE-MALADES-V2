@@ -166,12 +166,12 @@ async def predict_direct(request: DirectPredictionRequest, _=Depends(get_current
         )
 
     consultation_data = {
-        "age":                  request.age,
+        "age":                   request.age,
         "duree_symptomes_jours": request.duree_symptomes_jours,
-        "sexe":                 request.sexe,
-        "severite":             request.severite,
-        "vitaux":               request.vitaux,
-        "symptomes":            request.symptomes,
+        "sexe":                  request.sexe,
+        "severite":              request.severite,
+        "vitaux":                request.vitaux,
+        "symptomes":             request.symptomes,
         "examens": [
             {
                 "nom":              e.nom,
@@ -181,6 +181,9 @@ async def predict_direct(request: DirectPredictionRequest, _=Depends(get_current
             for e in request.examens
             if e.valeur_numerique is not None
         ],
+        "antecedents_personnels": request.antecedents_personnels,
+        "antecedents_familiaux":  request.antecedents_familiaux,
+        "allergies":              request.allergies,
     }
 
     loop = asyncio.get_event_loop()

@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1230" height="930" viewBox="0 0 1230 930" font-family="Arial, Helvetica, sans-serif">
+<defs>
+  <marker id="arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="#333"/>
+  </marker>
+  <marker id="arr-open" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="white" stroke="#555" stroke-width="1"/>
+  </marker>
+  <marker id="arr-red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="white" stroke="#CC0000" stroke-width="1"/>
+  </marker>
+</defs>
+
+<!-- Background -->
+<rect width="1230" height="930" fill="#FAFAFA"/>
+
+<!-- Title -->
+<text x="600" y="22" text-anchor="middle" font-size="14" font-weight="bold" fill="#222">Diagramme de Séquence — Workflow Infirmier (Consultation Partielle)</text>
+
+<!-- ═══ Participant Boxes ═══ -->
+<!-- Infirmier (cx=115) -->
+<rect x="35"  y="35" width="160" height="42" fill="#DAE8FC" stroke="#6C8EBF" stroke-width="1.5"/>
+<text x="115" y="61" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">Infirmier</text>
+
+<!-- Frontend React (cx=305) -->
+<rect x="225" y="35" width="160" height="42" fill="#D5E8D4" stroke="#82B366" stroke-width="1.5"/>
+<text x="305" y="61" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">Frontend React</text>
+
+<!-- Backend FastAPI (cx=505) -->
+<rect x="425" y="35" width="160" height="42" fill="#FFE6CC" stroke="#D79B00" stroke-width="1.5"/>
+<text x="505" y="61" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">Backend FastAPI</text>
+
+<!-- Modèle ML (cx=715) -->
+<rect x="635" y="35" width="160" height="42" fill="#E1D5E7" stroke="#9673A6" stroke-width="1.5"/>
+<text x="715" y="57" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">Modèle ML</text>
+<text x="715" y="71" text-anchor="middle" font-size="9"  font-weight="bold" fill="#555">(RandomForest)</text>
+
+<!-- Base de Données (cx=925) -->
+<rect x="845" y="35" width="160" height="42" fill="#F8CECC" stroke="#B85450" stroke-width="1.5"/>
+<text x="925" y="61" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">Base de Données</text>
+
+<!-- ═══ Lifelines ═══ -->
+<line x1="115" y1="77" x2="115" y2="920" stroke="#6C8EBF" stroke-width="1" stroke-dasharray="6,4"/>
+<line x1="305" y1="77" x2="305" y2="920" stroke="#82B366" stroke-width="1" stroke-dasharray="6,4"/>
+<line x1="505" y1="77" x2="505" y2="920" stroke="#D79B00" stroke-width="1" stroke-dasharray="6,4"/>
+<line x1="715" y1="77" x2="715" y2="920" stroke="#9673A6" stroke-width="1" stroke-dasharray="6,4"/>
+<line x1="925" y1="77" x2="925" y2="920" stroke="#B85450" stroke-width="1" stroke-dasharray="6,4"/>
+
+<!-- ═══ Alt Frame — Incompatibilité sexe/symptôme ═══ -->
+<rect x="395" y="582" width="545" height="38" fill="#FFF5F5" fill-opacity="0.7" stroke="#CC0000" stroke-width="1.5" stroke-dasharray="6,3"/>
+<text x="401" y="595" font-size="9" font-weight="bold" fill="#CC0000">alt  [Incompatibilité sexe ↔ symptôme]</text>
+
+<!-- ═══ Activation Bars (barres d'activation) ═══ -->
+
+<!-- Backend — Phase 1 recherche : reçoit GET (y=178) → envoie 200 OK (y=265) -->
+<rect x="499" y="178" width="12" height="87"  fill="white" stroke="#D79B00" stroke-width="1.5"/>
+<!-- DB — SELECT patients : reçoit (y=208) → retourne (y=238) -->
+<rect x="919" y="208" width="12" height="30"  fill="white" stroke="#B85450" stroke-width="1.5"/>
+
+<!-- Backend — Phase 3 workflow-partiel : reçoit POST (y=468) → envoie 200 OK (y=828) -->
+<rect x="499" y="468" width="12" height="360" fill="white" stroke="#D79B00" stroke-width="1.5"/>
+<!-- DB — INSERTs multiples : debut (y=500) → fin UPDATE (y=796) -->
+<rect x="919" y="500" width="12" height="296" fill="white" stroke="#B85450" stroke-width="1.5"/>
+<!-- Modèle ML — analyze_symptoms : reçoit (y=706) → retourne (y=736) -->
+<rect x="709" y="706" width="12" height="30"  fill="white" stroke="#9673A6" stroke-width="1.5"/>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--     PHASE 1 — RECHERCHE PATIENT                -->
+<!-- ═══════════════════════════════════════════════ -->
+<text x="600" y="93" text-anchor="middle" font-size="10" font-style="italic" fill="#555">— Phase 1 : Recherche Patient —</text>
+
+<!-- 1. Inf → F -->
+<line x1="115" y1="118" x2="300" y2="118" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="208" y="113" text-anchor="middle" font-size="9" fill="#333">1. Accède au workflow de consultation (navigation)</text>
+
+<!-- 2. Inf → F -->
+<line x1="115" y1="148" x2="300" y2="148" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="208" y="143" text-anchor="middle" font-size="9" fill="#333">2. Saisit nom/prénom pour rechercher le patient</text>
+
+<!-- 3. F → B : GET search -->
+<line x1="305" y1="178" x2="499" y2="178" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="402" y="173" text-anchor="middle" font-size="9" fill="#333">3. GET /api/patients/search?q=nom</text>
+
+<!-- 4. B → DB : SELECT -->
+<line x1="511" y1="208" x2="919" y2="208" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="715" y="203" text-anchor="middle" font-size="9" fill="#333">4. SELECT FROM patients WHERE nom LIKE '%nom%'</text>
+
+<!-- 5. DB → B : retour liste -->
+<line x1="919" y1="238" x2="516" y2="238" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-open)"/>
+<text x="715" y="233" text-anchor="middle" font-size="9" fill="#555">5. Liste de patients correspondants</text>
+
+<!-- 6. B → F : 200 OK -->
+<line x1="499" y1="265" x2="305" y2="265" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-open)"/>
+<text x="402" y="260" text-anchor="middle" font-size="9" fill="#555">6. 200 OK  { patients: [...] } ou liste vide → créer nouveau</text>
+
+<!-- 7. F → Inf : affiche résultats -->
+<line x1="305" y1="292" x2="115" y2="292" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-open)"/>
+<text x="210" y="287" text-anchor="middle" font-size="9" fill="#555">7. Affiche résultats — sélectionne patient ou crée nouveau</text>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--     PHASE 2 — SAISIE DU DOSSIER                -->
+<!-- ═══════════════════════════════════════════════ -->
+<line x1="25" y1="308" x2="1205" y2="308" stroke="#CCCCCC" stroke-width="0.8" stroke-dasharray="3,3"/>
+<text x="600" y="323" text-anchor="middle" font-size="10" font-style="italic" fill="#555">— Phase 2 : Saisie du dossier de consultation —</text>
+
+<!-- 8. Inf → F : motif + médecin -->
+<line x1="115" y1="334" x2="300" y2="334" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="208" y="329" text-anchor="middle" font-size="9" fill="#333">8. Saisit motif de consultation + sélectionne médecin assigné</text>
+
+<!-- 9. Inf → F : symptômes -->
+<line x1="115" y1="364" x2="300" y2="364" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="208" y="359" text-anchor="middle" font-size="9" fill="#333">9. Saisit symptômes : nom, sévérité (LEGER/MODERE/SEVERE), durée (j)</text>
+
+<!-- 10. Inf → F : signes vitaux -->
+<line x1="115" y1="394" x2="300" y2="394" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="208" y="389" text-anchor="middle" font-size="9" fill="#333">10. Saisit signes vitaux : TA, FC, Temp., FR, SpO2, Poids, Taille</text>
+
+<!-- 11. Inf → F : Valider -->
+<line x1="115" y1="424" x2="300" y2="424" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="208" y="419" text-anchor="middle" font-size="9" fill="#333">11. Clique « Valider et soumettre »</text>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--     PHASE 3 — TRAITEMENT SERVEUR               -->
+<!-- ═══════════════════════════════════════════════ -->
+<line x1="25" y1="440" x2="1205" y2="440" stroke="#CCCCCC" stroke-width="0.8" stroke-dasharray="3,3"/>
+<text x="600" y="454" text-anchor="middle" font-size="10" font-style="italic" fill="#555">— Phase 3 : Traitement serveur (POST /api/consultations/workflow-partiel) —</text>
+
+<!-- 12. F → B : POST workflow-partiel -->
+<line x1="305" y1="468" x2="499" y2="468" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="402" y="460" text-anchor="middle" font-size="9" fill="#333">12. POST /api/consultations/workflow-partiel</text>
+<text x="402" y="473" text-anchor="middle" font-size="9" fill="#555">     { patient, motif, medecin_id, symptomes[], signes_vitaux }</text>
+
+<!-- 13. B → DB : INSERT patients -->
+<line x1="511" y1="500" x2="919" y2="500" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="715" y="495" text-anchor="middle" font-size="9" fill="#333">13. INSERT INTO patients  (si nouveau patient)</text>
+
+<!-- 14. B → DB : INSERT consultations -->
+<line x1="511" y1="530" x2="919" y2="530" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="715" y="525" text-anchor="middle" font-size="9" fill="#333">14. INSERT INTO consultations  (statut = 'en attente')</text>
+
+<!-- 15. B self-loop : Validation compatibilité sexe/symptômes -->
+<path d="M 511,556 L 590,556 L 590,575 L 511,575" fill="none" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="594" y="569" font-size="9" fill="#333">15. Validation compatibilité sexe ↔ symptômes</text>
+
+<!-- 16. B → F : 400 Bad Request  [dans alt frame] -->
+<line x1="499" y1="600" x2="305" y2="600" stroke="#CC0000" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-red)"/>
+<text x="402" y="595" text-anchor="middle" font-size="9" fill="#CC0000">16. 400 Bad Request  [symptôme incompatible avec le sexe du patient]</text>
+
+<!-- 17. B → DB : INSERT symptômes -->
+<line x1="511" y1="635" x2="919" y2="635" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="715" y="630" text-anchor="middle" font-size="9" fill="#333">17. INSERT INTO symptomes  (nom, sévérité, durée, description) × N</text>
+
+<!-- 18. B → DB : INSERT signes_vitaux -->
+<line x1="511" y1="665" x2="919" y2="665" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="715" y="660" text-anchor="middle" font-size="9" fill="#333">18. INSERT INTO signes_vitaux  (IMC calculé automatiquement)</text>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!--     PHASE 4 — ANALYSE IA PRÉLIMINAIRE          -->
+<!-- ═══════════════════════════════════════════════ -->
+<line x1="25" y1="680" x2="1205" y2="680" stroke="#CCCCCC" stroke-width="0.8" stroke-dasharray="3,3"/>
+<text x="600" y="694" text-anchor="middle" font-size="10" font-style="italic" fill="#555">— Phase 4 : Analyse IA Préliminaire —</text>
+
+<!-- 19. B → ML : analyze_symptoms -->
+<line x1="511" y1="706" x2="709" y2="706" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="610" y="701" text-anchor="middle" font-size="9" fill="#333">19. analyze_symptoms(symptomes, signes_vitaux, sexe, age)</text>
+
+<!-- 20. ML → B : retour prédiction -->
+<line x1="709" y1="736" x2="516" y2="736" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-open)"/>
+<text x="610" y="731" text-anchor="middle" font-size="9" fill="#555">20. { maladie_predite, confiance, top_predictions: [{maladie, prob.}] }</text>
+
+<!-- 21. B → DB : INSERT analyses_ia -->
+<line x1="511" y1="766" x2="919" y2="766" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="715" y="761" text-anchor="middle" font-size="9" fill="#333">21. INSERT INTO analyses_ia  (modele='RandomForest_Préliminaire', probabilite)</text>
+
+<!-- 22. B → DB : UPDATE consultations statut -->
+<line x1="511" y1="796" x2="919" y2="796" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="715" y="791" text-anchor="middle" font-size="9" fill="#333">22. UPDATE consultations SET statut = 'en_attente_medecin'</text>
+
+<!-- 23. B → F : 200 OK résumé -->
+<line x1="499" y1="828" x2="305" y2="828" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-open)"/>
+<text x="402" y="823" text-anchor="middle" font-size="9" fill="#555">23. 200 OK  { consultation_id, patient_id, analyse_preliminaire: { maladie, confiance } }</text>
+
+<!-- 24. F → Inf : confirmation -->
+<line x1="305" y1="858" x2="115" y2="858" stroke="#555" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-open)"/>
+<text x="210" y="853" text-anchor="middle" font-size="9" fill="#555">24. Affiche confirmation + résumé IA préliminaire (transmis au médecin)</text>
+
+<!-- Note : niveaux de confiance IA -->
+<rect x="1040" y="698" width="178" height="76" fill="#E1D5E7" stroke="#9673A6" stroke-width="1"/>
+<polygon points="1040,698 1054,698 1054,712 1040,712" fill="#9673A6"/>
+<text x="1046" y="712" font-size="9" font-weight="bold" fill="#333">Niveaux de confiance IA :</text>
+<text x="1046" y="726" font-size="9" fill="#555">≥ 75% → HIGH  (vert)</text>
+<text x="1046" y="740" font-size="9" fill="#555">50–74% → MEDIUM (orange)</text>
+<text x="1046" y="754" font-size="9" fill="#555">&#60; 50% → LOW   (rouge)</text>
+<text x="1046" y="768" font-size="9" fill="#888">seuil configurable par admin</text>
+
+</svg>

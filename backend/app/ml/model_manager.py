@@ -3155,6 +3155,76 @@ class ModelManager:
                 proba[idx] *= boost_factor
                 logger.debug(f"Custom boost {maladie_nom} ×{boost_factor} ({nb_match} symptômes)")
 
+        # ── Règles basées sur les antécédents médicaux ──────────────────────────
+        ant_perso = str(consultation_data.get("antecedents_personnels") or "").lower()
+        ant_fam   = str(consultation_data.get("antecedents_familiaux") or "").lower()
+        allergies = str(consultation_data.get("allergies") or "").lower()
+        ant_all   = ant_perso + " " + ant_fam
+
+        def boost_ant(diag: str, factor: float):
+            if diag in classes:
+                proba[classes.index(diag)] *= factor
+
+        # Antécédents personnels → maladies chroniques récidivantes
+        if "diabète" in ant_perso or "diabete" in ant_perso:
+            boost_ant("Diabète Type 2", 3.0); boost_ant("Diabète Type 1", 2.0)
+            boost_ant("Neuropathie diabétique", 3.5); boost_ant("Rétinopathie diabétique", 3.0)
+            boost_ant("Insuffisance rénale chronique", 2.0)
+        if "hypertension" in ant_perso or "hta" in ant_perso:
+            boost_ant("Hypertension", 4.0); boost_ant("Insuffisance cardiaque", 2.0)
+            boost_ant("Accident vasculaire cérébral", 2.5); boost_ant("Insuffisance rénale chronique", 2.0)
+        if "asthme" in ant_perso:
+            boost_ant("Asthme", 4.0); boost_ant("BPCO", 2.0)
+        if "épilepsie" in ant_perso or "epilepsie" in ant_perso:
+            boost_ant("Épilepsie", 4.0)
+        if "tuberculose" in ant_perso or "tbc" in ant_perso:
+            boost_ant("Tuberculose", 3.0)
+        if "ulcère" in ant_perso or "ulcere" in ant_perso or "gastrite" in ant_perso:
+            boost_ant("Ulcère gastro-duodénal", 3.5); boost_ant("Gastrite", 3.0)
+        if "cirrhose" in ant_perso or "hépatite" in ant_perso or "hepatite" in ant_perso:
+            boost_ant("Cirrhose", 3.5); boost_ant("Hépatite B", 2.5); boost_ant("Hépatite C", 2.5)
+        if "lupus" in ant_perso:
+            boost_ant("Lupus érythémateux systémique", 4.0)
+        if "polyarthrite" in ant_perso or "rhumatoïde" in ant_perso:
+            boost_ant("Arthrite rhumatoïde", 4.0)
+        if "sclérose" in ant_perso:
+            boost_ant("Sclérose en plaques", 3.5)
+        if "hypothyroïdie" in ant_perso or "hypothyroidie" in ant_perso:
+            boost_ant("Hypothyroïdie", 4.0)
+        if "hyperthyroïdie" in ant_perso or "hyperthyroidie" in ant_perso:
+            boost_ant("Hyperthyroïdie", 4.0)
+        if "vih" in ant_perso or "sida" in ant_perso or "hiv" in ant_perso:
+            boost_ant("VIH/SIDA", 4.0)
+        if "psoriasis" in ant_perso:
+            boost_ant("Psoriasis", 4.0)
+        if "goutte" in ant_perso:
+            boost_ant("Goutte", 4.0)
+
+        # Antécédents familiaux → risque génétique/héréditaire
+        if "diabète" in ant_fam or "diabete" in ant_fam:
+            boost_ant("Diabète Type 2", 1.8); boost_ant("Diabète Type 1", 1.5)
+        if "cancer" in ant_fam:
+            boost_ant("Leucémie", 1.5); boost_ant("Lymphome", 1.5)
+        if "cardiopathie" in ant_fam or "infarctus" in ant_fam or "cœur" in ant_fam:
+            boost_ant("Infarctus du myocarde", 2.0); boost_ant("Angine de poitrine", 2.0)
+            boost_ant("Athérosclérose", 1.8)
+        if "hypertension" in ant_fam or "hta" in ant_fam:
+            boost_ant("Hypertension", 2.0)
+        if "lupus" in ant_fam:
+            boost_ant("Lupus érythémateux systémique", 2.0)
+        if "sclérose" in ant_fam:
+            boost_ant("Sclérose en plaques", 2.0)
+
+        # Allergies → boost maladies allergiques si symptômes présents
+        if allergies and len(allergies.strip()) > 2:
+            if "prurit" in symptomes or "urticaire" in symptomes or "éruption" in symptomes:
+                boost_ant("Dermatite atopique", 2.5); boost_ant("Eczéma", 2.5)
+            if "dyspnée" in symptomes or "essoufflement" in symptomes or "sibilances" in symptomes:
+                boost_ant("Asthme", 2.5)
+
+        logger.debug(f"[IA] Antécédents perso: {ant_perso[:50] if ant_perso.strip() else 'aucun'}")
+        logger.debug(f"[IA] Antécédents fam: {ant_fam[:50] if ant_fam.strip() else 'aucun'}")
+
         # Renormaliser
         total = proba.sum()
         if total > 0:
