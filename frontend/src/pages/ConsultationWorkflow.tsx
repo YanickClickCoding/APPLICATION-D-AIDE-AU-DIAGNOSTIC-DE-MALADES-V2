@@ -1125,7 +1125,7 @@ export default function ConsultationWorkflow() {
 
   // Charger les listes autocomplete antécédents & allergènes (au montage)
   useEffect(() => {
-    fetch('http://localhost:8000/api/ml/antecedents')
+    apiFetch('http://localhost:8000/api/ml/antecedents')
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         if (d) {
