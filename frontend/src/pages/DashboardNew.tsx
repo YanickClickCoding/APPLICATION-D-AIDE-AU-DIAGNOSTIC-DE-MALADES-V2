@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Activity, CheckCircle, UserCheck, Sun, List, PlusCircle, Inbox, UserX, PieChart, Brain, TrendingUp, AlertCircle, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Doughnut, Line } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler } from 'chart.js';
+import { Doughnut, Bar } from 'react-chartjs-2';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from 'chart.js';
 import { analyticsAPI, healthAPI, mlAPI } from '../services/api';
 import type { DashboardStats, Consultation } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler);
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
 // Custom hook for counter animation
 const useCounter = (target: number, duration: number = 1500) => {
@@ -48,7 +48,7 @@ const StatCard = ({ label, value, total, icon: Icon, accent, bgIcon, colorIcon }
             <Icon style={{color: colorIcon, width:'24px', height:'24px'}} />
         </div>
         <div>
-            <div className="sp-stat-value" style={{ display: 'flex', alignItems: 'baseline', color: '#0f172a' }}>
+            <div className="sp-stat-value" style={{ display: 'flex', alignItems: 'baseline', color: '#292929' }}>
                 <span className="sp-number sp-number-xl">{displayValue}</span>
                 {total !== undefined && (
                   <span className="sp-number sp-number-lg" style={{ color: '#94a3b8', marginLeft: '4px' }}>
@@ -72,7 +72,7 @@ const CenteredCounter = ({ value }: { value: number }) => {
 };
 
 const Dashboard = () => {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentConsultations, setRecentConsultations] = useState<Consultation[]>([]);
   const [personnel, setPersonnel] = useState<any>(null);
@@ -91,7 +91,7 @@ const Dashboard = () => {
       setLoading(true);
       const [dashboardData, consultationsData, healthData, personnelData, mlInfoData] = await Promise.all([
         analyticsAPI.getDashboard(),
-        isAdmin ? Promise.resolve([]) : analyticsAPI.getRecentConsultations(6),
+        analyticsAPI.getRecentConsultations(6),
         healthAPI.check(),
         analyticsAPI.getPersonnelDisponible(),
         mlAPI.getModelInfo().catch(() => null),
@@ -302,38 +302,48 @@ const Dashboard = () => {
                     { label: 'F1-Score',  val: f1,   color: '#DB2777' },
                   ];
 
-                  const lineData = {
+                  // Barres : métriques catégorielles indépendantes — axe resserré pour
+                  // distinguer des valeurs proches, sans descendre sous 70 %
+                  const valeursActives = metricDefs.filter((_, i) => activeMetrics[i]).map(m => m.val);
+                  const yMin = valeursActives.length ? Math.min(70, Math.floor(Math.min(...valeursActives)) - 5) : 70;
+
+                  const barData = {
                     labels: metricDefs.map(m => m.label),
                     datasets: [{
                       label: 'Performance (%)',
                       data: metricDefs.map((m, i) => activeMetrics[i] ? m.val : null),
-                      borderColor: '#4F46E5',
-                      backgroundColor: (ctx: any) => {
-                        const chart = ctx.chart;
-                        const { chartArea } = chart;
-                        if (!chartArea) return 'rgba(79,70,229,0.15)';
-                        const grad = chart.ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-                        grad.addColorStop(0, 'rgba(79,70,229,0.28)');
-                        grad.addColorStop(1, 'rgba(79,70,229,0.01)');
-                        return grad;
-                      },
-                      borderWidth: 2.5,
-                      pointBackgroundColor: metricDefs.map((m, i) => activeMetrics[i] ? m.color : 'transparent'),
-                      pointBorderColor: metricDefs.map((m, i) => activeMetrics[i] ? '#fff' : 'transparent'),
-                      pointBorderWidth: 2,
-                      pointRadius: metricDefs.map((_: any, i: number) => activeMetrics[i] ? 6 : 0),
-                      pointHoverRadius: metricDefs.map((_: any, i: number) => activeMetrics[i] ? 8 : 0),
-                      tension: 0.42,
-                      fill: true,
-                      spanGaps: true,
+                      backgroundColor: metricDefs.map(m => `${m.color}D9`),
+                      hoverBackgroundColor: metricDefs.map(m => m.color),
+                      borderRadius: 8,
+                      borderSkipped: false,
+                      maxBarThickness: 54,
                     }],
                   };
 
-                  const lineOptions: any = {
+                  // Affiche la valeur au-dessus de chaque barre
+                  const valueLabelPlugin = {
+                    id: 'barValueLabels',
+                    afterDatasetsDraw(chart: any) {
+                      const { ctx } = chart;
+                      const meta = chart.getDatasetMeta(0);
+                      meta.data.forEach((bar: any, i: number) => {
+                        const v = chart.data.datasets[0].data[i];
+                        if (v == null) return;
+                        ctx.save();
+                        ctx.font = "700 11px 'DM Sans', sans-serif";
+                        ctx.fillStyle = metricDefs[i].color;
+                        ctx.textAlign = 'center';
+                        ctx.fillText(`${(v as number).toFixed(1)}%`, bar.x, bar.y - 6);
+                        ctx.restore();
+                      });
+                    },
+                  };
+
+                  const barOptions: any = {
                     animation: { duration: 800, easing: 'easeInOutQuart' },
                     responsive: true,
                     maintainAspectRatio: true,
-                    layout: { padding: { left: 6, right: 6 } },
+                    layout: { padding: { top: 16, left: 6, right: 6 } },
                     plugins: {
                       legend: { display: false },
                       tooltip: {
@@ -350,13 +360,12 @@ const Dashboard = () => {
                     },
                     scales: {
                       y: {
-                        min: Math.floor(Math.min(acc, prec, rec, f1)) - 2,
-                        max: Math.ceil(Math.max(acc, prec, rec, f1)) + 1,
+                        min: yMin,
+                        max: 100,
                         ticks: { font: { size: 9 }, color: '#9CA3AF', callback: (v: any) => `${v}%` },
                         grid: { color: '#E5E7EB', drawBorder: false },
                       },
                       x: {
-                        offset: false,
                         ticks: { font: { size: 9, weight: '700' }, color: '#374151' },
                         grid: { display: false },
                       },
@@ -365,13 +374,14 @@ const Dashboard = () => {
 
                   return (
                     <>
-                      {/* Line chart dynamique */}
-                      <div style={{ marginBottom: '14px', background: '#F9FAFB', borderRadius: 12, padding: '10px 8px 6px', border: '1px solid #E5E7EB' }}>
-                        <Line data={lineData} options={lineOptions} />
+                      {/* Barres de performance du modèle */}
+                      <div style={{ background: '#F9FAFB', borderRadius: 12, padding: '10px 8px 6px', border: '1px solid #E5E7EB' }}>
+                        <Bar data={barData} options={barOptions} plugins={[valueLabelPlugin]} />
                       </div>
 
-                      {/* Badges métriques cliquables */}
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {/* Badges métriques cliquables — chacun sous sa barre
+                          (paddingLeft compense la largeur de l'axe Y du graphe) */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', justifyItems: 'center', gap: 6, marginTop: '8px', paddingLeft: '32px' }}>
                         {metricDefs.map(({ label, color }, i) => (
                           <span
                             key={label}
@@ -428,145 +438,10 @@ const Dashboard = () => {
           </div>
       </div>
 
-      {/* Deuxième ligne : Personnel Médical et Consultations récentes */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }} className="sp-fade-in">
-          {/* Personnel disponible */}
+      {/* Deuxième ligne : Consultations récentes */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }} className="sp-fade-in">
+          {/* Consultations récentes */}
           <div className="sp-card">
-              <div className="sp-card-header">
-                  <div className="sp-card-title">
-                      <UserCheck size={20} />
-                      Personnel Médical
-                  </div>
-              </div>
-              <div style={{padding: '20px'}}>
-                  <div style={{marginBottom: '20px'}}>
-                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px'}}>
-                          <span style={{fontSize: '13px', color: '#6B7280', fontWeight: 600}}>Médecins</span>
-                          <span className="sp-number sp-number-md" style={{color: '#4F46E5'}}>
-                              {personnel?.medecins.disponibles || 0}/{personnel?.medecins.total || 0}
-                          </span>
-                      </div>
-                      <div style={{height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden'}}>
-                          <div style={{
-                              height: '100%',
-                              width: `${personnel?.medecins.total > 0 ? (personnel.medecins.disponibles / personnel.medecins.total * 100) : 0}%`,
-                              background: 'linear-gradient(90deg, #4F46E5, #7C3AED)',
-                              transition: 'width 0.3s ease'
-                          }}></div>
-                      </div>
-                  </div>
-                  <div>
-                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px'}}>
-                          <span style={{fontSize: '13px', color: '#6B7280', fontWeight: 600}}>Infirmiers</span>
-                          <span className="sp-number sp-number-md" style={{color: '#10B981'}}>
-                              {personnel?.infirmiers.disponibles || 0}/{personnel?.infirmiers.total || 0}
-                          </span>
-                      </div>
-                      <div style={{height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden'}}>
-                          <div style={{
-                              height: '100%',
-                              width: `${personnel?.infirmiers.total > 0 ? (personnel.infirmiers.disponibles / personnel.infirmiers.total * 100) : 0}%`,
-                              background: 'linear-gradient(90deg, #10B981, #059669)',
-                              transition: 'width 0.3s ease'
-                          }}></div>
-                      </div>
-                  </div>
-
-                  {/* Disponibilité — statistiques */}
-                  <div style={{marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #F3F4F6'}}>
-                      <p style={{fontSize: '11px', color: '#9CA3AF', fontWeight: 600, marginBottom: '14px', textTransform: 'uppercase', letterSpacing: '0.06em'}}>Disponibilité en temps réel</p>
-                      <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}>
-                          {[
-                              { label: 'Médecins',   dispo: personnel?.medecins.disponibles   || 0, total: personnel?.medecins.total   || 0, color: '#4F46E5', bg: '#EEF2FF' },
-                              { label: 'Infirmiers', dispo: personnel?.infirmiers.disponibles || 0, total: personnel?.infirmiers.total || 0, color: '#10B981', bg: '#ECFDF5' }
-                          ].map(({ label, dispo, total, color, bg }) => {
-                              const ratio = total > 0 ? dispo / total : 0;
-                              const pct   = Math.round(ratio * 100);
-                              const r     = 26;
-                              const circ  = 2 * Math.PI * r;
-                              const dash  = ratio * circ;
-                              const indispo = total - dispo;
-                              return (
-                                  <div key={label} style={{display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '14px 8px 10px', background: bg, borderRadius: '12px', gap: '8px'}}>
-                                      <div style={{position: 'relative', width: '72px', height: '72px'}}>
-                                          <svg width="72" height="72" viewBox="0 0 72 72">
-                                              <circle cx="36" cy="36" r={r} fill="none" stroke="white" strokeWidth="7"/>
-                                              <circle cx="36" cy="36" r={r} fill="none" stroke={color} strokeWidth="7"
-                                                  strokeDasharray={`${dash} ${circ - dash}`}
-                                                  strokeLinecap={pct < 100 ? 'round' : 'butt'}
-                                                  transform="rotate(-90 36 36)"/>
-                                          </svg>
-                                          <div style={{position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                                              <span style={{fontSize: '16px', fontWeight: 700, color, lineHeight: 1}}>{pct}%</span>
-                                          </div>
-                                      </div>
-                                      <span style={{fontSize: '12px', fontWeight: 700, color: '#374151'}}>{label}</span>
-                                      <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', width: '100%'}}>
-                                          <div style={{display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '11px'}}>
-                                              <span style={{color: '#6B7280'}}>Disponibles</span>
-                                              <span style={{fontWeight: 700, color}}>{dispo}</span>
-                                          </div>
-                                          <div style={{display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '11px'}}>
-                                              <span style={{color: '#6B7280'}}>Indisponibles</span>
-                                              <span style={{fontWeight: 700, color: indispo > 0 ? '#EF4444' : '#9CA3AF'}}>{indispo}</span>
-                                          </div>
-                                          <div style={{display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '11px', borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: '3px', marginTop: '1px'}}>
-                                              <span style={{color: '#6B7280'}}>Total</span>
-                                              <span style={{fontWeight: 600, color: '#374151'}}>{total}</span>
-                                          </div>
-                                      </div>
-                                  </div>
-                              );
-                          })}
-                      </div>
-                  </div>
-              </div>
-          </div>
-
-          {/* Consultations récentes (non-admin) / Top maladies (admin) */}
-          {isAdmin ? (
-            <div className="sp-card">
-              <div className="sp-card-header">
-                <div className="sp-card-title">
-                  <PieChart size={20} />
-                  Top maladies diagnostiquées
-                </div>
-              </div>
-              <div style={{ padding: '16px 20px 20px' }}>
-                {stats.top_diagnostics.length === 0 ? (
-                  <div className="sp-empty" style={{ padding: '30px' }}>
-                    <Inbox size={32} style={{ color: 'var(--sp-gray-300)', marginBottom: '8px' }} />
-                    <div className="sp-empty-title">Aucun diagnostic enregistré</div>
-                  </div>
-                ) : (() => {
-                  const maxCount = Math.max(...stats.top_diagnostics.map(d => d.count));
-                  const palette = ['#4F46E5', '#7C3AED', '#DB2777', '#059669', '#D97706'];
-                  return stats.top_diagnostics.slice(0, 5).map((d, i) => (
-                    <div key={d.diagnostic} style={{ marginBottom: i < 4 ? '14px' : 0 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-                        <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '75%' }}>
-                          {d.diagnostic}
-                        </span>
-                        <span style={{ fontSize: '12px', fontWeight: 700, color: palette[i % palette.length] }}>
-                          {d.count} cas
-                        </span>
-                      </div>
-                      <div style={{ height: '6px', background: '#F3F4F6', borderRadius: '3px', overflow: 'hidden' }}>
-                        <div style={{
-                          height: '100%',
-                          width: `${maxCount > 0 ? (d.count / maxCount) * 100 : 0}%`,
-                          background: palette[i % palette.length],
-                          borderRadius: '3px',
-                          transition: 'width 0.8s ease',
-                        }} />
-                      </div>
-                    </div>
-                  ));
-                })()}
-              </div>
-            </div>
-          ) : (
-            <div className="sp-card">
               <div className="sp-card-header">
                 <div className="sp-card-title">
                   <List size={20} />
@@ -607,8 +482,7 @@ const Dashboard = () => {
                   </div>
                 )}
               </div>
-            </div>
-          )}
+          </div>
       </div>
     </>
   );

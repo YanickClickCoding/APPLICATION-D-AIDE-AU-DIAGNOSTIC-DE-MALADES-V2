@@ -1,38 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Server, Brain, Database, Trash2, RefreshCw, Play, CheckCircle,
-  XCircle, FileText, Cpu, Clock, ChevronDown,
-  ChevronUp, Terminal, Package, Zap, Sliders, AlertTriangle,
-  BarChart2, Activity, History, TrendingUp, Plus, X, FlaskConical,
+  Server, Brain, Trash2, RefreshCw, Play, CheckCircle,
+  XCircle, FileText, Cpu, Clock, ChevronDown, ChevronUp,
+  Terminal, Sliders, AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { adminAPI, type IAConfig } from '../services/api';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-
-interface ModelPerformance {
-  available: boolean;
-  model_version?: string;
-  metrics?: {
-    accuracy: number; precision: number; recall: number; f1_score: number;
-    n_samples?: number; n_features?: number; n_classes?: number; duration_s?: number;
-  };
-  feature_importance?: { features: string[]; importances: number[] };
-  message?: string;
-}
-
-interface AIStats {
-  total_predictions: number;
-  avg_confidence_pct: number;
-  confidence_distribution: { HIGH: number; MEDIUM: number; LOW: number };
-  top_diseases: Array<{ disease: string; count: number }>;
-}
-
-interface TrainingSession {
-  date: string; accuracy: number; precision: number; recall: number;
-  f1_score: number; n_samples?: number; n_features?: number; n_classes?: number;
-  duration_s?: number; n_estimators?: number; max_depth?: number;
-}
 
 interface SystemStatus {
   server: { status: string; timestamp: string; platform: string; python_version: string; uvicorn_port: number };
@@ -112,107 +87,12 @@ export default function AdminSystem() {
   const [savingIA, setSavingIA] = useState(false);
   const [iaConfigDirty, setIaConfigDirty] = useState(false);
 
-  // Nouvelles sections
-  const [modelPerf, setModelPerf] = useState<ModelPerformance | null>(null);
-  const [aiStats, setAIStats] = useState<AIStats | null>(null);
-  const [trainingHistory, setTrainingHistory] = useState<TrainingSession[]>([]);
-
-  // ── Ajout nouvelle maladie ──────────────────────────────────────────────────
-  const [newDiseaseName, setNewDiseaseName]       = useState('');
-  const [newDiseaseCateg, setNewDiseaseCateg]     = useState('Infectieuses');
-  const [newDiseaseSymptomes, setNewDiseaseSymptomes] = useState<string[]>([]);
-  const [newSymptomeInput, setNewSymptomeInput]   = useState('');
-  const [newDiseaseNCas, setNewDiseaseNCas]       = useState(80);
-  const [addDiseaseLoading, setAddDiseaseLoading] = useState(false);
-  const [addDiseaseResult, setAddDiseaseResult]   = useState<{ success: boolean; message: string; total?: number } | null>(null);
-  const [datasetStats, setDatasetStats]           = useState<{ total_maladies: number; total_cas: number } | null>(null);
-  const [maladiesExistantes, setMaladiesExistantes] = useState<string[]>([]);
-
-  const CATEGORIES = [
-    'Infectieuses', 'Cardiovasculaires', 'Respiratoires', 'Gastro-intestinales',
-    'Endocriniennes / Métaboliques', 'Hépatiques', 'Neurologiques', 'Rhumatologiques',
-    'Dermatologiques', 'Ophtalmologiques', 'Hématologiques', 'Rénales / Urinaires', 'Autres',
-  ];
-
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok });
     setTimeout(() => setToast(null), 4000);
-  };
-
-  const fetchDatasetStats = useCallback(async () => {
-    if (!token) return;
-    try {
-      const res = await fetch('http://localhost:8000/api/admin/dataset/maladies', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const d = await res.json();
-        setDatasetStats({ total_maladies: d.total_maladies, total_cas: d.total_cas });
-        setMaladiesExistantes((d.maladies as { nom: string }[]).map(m => m.nom.toLowerCase().trim()));
-      }
-    } catch { /* silencieux */ }
-  }, [token]);
-
-  const diseaseAlreadyExists = maladiesExistantes.includes(newDiseaseName.trim().toLowerCase());
-
-  const handleAddSymptome = () => {
-    const s = newSymptomeInput.trim();
-    if (s && !newDiseaseSymptomes.includes(s)) {
-      setNewDiseaseSymptomes(prev => [...prev, s]);
-    }
-    setNewSymptomeInput('');
-  };
-
-  const handleRefreshSymptomes = async () => {
-    if (!token) return;
-    try {
-      const res = await fetch('http://localhost:8000/api/admin/symptomes/refresh', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.detail || 'Erreur');
-      showToast(`Cache mis à jour — ${d.total} symptômes disponibles dans le dropdown`);
-    } catch (e: any) {
-      showToast(e.message, false);
-    }
-  };
-
-  const handleAddDisease = async () => {
-    if (!token) return;
-    if (!newDiseaseName.trim()) { showToast('Nom de la maladie requis', false); return; }
-    if (diseaseAlreadyExists) { showToast(`"${newDiseaseName}" existe déjà dans le dataset`, false); return; }
-    if (newDiseaseSymptomes.length < 2) { showToast('Ajoutez au moins 2 symptômes caractéristiques', false); return; }
-    setAddDiseaseLoading(true);
-    setAddDiseaseResult(null);
-    try {
-      const res = await fetch('http://localhost:8000/api/admin/dataset/add-disease', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          nom_maladie: newDiseaseName.trim(),
-          categorie: newDiseaseCateg,
-          symptomes: newDiseaseSymptomes,
-          n_cas: newDiseaseNCas,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Erreur serveur');
-      setAddDiseaseResult({ success: true, message: data.message, total: data.total_dataset });
-      setNewDiseaseName('');
-      setNewDiseaseSymptomes([]);
-      setNewDiseaseNCas(80);
-      fetchDatasetStats();
-      showToast(`${data.cas_ajoutes} cas ajoutés pour "${data.maladie}" !`);
-    } catch (e: any) {
-      setAddDiseaseResult({ success: false, message: e.message });
-      showToast(e.message, false);
-    } finally {
-      setAddDiseaseLoading(false);
-    }
   };
 
   const fetchStatus = useCallback(async () => {
@@ -237,20 +117,6 @@ export default function AdminSystem() {
     }
   }, [token]);
 
-  const fetchExtras = useCallback(async () => {
-    if (!token) return;
-    try {
-      const [perf, stats, hist] = await Promise.all([
-        adminAPI.getModelPerformance(token),
-        adminAPI.getAIStats(token),
-        adminAPI.getTrainingHistory(token),
-      ]);
-      setModelPerf(perf);
-      setAIStats(stats);
-      setTrainingHistory(hist.sessions || []);
-    } catch { /* silencieux */ }
-  }, [token]);
-
   const fetchLogs = useCallback(async () => {
     if (!token) return;
     try {
@@ -262,7 +128,6 @@ export default function AdminSystem() {
     }
   }, [token]);
 
-  // Poll training status when running
   useEffect(() => {
     if (training?.status === 'running') {
       pollRef.current = setInterval(async () => {
@@ -273,21 +138,19 @@ export default function AdminSystem() {
           if (data.status !== 'running') {
             clearInterval(pollRef.current!);
             fetchStatus();
-            fetchExtras();
             if (data.status === 'success') showToast('Entraînement terminé avec succès !');
             else showToast(data.error ?? 'Entraînement échoué', false);
           }
-        } catch {
-          // ignore
-        }
+        } catch { /* ignore */ }
       }, 3000);
     }
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [training?.status, fetchStatus, token]);
 
   useEffect(() => {
-    if (!authLoading) { fetchStatus(); fetchExtras(); fetchDatasetStats(); }
-  }, [fetchStatus, fetchExtras, fetchDatasetStats, authLoading]);
+    if (!authLoading) fetchStatus();
+  }, [fetchStatus, authLoading]);
+
   useEffect(() => { if (logsOpen) fetchLogs(); }, [logsOpen, fetchLogs]);
 
   const startTraining = async () => {
@@ -313,9 +176,7 @@ export default function AdminSystem() {
       fetchStatus();
     } catch {
       showToast('Erreur lors du nettoyage', false);
-    } finally {
-      setLoadingCleanModels(false);
-    }
+    } finally { setLoadingCleanModels(false); }
   };
 
   const cleanLogs = async () => {
@@ -328,9 +189,7 @@ export default function AdminSystem() {
       fetchStatus();
     } catch {
       showToast('Erreur lors du nettoyage des logs', false);
-    } finally {
-      setLoadingCleanLogs(false);
-    }
+    } finally { setLoadingCleanLogs(false); }
   };
 
   const saveIAConfig = async () => {
@@ -338,15 +197,11 @@ export default function AdminSystem() {
     setSavingIA(true);
     try {
       const updated = await adminAPI.updateIAConfig(token, iaConfigDraft);
-      setIaConfig(updated);
-      setIaConfigDraft(updated);
-      setIaConfigDirty(false);
+      setIaConfig(updated); setIaConfigDraft(updated); setIaConfigDirty(false);
       showToast('Configuration IA sauvegardée');
     } catch (e: any) {
       showToast(e.detail ?? 'Erreur lors de la sauvegarde', false);
-    } finally {
-      setSavingIA(false);
-    }
+    } finally { setSavingIA(false); }
   };
 
   const updateDraft = (key: keyof IAConfig, value: number) => {
@@ -373,8 +228,6 @@ export default function AdminSystem() {
           onClick={() => setShowTrainWarning(false)}>
           <div style={{ background: '#fff', borderRadius: 16, padding: '32px 36px', maxWidth: 540, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}
             onClick={e => e.stopPropagation()}>
-
-            {/* En-tête */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
               <div style={{ width: 48, height: 48, borderRadius: 12, background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <AlertTriangle size={24} style={{ color: '#D97706' }} />
@@ -384,8 +237,6 @@ export default function AdminSystem() {
                 <p style={{ margin: 0, fontSize: 13, color: '#6B7280' }}>Lire les informations importantes ci-dessous</p>
               </div>
             </div>
-
-            {/* Performances actuelles */}
             <div style={{ background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 10, padding: '12px 16px', marginBottom: 16 }}>
               <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 700, color: '#166534' }}>Performances actuelles du modèle</p>
               <div style={{ display: 'flex', gap: 20 }}>
@@ -393,37 +244,25 @@ export default function AdminSystem() {
                 <span style={{ fontSize: 13, color: '#15803D' }}>✓ Top-3 : <strong>98 %</strong> (49/50 maladies)</span>
               </div>
             </div>
-
-            {/* Avertissement */}
             <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10, padding: '12px 16px', marginBottom: 16 }}>
               <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 700, color: '#92400E' }}>⚠️ Réentraîner sans modifier le dataset ne changera pas les résultats</p>
               <p style={{ margin: 0, fontSize: 12, color: '#78350F', lineHeight: 1.6 }}>
-                Le modèle atteint déjà 84 % d'accuracy sur ses données de test internes. Les 5 maladies encore ambiguës
-                (DT1/DT2, HépA/HépB, RGO/Hernie, Gastrite/Ulcère, IRA/IRC) ne peuvent pas être distinguées
-                sans sérologie ou biopsie — même avec plus d'arbres ou de profondeur.
+                Le modèle atteint déjà 84 % d'accuracy sur ses données de test. Les maladies ambiguës ne peuvent être distinguées sans sérologie.
               </p>
             </div>
-
-            {/* Ce qui améliorerait vraiment */}
             <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 10, padding: '12px 16px', marginBottom: 24 }}>
               <p style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 700, color: '#1E40AF' }}>Ce qui améliorerait réellement le modèle</p>
               <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: '#1E3A8A', lineHeight: 1.8 }}>
-                <li>Ajouter des features binaires dans le dataset (seuils HTA, anosmie, etc.)</li>
-                <li>Augmenter le nombre de cas d'entraînement par maladie ambiguë</li>
+                <li>Ajouter des features binaires dans le dataset (page Dataset)</li>
+                <li>Augmenter le nombre de cas par maladie ambiguë</li>
                 <li>Inclure les résultats de sérologie comme feature discriminante</li>
               </ul>
             </div>
-
-            {/* Boutons */}
             <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-              <button
-                onClick={() => setShowTrainWarning(false)}
-                style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #D1D5DB', background: '#fff', color: '#374151', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+              <button onClick={() => setShowTrainWarning(false)} style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #D1D5DB', background: '#fff', color: '#374151', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
                 Annuler
               </button>
-              <button
-                onClick={() => { setShowTrainWarning(false); startTraining(); }}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#7C3AED,#4F46E5)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+              <button onClick={() => { setShowTrainWarning(false); startTraining(); }} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#7C3AED,#4F46E5)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
                 <Play size={15} /> Lancer quand même
               </button>
             </div>
@@ -433,47 +272,30 @@ export default function AdminSystem() {
 
       {/* Bannière modèle non entraîné */}
       {status && !status.model.loaded && (
-        <div style={{
-          marginBottom: 24, padding: '16px 20px', borderRadius: 12,
-          background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)',
-          border: '2px solid #F59E0B',
-          display: 'flex', alignItems: 'flex-start', gap: 14,
-        }}>
+        <div style={{ marginBottom: 24, padding: '16px 20px', borderRadius: 12, background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)', border: '2px solid #F59E0B', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
           <AlertTriangle size={24} style={{ color: '#B45309', flexShrink: 0, marginTop: 2 }} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 800, fontSize: 15, color: '#92400E', marginBottom: 4 }}>
-              Aucun modèle d'IA entraîné
-            </div>
+            <div style={{ fontWeight: 800, fontSize: 15, color: '#92400E', marginBottom: 4 }}>Aucun modèle d'IA entraîné</div>
             <div style={{ fontSize: 13, color: '#78350F', lineHeight: 1.5, marginBottom: 10 }}>
-              Le système ne peut pas effectuer de diagnostics automatiques. Entraînez le modèle
-              ci-dessous à partir du dataset inclus dans le projet (<code style={{ background: 'rgba(0,0,0,0.08)', padding: '1px 5px', borderRadius: 3 }}>les ressources dataset/</code>).
+              Rendez-vous sur la page <strong>Modèle IA</strong> pour lancer l'entraînement.
             </div>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <div style={{ fontSize: 12, color: '#78350F', background: 'rgba(0,0,0,0.07)', padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}>
-                {status.dataset.found ? `✅ Dataset prêt (${status.dataset.size_mb} Mo)` : '❌ Dataset introuvable'}
-              </div>
-              <div style={{ fontSize: 12, color: '#78350F', background: 'rgba(0,0,0,0.07)', padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}>
-                👇 Cliquez sur "Entraîner le modèle" dans la section ML ci-dessous
-              </div>
+            <div style={{ fontSize: 12, color: '#78350F', background: 'rgba(0,0,0,0.07)', padding: '4px 10px', borderRadius: 6, fontWeight: 600, display: 'inline-block' }}>
+              {status.dataset.found ? `✅ Dataset prêt (${status.dataset.size_mb} Mo)` : '❌ Dataset introuvable'}
             </div>
           </div>
         </div>
       )}
 
       {/* En-tête */}
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 900, color: '#111827', margin: 0 }}>Administration Système</h1>
-        <p style={{ color: '#6B7280', marginTop: 4, fontSize: 14 }}>
-          Gérez le serveur FastAPI, le modèle ML, les logs et le nettoyage
-        </p>
-      </div>
-
-      {/* Bouton actualiser */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-        <button
-          onClick={() => { setLoadingStatus(true); fetchStatus(); fetchExtras(); }}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, border: '1px solid #E5E7EB', background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#374151' }}
-        >
+      <div style={{ marginBottom: 28, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h1 style={{ fontSize: 26, fontWeight: 900, color: '#111827', margin: 0 }}>Administration Système</h1>
+          <p style={{ color: '#6B7280', marginTop: 4, fontSize: 14 }}>
+            Serveur FastAPI, ressources, nettoyage et logs
+          </p>
+        </div>
+        <button onClick={() => { setLoadingStatus(true); fetchStatus(); }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 8, border: '1px solid #E5E7EB', background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: '#374151' }}>
           <RefreshCw size={14} style={{ animation: loadingStatus ? 'spin 1s linear infinite' : 'none' }} />
           Actualiser
         </button>
@@ -500,83 +322,30 @@ export default function AdminSystem() {
             </button>
           </div>
 
-          {/* Section entraînement accessible même sans connexion au status */}
           <Card title="Entraîner le modèle ML" icon={Brain} accent="#7C3AED">
             <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 16 }}>
               Aucun modèle n'est chargé. Configurez les paramètres et lancez l'entraînement.
             </p>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 12 }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
               <div>
                 <label style={{ fontSize: 11, color: '#6B7280', fontWeight: 600, display: 'block', marginBottom: 4 }}>Nombre d'arbres</label>
-                <input
-                  type="number" value={nEstimators} min={50} max={500} step={50}
-                  onChange={e => setNEstimators(+e.target.value)}
-                  style={{ width: 100, padding: '6px 10px', borderRadius: 6, border: '1px solid #D1D5DB', fontSize: 13 }}
-                  disabled={trainingRunning}
-                />
+                <input type="number" value={nEstimators} min={50} max={500} step={50} onChange={e => setNEstimators(+e.target.value)} style={{ width: 100, padding: '6px 10px', borderRadius: 6, border: '1px solid #D1D5DB', fontSize: 13 }} disabled={trainingRunning} />
               </div>
               <div>
                 <label style={{ fontSize: 11, color: '#6B7280', fontWeight: 600, display: 'block', marginBottom: 4 }}>Profondeur max</label>
-                <input
-                  type="number" value={maxDepth} min={5} max={60} step={5}
-                  onChange={e => setMaxDepth(+e.target.value)}
-                  style={{ width: 100, padding: '6px 10px', borderRadius: 6, border: '1px solid #D1D5DB', fontSize: 13 }}
-                  disabled={trainingRunning}
-                />
+                <input type="number" value={maxDepth} min={5} max={60} step={5} onChange={e => setMaxDepth(+e.target.value)} style={{ width: 100, padding: '6px 10px', borderRadius: 6, border: '1px solid #D1D5DB', fontSize: 13 }} disabled={trainingRunning} />
               </div>
-              <button
-                onClick={() => setShowTrainWarning(true)}
-                disabled={trainingRunning || loadingTrain}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '9px 20px', borderRadius: 8, border: 'none',
-                  cursor: trainingRunning ? 'not-allowed' : 'pointer',
-                  background: trainingRunning ? '#E5E7EB' : 'linear-gradient(135deg,#7C3AED,#4F46E5)',
-                  color: trainingRunning ? '#9CA3AF' : 'white', fontWeight: 700, fontSize: 14,
-                  opacity: trainingRunning ? 0.7 : 1,
-                }}
-              >
-                {trainingRunning
-                  ? <><RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Entraînement en cours…</>
-                  : <><Play size={16} /> Entraîner le modèle</>
-                }
+              <button onClick={() => setShowTrainWarning(true)} disabled={trainingRunning || loadingTrain} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 20px', borderRadius: 8, border: 'none', cursor: trainingRunning ? 'not-allowed' : 'pointer', background: trainingRunning ? '#E5E7EB' : 'linear-gradient(135deg,#7C3AED,#4F46E5)', color: trainingRunning ? '#9CA3AF' : 'white', fontWeight: 700, fontSize: 14, opacity: trainingRunning ? 0.7 : 1 }}>
+                {trainingRunning ? <><RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Entraînement en cours…</> : <><Play size={16} /> Entraîner le modèle</>}
               </button>
             </div>
-
-            {training && training.status !== 'idle' && (
-              <div style={{
-                marginTop: 12, padding: 16, borderRadius: 10,
-                background: training.status === 'success' ? '#ECFDF5' : training.status === 'error' ? '#FEF2F2' : '#EEF2FF',
-                border: `1px solid ${training.status === 'success' ? '#6EE7B7' : training.status === 'error' ? '#FECACA' : '#C7D2FE'}`,
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  {training.status === 'running' && <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite', color: '#4F46E5' }} />}
-                  {training.status === 'success' && <CheckCircle size={14} style={{ color: '#059669' }} />}
-                  {training.status === 'error' && <XCircle size={14} style={{ color: '#DC2626' }} />}
-                  <span style={{ fontSize: 13, fontWeight: 600, color: training.status === 'success' ? '#065F46' : training.status === 'error' ? '#991B1B' : '#3730A3' }}>
-                    {training.message}
-                  </span>
-                </div>
-                {training.status === 'running' && (
-                  <div style={{ overflow: 'hidden', borderRadius: 99, background: '#C7D2FE', height: 6 }}>
-                    <div style={{ height: '100%', width: '40%', background: '#4F46E5', animation: 'pulse 2s infinite', borderRadius: 99 }} />
-                  </div>
-                )}
-                {training.status === 'error' && <p style={{ fontSize: 12, color: '#991B1B', margin: 0 }}>{training.error}</p>}
-                {training.status === 'success' && (
-                  <p style={{ fontSize: 12, color: '#065F46', margin: '8px 0 0' }}>
-                    Entraînement terminé. Actualisez la page pour voir les détails complets.
-                  </p>
-                )}
-              </div>
-            )}
           </Card>
         </>
       )}
 
       {status && (
         <>
-          {/* ─── Serveur ─────────────────────────────────────────────── */}
+          {/* ─── Serveur ─── */}
           <Card title="Serveur FastAPI" icon={Server} accent="#4F46E5">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 20, marginBottom: 16 }}>
               <Stat label="Statut" value={<Badge ok label="En ligne" />} />
@@ -591,7 +360,7 @@ export default function AdminSystem() {
             </div>
           </Card>
 
-          {/* ─── Ressources ──────────────────────────────────────────── */}
+          {/* ─── Ressources ─── */}
           {status.resources.cpu_percent !== undefined && (
             <Card title="Ressources système" icon={Cpu} accent="#0EA5E9">
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 20, marginBottom: 16 }}>
@@ -609,12 +378,10 @@ export default function AdminSystem() {
             </Card>
           )}
           {status.resources.note && (
-            <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 12, fontStyle: 'italic' }}>
-              ℹ️ {status.resources.note}
-            </div>
+            <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 12, fontStyle: 'italic' }}>ℹ️ {status.resources.note}</div>
           )}
 
-          {/* ─── Modèle ML ───────────────────────────────────────────── */}
+          {/* ─── Modèle ML (résumé + bouton entraîner) ─── */}
           <Card title="Modèle Machine Learning" icon={Brain} accent="#7C3AED">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 20, marginBottom: 20 }}>
               <Stat label="Statut" value={<Badge ok={status.model.loaded} label={status.model.loaded ? 'Chargé' : 'Non chargé'} />} />
@@ -627,65 +394,28 @@ export default function AdminSystem() {
                 Fichier actif : <code style={{ background: '#F3F4F6', padding: '2px 6px', borderRadius: 4 }}>{status.model.version}</code>
               </div>
             )}
-
-            {/* Paramètres d'entraînement */}
             <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 12 }}>
               <div>
                 <label style={{ fontSize: 11, color: '#6B7280', fontWeight: 600, display: 'block', marginBottom: 4 }}>Nombre d'arbres</label>
-                <input
-                  type="number" value={nEstimators} min={50} max={500} step={50}
-                  onChange={e => setNEstimators(+e.target.value)}
-                  style={{ width: 100, padding: '6px 10px', borderRadius: 6, border: '1px solid #D1D5DB', fontSize: 13 }}
-                  disabled={trainingRunning}
-                />
+                <input type="number" value={nEstimators} min={50} max={500} step={50} onChange={e => setNEstimators(+e.target.value)} style={{ width: 100, padding: '6px 10px', borderRadius: 6, border: '1px solid #D1D5DB', fontSize: 13 }} disabled={trainingRunning} />
               </div>
               <div>
                 <label style={{ fontSize: 11, color: '#6B7280', fontWeight: 600, display: 'block', marginBottom: 4 }}>Profondeur max</label>
-                <input
-                  type="number" value={maxDepth} min={5} max={60} step={5}
-                  onChange={e => setMaxDepth(+e.target.value)}
-                  style={{ width: 100, padding: '6px 10px', borderRadius: 6, border: '1px solid #D1D5DB', fontSize: 13 }}
-                  disabled={trainingRunning}
-                />
+                <input type="number" value={maxDepth} min={5} max={60} step={5} onChange={e => setMaxDepth(+e.target.value)} style={{ width: 100, padding: '6px 10px', borderRadius: 6, border: '1px solid #D1D5DB', fontSize: 13 }} disabled={trainingRunning} />
               </div>
-              <button
-                onClick={() => setShowTrainWarning(true)}
-                disabled={trainingRunning || loadingTrain}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '9px 20px', borderRadius: 8, border: 'none', cursor: trainingRunning ? 'not-allowed' : 'pointer',
-                  background: trainingRunning ? '#E5E7EB' : 'linear-gradient(135deg,#7C3AED,#4F46E5)',
-                  color: trainingRunning ? '#9CA3AF' : 'white', fontWeight: 700, fontSize: 14,
-                  opacity: trainingRunning ? 0.7 : 1,
-                }}
-              >
-                {trainingRunning
-                  ? <><RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Entraînement en cours…</>
-                  : <><Play size={16} /> {status.model.loaded ? 'Réentraîner le modèle' : 'Entraîner le modèle'}</>
-                }
+              <button onClick={() => setShowTrainWarning(true)} disabled={trainingRunning || loadingTrain} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 20px', borderRadius: 8, border: 'none', cursor: trainingRunning ? 'not-allowed' : 'pointer', background: trainingRunning ? '#E5E7EB' : 'linear-gradient(135deg,#7C3AED,#4F46E5)', color: trainingRunning ? '#9CA3AF' : 'white', fontWeight: 700, fontSize: 14, opacity: trainingRunning ? 0.7 : 1 }}>
+                {trainingRunning ? <><RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Entraînement en cours…</> : <><Play size={16} /> {status.model.loaded ? 'Réentraîner' : 'Entraîner le modèle'}</>}
               </button>
             </div>
-
-            {/* Bloc entraînement */}
             {training && training.status !== 'idle' && (
-              <div style={{
-                marginTop: 12, padding: 16, borderRadius: 10,
-                background: training.status === 'success' ? '#ECFDF5' : training.status === 'error' ? '#FEF2F2' : '#EEF2FF',
-                border: `1px solid ${training.status === 'success' ? '#6EE7B7' : training.status === 'error' ? '#FECACA' : '#C7D2FE'}`,
-              }}>
+              <div style={{ marginTop: 12, padding: 16, borderRadius: 10, background: training.status === 'success' ? '#ECFDF5' : training.status === 'error' ? '#FEF2F2' : '#EEF2FF', border: `1px solid ${training.status === 'success' ? '#6EE7B7' : training.status === 'error' ? '#FECACA' : '#C7D2FE'}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   {training.status === 'running' && <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite', color: '#4F46E5' }} />}
                   {training.status === 'success' && <CheckCircle size={14} style={{ color: '#059669' }} />}
                   {training.status === 'error' && <XCircle size={14} style={{ color: '#DC2626' }} />}
-                  <span style={{ fontSize: 13, fontWeight: 600, color: training.status === 'success' ? '#065F46' : training.status === 'error' ? '#991B1B' : '#3730A3' }}>
-                    {training.message}
-                  </span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: training.status === 'success' ? '#065F46' : training.status === 'error' ? '#991B1B' : '#3730A3' }}>{training.message}</span>
                 </div>
-                {training.status === 'running' && (
-                  <div style={{ overflow: 'hidden', borderRadius: 99, background: '#C7D2FE', height: 6 }}>
-                    <div style={{ height: '100%', width: '40%', background: '#4F46E5', animation: 'pulse 2s infinite', borderRadius: 99 }} />
-                  </div>
-                )}
+                {training.status === 'running' && <div style={{ overflow: 'hidden', borderRadius: 99, background: '#C7D2FE', height: 6 }}><div style={{ height: '100%', width: '40%', background: '#4F46E5', animation: 'pulse 2s infinite', borderRadius: 99 }} /></div>}
                 {training.status === 'error' && <p style={{ fontSize: 12, color: '#991B1B', margin: 0 }}>{training.error}</p>}
                 {training.results && (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 12 }}>
@@ -707,76 +437,27 @@ export default function AdminSystem() {
             )}
           </Card>
 
-          {/* ─── Config IA ───────────────────────────────────────────── */}
+          {/* ─── Config IA ─── */}
           <Card title="Configuration de l'IA" icon={Sliders} accent="#0891B2">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 20 }}>
-
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>
-                  Seuil confiance minimum
-                  <span style={{ float: 'right', color: '#0891B2', fontWeight: 700 }}>{Math.round(iaConfigDraft.seuil_confiance_min * 100)}%</span>
-                </label>
-                <input
-                  type="range" min={0} max={1} step={0.05}
-                  value={iaConfigDraft.seuil_confiance_min}
-                  onChange={e => updateDraft('seuil_confiance_min', parseFloat(e.target.value))}
-                  style={{ width: '100%', accentColor: '#0891B2' }}
-                />
-                <p style={{ fontSize: 11, color: '#6B7280', margin: '4px 0 0' }}>
-                  En-dessous, le diagnostic est marqué comme incertain
-                </p>
-              </div>
-
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>
-                  Seuil alerte basse confiance
-                  <span style={{ float: 'right', color: '#DC2626', fontWeight: 700 }}>{Math.round(iaConfigDraft.seuil_alerte_bas * 100)}%</span>
-                </label>
-                <input
-                  type="range" min={0} max={0.8} step={0.05}
-                  value={iaConfigDraft.seuil_alerte_bas}
-                  onChange={e => updateDraft('seuil_alerte_bas', parseFloat(e.target.value))}
-                  style={{ width: '100%', accentColor: '#DC2626' }}
-                />
-                <p style={{ fontSize: 11, color: '#6B7280', margin: '4px 0 0' }}>
-                  En-dessous de ce seuil, une alerte rouge est affichée
-                </p>
-              </div>
-
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>
-                  Arbres pour le prochain entraînement
-                  <span style={{ float: 'right', color: '#7C3AED', fontWeight: 700 }}>{iaConfigDraft.n_estimators}</span>
-                </label>
-                <input
-                  type="range" min={50} max={500} step={50}
-                  value={iaConfigDraft.n_estimators}
-                  onChange={e => updateDraft('n_estimators', parseInt(e.target.value))}
-                  style={{ width: '100%', accentColor: '#7C3AED' }}
-                />
-                <p style={{ fontSize: 11, color: '#6B7280', margin: '4px 0 0' }}>
-                  Plus = meilleure précision, mais plus lent
-                </p>
-              </div>
-
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>
-                  Profondeur max des arbres
-                  <span style={{ float: 'right', color: '#059669', fontWeight: 700 }}>{iaConfigDraft.max_depth}</span>
-                </label>
-                <input
-                  type="range" min={5} max={60} step={5}
-                  value={iaConfigDraft.max_depth}
-                  onChange={e => updateDraft('max_depth', parseInt(e.target.value))}
-                  style={{ width: '100%', accentColor: '#059669' }}
-                />
-                <p style={{ fontSize: 11, color: '#6B7280', margin: '4px 0 0' }}>
-                  Plus élevé = peut sur-apprendre
-                </p>
-              </div>
+              {([
+                ['seuil_confiance_min', 'Seuil confiance minimum', 0, 1, 0.05, '#0891B2', 'En-dessous, le diagnostic est marqué incertain', (v: number) => `${Math.round(v * 100)}%`],
+                ['seuil_alerte_bas', 'Seuil alerte basse confiance', 0, 0.8, 0.05, '#DC2626', 'En-dessous de ce seuil, une alerte rouge est affichée', (v: number) => `${Math.round(v * 100)}%`],
+                ['n_estimators', 'Arbres pour le prochain entraînement', 50, 500, 50, '#7C3AED', 'Plus = meilleure précision, mais plus lent', (v: number) => `${v}`],
+                ['max_depth', 'Profondeur max des arbres', 5, 60, 5, '#059669', 'Plus élevé = peut sur-apprendre', (v: number) => `${v}`],
+              ] as [keyof IAConfig, string, number, number, number, string, string, (v: number) => string][]).map(([key, label, min, max, step, color, desc, fmt]) => (
+                <div key={key}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>
+                    {label}
+                    <span style={{ float: 'right', color, fontWeight: 700 }}>{fmt(iaConfigDraft[key] as number)}</span>
+                  </label>
+                  <input type="range" min={min} max={max} step={step} value={iaConfigDraft[key] as number}
+                    onChange={e => updateDraft(key, key === 'n_estimators' || key === 'max_depth' ? parseInt(e.target.value) : parseFloat(e.target.value))}
+                    style={{ width: '100%', accentColor: color }} />
+                  <p style={{ fontSize: 11, color: '#6B7280', margin: '4px 0 0' }}>{desc}</p>
+                </div>
+              ))}
             </div>
-
-            {/* Valeurs actuelles sauvegardées */}
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16, padding: '10px 14px', background: '#F0F9FF', borderRadius: 8, border: '1px solid #BAE6FD' }}>
               <span style={{ fontSize: 12, color: '#0369A1', fontWeight: 600 }}>Actuels :</span>
               <span style={{ fontSize: 12, color: '#374151' }}>Confiance min : <strong>{Math.round(iaConfig.seuil_confiance_min * 100)}%</strong></span>
@@ -784,291 +465,31 @@ export default function AdminSystem() {
               <span style={{ fontSize: 12, color: '#374151' }}>Arbres : <strong>{iaConfig.n_estimators}</strong></span>
               <span style={{ fontSize: 12, color: '#374151' }}>Profondeur : <strong>{iaConfig.max_depth}</strong></span>
             </div>
-
-            <button
-              onClick={saveIAConfig}
-              disabled={!iaConfigDirty || savingIA}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '9px 20px', borderRadius: 8, border: 'none',
-                cursor: !iaConfigDirty || savingIA ? 'not-allowed' : 'pointer',
-                background: iaConfigDirty ? 'linear-gradient(135deg,#0891B2,#0369A1)' : '#E5E7EB',
-                color: iaConfigDirty ? 'white' : '#9CA3AF',
-                fontWeight: 700, fontSize: 14,
-                opacity: !iaConfigDirty ? 0.6 : 1,
-              }}
-            >
+            <button onClick={saveIAConfig} disabled={!iaConfigDirty || savingIA}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 20px', borderRadius: 8, border: 'none', cursor: !iaConfigDirty || savingIA ? 'not-allowed' : 'pointer', background: iaConfigDirty ? 'linear-gradient(135deg,#0891B2,#0369A1)' : '#E5E7EB', color: iaConfigDirty ? 'white' : '#9CA3AF', fontWeight: 700, fontSize: 14, opacity: !iaConfigDirty ? 0.6 : 1 }}>
               {savingIA ? <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCircle size={16} />}
               {savingIA ? 'Sauvegarde...' : iaConfigDirty ? 'Sauvegarder la configuration' : 'Configuration à jour'}
             </button>
           </Card>
 
-          {/* ─── Dataset ─────────────────────────────────────────────── */}
-          <Card title="Dataset d'entraînement" icon={Database} accent="#0D9488">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-              <Badge ok={status.dataset.found} label={status.dataset.found ? 'Trouvé' : 'Introuvable'} />
-              {status.dataset.found && (
-                <>
-                  <span style={{ fontSize: 13, color: '#374151' }}>
-                    <strong>{status.dataset.size_mb} Mo</strong> — 10 000 cas, 121 maladies
-                  </span>
-                  <code style={{ fontSize: 11, color: '#6B7280', background: '#F9FAFB', padding: '3px 8px', borderRadius: 4, wordBreak: 'break-all' }}>
-                    {status.dataset.path}
-                  </code>
-                </>
-              )}
-              {!status.dataset.found && (
-                <span style={{ fontSize: 12, color: '#991B1B' }}>
-                  Placez le fichier dans <code>les ressources dataset/dataset_medical_robust_10000_cas.csv</code>
-                </span>
-              )}
-            </div>
-          </Card>
-
-          {/* ─── Fichiers modèles ─────────────────────────────────────── */}
-          <Card title="Fichiers modèles sauvegardés" icon={Package} accent="#D97706">
-            {status.model_files.length === 0 ? (
-              <p style={{ color: '#9CA3AF', fontSize: 13 }}>Aucun modèle sauvegardé. Lancez un entraînement.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {status.model_files.map((f, i) => (
-                  <div key={f.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 8, background: i === 0 ? '#FFFBEB' : '#F9FAFB', border: `1px solid ${i === 0 ? '#FCD34D' : '#E5E7EB'}`, fontSize: 13 }}>
-                    <Zap size={14} style={{ color: i === 0 ? '#D97706' : '#9CA3AF', flexShrink: 0 }} />
-                    <span style={{ flex: 1, fontFamily: 'monospace', fontSize: 12, color: '#374151' }}>{f.name}</span>
-                    <span style={{ color: '#6B7280', fontSize: 12 }}>{f.size_mb} Mo</span>
-                    {f.modified && <span style={{ color: '#9CA3AF', fontSize: 11 }}>{new Date(f.modified).toLocaleString('fr-FR')}</span>}
-                    {i === 0 && <span style={{ background: '#D97706', color: 'white', padding: '1px 8px', borderRadius: 99, fontSize: 10, fontWeight: 700 }}>ACTIF</span>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
-
-          {/* ─── Performances du modèle ──────────────────────────────── */}
-          {modelPerf?.available && modelPerf.metrics && (
-            <Card title="Performances du modèle (dernière session)" icon={TrendingUp} accent="#059669">
-              {/* Métriques */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
-                {([
-                  ['Accuracy', modelPerf.metrics.accuracy, '#4F46E5'],
-                  ['Précision', modelPerf.metrics.precision, '#059669'],
-                  ['Rappel', modelPerf.metrics.recall, '#D97706'],
-                  ['F1-Score', modelPerf.metrics.f1_score, '#DB2777'],
-                ] as [string, number, string][]).map(([label, val, color]) => (
-                  <div key={label} style={{ background: '#F9FAFB', borderRadius: 12, padding: '14px 16px', border: '1px solid #E5E7EB' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>{label}</span>
-                      <span style={{ fontSize: 15, fontWeight: 800, color }}>{val?.toFixed(2)} %</span>
-                    </div>
-                    <ProgressBar pct={val ?? 0} color={color} />
-                  </div>
-                ))}
-              </div>
-
-              {/* Infos */}
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
-                {[
-                  ['Observations', modelPerf.metrics.n_samples?.toLocaleString('fr-FR')],
-                  ['Features', modelPerf.metrics.n_features],
-                  ['Classes', modelPerf.metrics.n_classes],
-                  ['Durée', modelPerf.metrics.duration_s != null ? `${modelPerf.metrics.duration_s} s` : '—'],
-                ].map(([lbl, val]) => val != null && (
-                  <span key={lbl as string} style={{ fontSize: 12, color: '#374151', background: '#EEF2FF', padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}>
-                    {lbl} : <strong>{val}</strong>
-                  </span>
-                ))}
-              </div>
-
-              {/* Feature Importance */}
-              {modelPerf.feature_importance && modelPerf.feature_importance.features.length > 0 && (
-                <>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 12, borderTop: '1px solid #E5E7EB', paddingTop: 16 }}>
-                    Top {modelPerf.feature_importance.features.length} Features — Impact sur la décision IA
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {modelPerf.feature_importance.features.map((feat, i) => {
-                      const imp = modelPerf.feature_importance!.importances[i];
-                      const maxImp = modelPerf.feature_importance!.importances[0];
-                      const pct = maxImp > 0 ? (imp / maxImp) * 100 : 0;
-                      const shortName = feat.replace(/^(Lab_|Vital_|SYM_)/, '').replace(/_/g, ' ').substring(0, 40);
-                      const isSym = feat.startsWith('SYM_');
-                      return (
-                        <div key={feat} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={{
-                            fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4,
-                            background: isSym ? '#DBEAFE' : '#D1FAE5',
-                            color: isSym ? '#1D4ED8' : '#065F46',
-                            minWidth: 38, textAlign: 'center', flexShrink: 0,
-                          }}>
-                            {isSym ? 'SYM' : 'LAB'}
-                          </span>
-                          <span style={{ fontSize: 11, color: '#374151', minWidth: 180, maxWidth: 220, flexShrink: 0 }}>{shortName}</span>
-                          <div style={{ flex: 1, background: '#F3F4F6', borderRadius: 99, height: 8, overflow: 'hidden' }}>
-                            <div style={{ width: `${pct}%`, height: '100%', background: isSym ? '#3B82F6' : '#10B981', borderRadius: 99, transition: 'width .4s' }} />
-                          </div>
-                          <span style={{ fontSize: 10, color: '#9CA3AF', minWidth: 50, textAlign: 'right' }}>{(imp * 100).toFixed(3)} %</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div style={{ display: 'flex', gap: 16, marginTop: 10, fontSize: 11, color: '#6B7280' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <span style={{ background: '#3B82F6', width: 10, height: 10, borderRadius: 2, display: 'inline-block' }} /> Symptôme (SYM)
-                    </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <span style={{ background: '#10B981', width: 10, height: 10, borderRadius: 2, display: 'inline-block' }} /> Paramètre biologique (LAB/VITAL)
-                    </span>
-                  </div>
-                </>
-              )}
-            </Card>
-          )}
-
-          {/* ─── Statistiques d'utilisation de l'IA ─────────────────── */}
-          {aiStats && (
-            <Card title="Statistiques d'utilisation de l'IA" icon={Activity} accent="#7C3AED">
-              {aiStats.total_predictions === 0 ? (
-                <p style={{ fontSize: 13, color: '#9CA3AF', fontStyle: 'italic' }}>
-                  Aucun diagnostic IA effectué pour l'instant. Les statistiques apparaîtront dès la première prédiction.
-                </p>
-              ) : (
-                <>
-                  {/* KPI row */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 16, marginBottom: 20 }}>
-                    <div style={{ textAlign: 'center', background: '#F9FAFB', borderRadius: 12, padding: '14px 8px', border: '1px solid #E5E7EB' }}>
-                      <div style={{ fontSize: 26, fontWeight: 900, color: '#7C3AED' }}>{aiStats.total_predictions.toLocaleString('fr-FR')}</div>
-                      <div style={{ fontSize: 11, color: '#6B7280', fontWeight: 600, marginTop: 2 }}>Diagnostics IA effectués</div>
-                    </div>
-                    <div style={{ textAlign: 'center', background: '#F9FAFB', borderRadius: 12, padding: '14px 8px', border: '1px solid #E5E7EB' }}>
-                      <div style={{ fontSize: 26, fontWeight: 900, color: '#059669' }}>{aiStats.avg_confidence_pct} %</div>
-                      <div style={{ fontSize: 11, color: '#6B7280', fontWeight: 600, marginTop: 2 }}>Confiance moyenne</div>
-                    </div>
-                  </div>
-
-                  {/* Distribution confiance */}
-                  <div style={{ marginBottom: 20 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 10 }}>Distribution des niveaux de confiance</div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      {([
-                        ['HIGH', aiStats.confidence_distribution.HIGH, '#059669', '#ECFDF5', 'Élevée ≥ 70%'],
-                        ['MEDIUM', aiStats.confidence_distribution.MEDIUM, '#D97706', '#FFFBEB', 'Moyenne 40–70%'],
-                        ['LOW', aiStats.confidence_distribution.LOW, '#DC2626', '#FEF2F2', 'Basse < 40%'],
-                      ] as [string, number, string, string, string][]).map(([key, count, color, bg, label]) => {
-                        const total = aiStats.total_predictions || 1;
-                        const pct = Math.round((count / total) * 100);
-                        return (
-                          <div key={key} style={{ flex: 1, background: bg, border: `1px solid ${color}30`, borderRadius: 10, padding: '12px 10px', textAlign: 'center' }}>
-                            <div style={{ fontSize: 20, fontWeight: 800, color }}>{count.toLocaleString('fr-FR')}</div>
-                            <div style={{ fontSize: 10, fontWeight: 700, color, marginTop: 2 }}>{pct} %</div>
-                            <div style={{ fontSize: 10, color: '#6B7280', marginTop: 2 }}>{label}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {aiStats.total_predictions > 0 && (() => {
-                      const t = aiStats.total_predictions;
-                      return (
-                        <div style={{ display: 'flex', height: 8, borderRadius: 99, overflow: 'hidden', marginTop: 10 }}>
-                          <div style={{ width: `${(aiStats.confidence_distribution.HIGH / t) * 100}%`, background: '#059669' }} />
-                          <div style={{ width: `${(aiStats.confidence_distribution.MEDIUM / t) * 100}%`, background: '#D97706' }} />
-                          <div style={{ width: `${(aiStats.confidence_distribution.LOW / t) * 100}%`, background: '#DC2626' }} />
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  {/* Top diseases */}
-                  {aiStats.top_diseases.length > 0 && (
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 10 }}>Top 5 maladies prédites</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {aiStats.top_diseases.map((d, i) => {
-                          const maxCount = aiStats.top_diseases[0].count;
-                          const pct = maxCount > 0 ? (d.count / maxCount) * 100 : 0;
-                          const rankColors = ['#4F46E5', '#7C3AED', '#0891B2', '#059669', '#D97706'];
-                          return (
-                            <div key={d.disease} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <span style={{ fontSize: 11, fontWeight: 800, color: 'white', background: rankColors[i], borderRadius: 99, width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</span>
-                              <span style={{ fontSize: 12, color: '#374151', minWidth: 160 }}>{d.disease}</span>
-                              <div style={{ flex: 1, background: '#F3F4F6', borderRadius: 99, height: 7, overflow: 'hidden' }}>
-                                <div style={{ width: `${pct}%`, height: '100%', background: rankColors[i], borderRadius: 99 }} />
-                              </div>
-                              <span style={{ fontSize: 11, color: '#6B7280', minWidth: 36, textAlign: 'right' }}>{d.count}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </Card>
-          )}
-
-          {/* ─── Historique des entraînements ────────────────────────── */}
-          {trainingHistory.length > 0 && (
-            <Card title="Historique des entraînements" icon={History} accent="#0891B2">
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                  <thead>
-                    <tr style={{ background: '#F9FAFB', borderBottom: '2px solid #E5E7EB' }}>
-                      {['Date', 'Accuracy', 'Précision', 'Rappel', 'F1-Score', 'Obs.', 'Arbres', 'Durée'].map(h => (
-                        <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#6B7280', whiteSpace: 'nowrap' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {trainingHistory.map((s, i) => {
-                      const isFirst = i === 0;
-                      return (
-                        <tr key={s.date} style={{ borderBottom: '1px solid #F3F4F6', background: isFirst ? '#F0FDF4' : 'white' }}>
-                          <td style={{ padding: '8px 12px', color: '#374151', whiteSpace: 'nowrap' }}>
-                            {isFirst && <span style={{ background: '#059669', color: 'white', fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3, marginRight: 5 }}>ACTIF</span>}
-                            {s.date ? new Date(s.date).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}
-                          </td>
-                          {[s.accuracy, s.precision, s.recall, s.f1_score].map((v, j) => (
-                            <td key={j} style={{ padding: '8px 12px', fontWeight: 700, color: v >= 90 ? '#059669' : v >= 70 ? '#D97706' : '#DC2626' }}>
-                              {v?.toFixed(2)} %
-                            </td>
-                          ))}
-                          <td style={{ padding: '8px 12px', color: '#6B7280' }}>{s.n_samples?.toLocaleString('fr-FR') ?? '—'}</td>
-                          <td style={{ padding: '8px 12px', color: '#6B7280' }}>{s.n_estimators ?? '—'}</td>
-                          <td style={{ padding: '8px 12px', color: '#6B7280' }}>{s.duration_s != null ? `${s.duration_s} s` : '—'}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-          )}
-
-          {/* ─── Nettoyage ───────────────────────────────────────────── */}
+          {/* ─── Nettoyage ─── */}
           <Card title="Nettoyage" icon={Trash2} accent="#DC2626">
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <button
-                onClick={cleanModels}
-                disabled={loadingCleanModels || status.model_files.length <= 1}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 8, border: '1px solid #FECACA', background: '#FEF2F2', color: '#DC2626', cursor: status.model_files.length <= 1 ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 13, opacity: status.model_files.length <= 1 ? 0.5 : 1 }}
-              >
+              <button onClick={cleanModels} disabled={loadingCleanModels || status.model_files.length <= 1}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 8, border: '1px solid #FECACA', background: '#FEF2F2', color: '#DC2626', cursor: status.model_files.length <= 1 ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 13, opacity: status.model_files.length <= 1 ? 0.5 : 1 }}>
                 {loadingCleanModels ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Trash2 size={14} />}
                 Supprimer anciens modèles ({Math.max(0, status.model_files.length - 1)} à supprimer)
               </button>
-              <button
-                onClick={cleanLogs}
-                disabled={loadingCleanLogs || !status.logs.exists}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 8, border: '1px solid #FED7AA', background: '#FFF7ED', color: '#C2410C', cursor: !status.logs.exists ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 13, opacity: !status.logs.exists ? 0.5 : 1 }}
-              >
+              <button onClick={cleanLogs} disabled={loadingCleanLogs || !status.logs.exists}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 8, border: '1px solid #FED7AA', background: '#FFF7ED', color: '#C2410C', cursor: !status.logs.exists ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 13, opacity: !status.logs.exists ? 0.5 : 1 }}>
                 {loadingCleanLogs ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <FileText size={14} />}
                 Vider les logs {status.logs.size_kb ? `(${status.logs.size_kb} Ko)` : ''}
               </button>
             </div>
-            <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: 10 }}>
-              La suppression des anciens modèles conserve uniquement le plus récent.
-            </p>
+            <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: 10 }}>La suppression des anciens modèles conserve uniquement le plus récent.</p>
           </Card>
 
-          {/* ─── Logs ────────────────────────────────────────────────── */}
+          {/* ─── Logs ─── */}
           <Card title="Logs système" icon={Terminal} accent="#374151">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: logsOpen ? 12 : 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1081,10 +502,7 @@ export default function AdminSystem() {
                     <RefreshCw size={12} /> Rafraîchir
                   </button>
                 )}
-                <button
-                  onClick={() => setLogsOpen(o => !o)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px', borderRadius: 6, border: '1px solid #E5E7EB', background: 'white', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
-                >
+                <button onClick={() => setLogsOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px', borderRadius: 6, border: '1px solid #E5E7EB', background: 'white', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
                   {logsOpen ? <><ChevronUp size={14} /> Masquer</> : <><ChevronDown size={14} /> Afficher</>}
                 </button>
               </div>
@@ -1107,7 +525,7 @@ export default function AdminSystem() {
             )}
           </Card>
 
-          {/* ─── Commandes de référence ──────────────────────────────── */}
+          {/* ─── Commandes de référence ─── */}
           <Card title="Commandes de référence" icon={Clock} accent="#6B7280">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {[
@@ -1121,214 +539,16 @@ export default function AdminSystem() {
                 <div key={cmd} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#F9FAFB', borderRadius: 8, border: '1px solid #E5E7EB' }}>
                   <span style={{ fontSize: 12, color: '#374151', fontWeight: 600, minWidth: 220 }}>{label}</span>
                   <code style={{ flex: 1, fontSize: 12, color: '#4F46E5', fontFamily: 'monospace', background: '#EEF2FF', padding: '4px 8px', borderRadius: 4 }}>{cmd}</code>
-                  <button
-                    onClick={() => { navigator.clipboard.writeText(cmd); showToast('Copié !'); }}
-                    style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #E5E7EB', background: 'white', cursor: 'pointer', fontSize: 11, fontWeight: 600, color: '#6B7280', whiteSpace: 'nowrap' }}
-                  >
+                  <button onClick={() => { navigator.clipboard.writeText(cmd); showToast('Copié !'); }} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #E5E7EB', background: 'white', cursor: 'pointer', fontSize: 11, fontWeight: 600, color: '#6B7280', whiteSpace: 'nowrap' }}>
                     Copier
                   </button>
                 </div>
               ))}
             </div>
           </Card>
+
         </>
       )}
-
-      {/* ── Ajouter une nouvelle maladie au dataset ──────────────────────────── */}
-      <Card title="Ajouter une maladie au dataset" icon={FlaskConical} accent="#7C3AED">
-        {/* Stats dataset */}
-        {datasetStats && (
-          <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
-            <div style={{ flex: 1, background: '#F5F3FF', borderRadius: 10, padding: '12px 16px', textAlign: 'center' }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: '#7C3AED' }}>{datasetStats.total_maladies}</div>
-              <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>Maladies dans le dataset</div>
-            </div>
-            <div style={{ flex: 1, background: '#EDE9FE', borderRadius: 10, padding: '12px 16px', textAlign: 'center' }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: '#6D28D9' }}>{datasetStats.total_cas.toLocaleString('fr-FR')}</div>
-              <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>Cas d'entraînement total</div>
-            </div>
-          </div>
-        )}
-
-        <div style={{ background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: 10, padding: '12px 16px', marginBottom: 20, display: 'flex', gap: 10 }}>
-          <AlertTriangle size={16} style={{ color: '#D97706', flexShrink: 0, marginTop: 1 }} />
-          <p style={{ fontSize: 13, color: '#92400E', margin: 0 }}>
-            Après l'ajout, lancez un <strong>réentraînement</strong> depuis la section ci-dessus pour que la nouvelle maladie soit détectable par le modèle.
-          </p>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-          {/* Nom de la maladie */}
-          <div>
-            <label style={{ fontSize: 13, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6 }}>
-              Nom de la maladie <span style={{ color: '#EF4444' }}>*</span>
-            </label>
-            <input
-              type="text"
-              className="sp-form-input"
-              placeholder="Ex : Leishmaniose, Bilharziose…"
-              value={newDiseaseName}
-              onChange={e => { setNewDiseaseName(e.target.value); setAddDiseaseResult(null); }}
-              style={{ borderColor: diseaseAlreadyExists ? '#EF4444' : undefined }}
-            />
-            {diseaseAlreadyExists && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, padding: '6px 10px', background: '#FEF2F2', borderRadius: 6, border: '1px solid #FECACA' }}>
-                <XCircle size={14} style={{ color: '#DC2626', flexShrink: 0 }} />
-                <span style={{ fontSize: 12, color: '#B91C1C', fontWeight: 600 }}>
-                  Cette maladie existe déjà dans le dataset — choisissez un nom différent.
-                </span>
-              </div>
-            )}
-            {!diseaseAlreadyExists && newDiseaseName.trim().length >= 2 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, padding: '6px 10px', background: '#ECFDF5', borderRadius: 6, border: '1px solid #A7F3D0' }}>
-                <CheckCircle size={14} style={{ color: '#059669', flexShrink: 0 }} />
-                <span style={{ fontSize: 12, color: '#047857', fontWeight: 600 }}>
-                  Nom disponible — cette maladie n'existe pas encore dans le dataset.
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Catégorie */}
-          <div>
-            <label style={{ fontSize: 13, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6 }}>
-              Catégorie médicale <span style={{ color: '#EF4444' }}>*</span>
-            </label>
-            <select
-              className="sp-form-select"
-              value={newDiseaseCateg}
-              onChange={e => setNewDiseaseCateg(e.target.value)}
-            >
-              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-        </div>
-
-        {/* Nombre de cas */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 13, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6 }}>
-            Nombre de cas synthétiques à générer : <strong style={{ color: '#7C3AED' }}>{newDiseaseNCas}</strong>
-          </label>
-          <input
-            type="range" min={20} max={300} step={10}
-            value={newDiseaseNCas}
-            onChange={e => setNewDiseaseNCas(Number(e.target.value))}
-            style={{ width: '100%', accentColor: '#7C3AED' }}
-          />
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>
-            <span>20 (minimal)</span><span>80 (recommandé)</span><span>300 (maximum)</span>
-          </div>
-        </div>
-
-        {/* Symptômes */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 13, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6 }}>
-            Symptômes caractéristiques <span style={{ color: '#EF4444' }}>*</span>
-            <span style={{ fontWeight: 400, color: '#6B7280', marginLeft: 8 }}>({newDiseaseSymptomes.length} ajouté{newDiseaseSymptomes.length > 1 ? 's' : ''})</span>
-          </label>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-            <input
-              type="text"
-              className="sp-form-input"
-              placeholder="Ex : Fièvre, Douleurs articulaires, Éruption cutanée…"
-              value={newSymptomeInput}
-              onChange={e => setNewSymptomeInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddSymptome(); } }}
-              style={{ flex: 1 }}
-            />
-            <button
-              type="button"
-              onClick={handleAddSymptome}
-              disabled={!newSymptomeInput.trim()}
-              className="sp-btn sp-btn-primary"
-              style={{ padding: '0 16px', background: '#7C3AED', opacity: !newSymptomeInput.trim() ? 0.5 : 1 }}
-            >
-              <Plus size={14} /> Ajouter
-            </button>
-          </div>
-
-          {/* Tags symptômes */}
-          {newDiseaseSymptomes.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {newDiseaseSymptomes.map(s => (
-                <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#EDE9FE', color: '#5B21B6', borderRadius: 99, padding: '4px 12px', fontSize: 13, fontWeight: 600 }}>
-                  {s}
-                  <button
-                    type="button"
-                    onClick={() => setNewDiseaseSymptomes(prev => prev.filter(x => x !== s))}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7C3AED', display: 'flex', padding: 0 }}
-                  >
-                    <X size={12} />
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-
-          {newDiseaseSymptomes.length === 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', background: '#FFF7ED', borderRadius: 6, border: '1px solid #FED7AA' }}>
-              <AlertTriangle size={13} style={{ color: '#D97706', flexShrink: 0 }} />
-              <span style={{ fontSize: 12, color: '#92400E' }}>
-                Aucun symptôme ajouté — minimum 2 requis. Appuyez sur <strong>Entrée</strong> pour ajouter rapidement.
-              </span>
-            </div>
-          )}
-          {newDiseaseSymptomes.length === 1 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', background: '#FFF7ED', borderRadius: 6, border: '1px solid #FED7AA' }}>
-              <AlertTriangle size={13} style={{ color: '#D97706', flexShrink: 0 }} />
-              <span style={{ fontSize: 12, color: '#92400E' }}>
-                1 symptôme ajouté — il en faut au moins <strong>2</strong> pour générer des cas représentatifs.
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Résultat */}
-        {addDiseaseResult && (
-          <div style={{
-            padding: '12px 16px', borderRadius: 10, marginBottom: 16,
-            background: addDiseaseResult.success ? '#ECFDF5' : '#FEF2F2',
-            border: `1px solid ${addDiseaseResult.success ? '#A7F3D0' : '#FECACA'}`,
-            display: 'flex', alignItems: 'flex-start', gap: 10,
-          }}>
-            {addDiseaseResult.success
-              ? <CheckCircle size={16} style={{ color: '#059669', flexShrink: 0, marginTop: 1 }} />
-              : <XCircle size={16} style={{ color: '#DC2626', flexShrink: 0, marginTop: 1 }} />}
-            <div>
-              <p style={{ fontSize: 13, fontWeight: 600, color: addDiseaseResult.success ? '#065F46' : '#991B1B', margin: '0 0 2px' }}>
-                {addDiseaseResult.success ? 'Maladie ajoutée avec succès' : 'Erreur'}
-              </p>
-              <p style={{ fontSize: 12, color: addDiseaseResult.success ? '#047857' : '#B91C1C', margin: 0 }}>
-                {addDiseaseResult.message}
-                {addDiseaseResult.total && ` — Dataset total : ${addDiseaseResult.total.toLocaleString('fr-FR')} cas`}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Bouton mise à jour cache symptômes */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', background: '#F0FDF4', borderRadius: 10, border: '1px solid #BBF7D0', marginBottom: 12 }}>
-          <CheckCircle size={15} style={{ color: '#16A34A', flexShrink: 0 }} />
-          <p style={{ fontSize: 13, color: '#15803D', margin: 0, flex: 1 }}>
-            Après l'ajout d'une maladie et un réentraînement, cliquez ici pour que les nouveaux symptômes apparaissent dans le dropdown de consultation.
-          </p>
-          <button onClick={handleRefreshSymptomes} className="sp-btn" style={{ background: '#16A34A', color: '#fff', padding: '6px 14px', fontSize: 12, flexShrink: 0 }}>
-            <RefreshCw size={13} /> Actualiser les symptômes
-          </button>
-        </div>
-
-        <button
-          onClick={handleAddDisease}
-          disabled={addDiseaseLoading || !newDiseaseName.trim() || newDiseaseSymptomes.length < 2 || diseaseAlreadyExists}
-          className="sp-btn sp-btn-primary"
-          style={{ width: '100%', justifyContent: 'center', background: '#7C3AED', opacity: (addDiseaseLoading || !newDiseaseName.trim() || newDiseaseSymptomes.length < 2 || diseaseAlreadyExists) ? 0.6 : 1 }}
-          title={diseaseAlreadyExists ? `"${newDiseaseName}" existe déjà dans le dataset` : newDiseaseSymptomes.length < 2 ? 'Ajoutez au moins 2 symptômes' : ''}
-        >
-          {addDiseaseLoading
-            ? <><RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> Génération en cours…</>
-            : <><FlaskConical size={15} /> Ajouter la maladie au dataset</>}
-        </button>
-      </Card>
 
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

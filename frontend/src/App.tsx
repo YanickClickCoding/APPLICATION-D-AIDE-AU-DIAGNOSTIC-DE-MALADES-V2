@@ -4,7 +4,7 @@ import { triggerNavigationGuard } from './utils/navigationGuard';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './components/Toast';
 import { initDB } from './db';
-import { Users, Calendar, LogOut, UserCheck, Clock, Settings, Brain, User, Bell, UserPlus } from 'lucide-react';
+import { Users, Calendar, LogOut, UserCheck, Clock, Settings, Brain, User, Bell, UserPlus, Database, BarChart2, TrendingUp } from 'lucide-react';
 import { adminAPI } from './services/api';
 
 // Pages — chargement différé pour réduire le bundle initial (~60%)
@@ -18,9 +18,12 @@ const Utilisateurs      = lazy(() => import('./pages/Utilisateurs'));
 const Register          = lazy(() => import('./pages/Register'));
 const Identifiants      = lazy(() => import('./pages/Identifiants'));
 const AdminSystem       = lazy(() => import('./pages/AdminSystem'));
+const AdminDataset      = lazy(() => import('./pages/AdminDataset'));
+const AdminML           = lazy(() => import('./pages/AdminML'));
 const DossierPatient    = lazy(() => import('./pages/DossierPatient'));
 const MesPatients       = lazy(() => import('./pages/MesPatients'));
 const DiagnosticsIA     = lazy(() => import('./pages/DiagnosticsIA'));
+const Analytics         = lazy(() => import('./pages/Analytics'));
 
 const PageLoader = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
@@ -100,6 +103,12 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
                   <span>Tableau de bord</span>
               </a>
 
+              {/* Analytique — séries quotidiennes, accessible à tous les rôles */}
+              <a href="/analytique" className={`sp-nav-item ${location.pathname === '/analytique' ? 'active' : ''}`} onClick={e => navTo(e, '/analytique')}>
+                  <TrendingUp size={18} />
+                  <span>Analytique</span>
+              </a>
+
               {/* Navigation clinique — médecin et infirmier UNIQUEMENT, admin exclu */}
               {!isAdmin && (
                 <>
@@ -140,6 +149,14 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
                   <a href="/admin/systeme" className={`sp-nav-item ${location.pathname === '/admin/systeme' ? 'active' : ''}`} onClick={e => navTo(e, '/admin/systeme')}>
                       <Settings size={18} />
                       <span>Système</span>
+                  </a>
+                  <a href="/admin/dataset" className={`sp-nav-item ${location.pathname === '/admin/dataset' ? 'active' : ''}`} onClick={e => navTo(e, '/admin/dataset')}>
+                      <Database size={18} />
+                      <span>Dataset & Maladies</span>
+                  </a>
+                  <a href="/admin/ml" className={`sp-nav-item ${location.pathname === '/admin/ml' ? 'active' : ''}`} onClick={e => navTo(e, '/admin/ml')}>
+                      <BarChart2 size={18} />
+                      <span>Modèle IA</span>
                   </a>
                 </>
               )}
@@ -184,6 +201,22 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
   );
 };
 
+// Horloge temps réel — composant isolé pour que le tick de 1s ne re-rende pas tout le Layout
+const LiveClock = () => {
+  const [now, setNow] = React.useState(() => new Date());
+
+  React.useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <span>
+      {now.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} à {now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+    </span>
+  );
+};
+
 interface PendingConsult { consultation_id: number; nom_patient: string; motif: string; date_heure: string; }
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
@@ -195,8 +228,27 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
   const [adminDropdownOpen, setAdminDropdownOpen] = React.useState(false);
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [topbarFixed, setTopbarFixed] = React.useState(false);
   const bellRef = React.useRef<HTMLDivElement>(null);
   const adminBellRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    let lastY = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      // Visible uniquement quand on remonte, une fois la barre d'origine hors de vue
+      if (y <= 120) {
+        setTopbarFixed(false);
+      } else if (y < lastY - 2) {
+        setTopbarFixed(true);
+      } else if (y > lastY + 2) {
+        setTopbarFixed(false);
+      }
+      lastY = y;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   React.useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -242,6 +294,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const getPageTitle = () => {
     const path = window.location.pathname;
     if (path === '/') return 'Tableau de bord';
+    if (path === '/analytique') return 'Analytique';
     if (path === '/consultations') return 'Consultations';
     if (path === '/mes-patients') return 'Mes Patients';
     if (path === '/diagnostics') return 'Diagnostics IA';
@@ -249,7 +302,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     if (path === '/utilisateurs') return 'Utilisateurs';
     if (path === '/identifiants') return 'Identifiants';
     if (path === '/admin/systeme') return 'Administration Système';
-if (path.startsWith('/dossier-patient')) return 'Dossier Patient';
+    if (path === '/admin/dataset') return 'Dataset & Maladies';
+    if (path === '/admin/ml') return 'Modèle IA & Entraînement';
+    if (path.startsWith('/dossier-patient')) return 'Dossier Patient';
     return 'Accueil';
   };
   
@@ -261,7 +316,8 @@ if (path.startsWith('/dossier-patient')) return 'Dossier Patient';
       
       <div className={`sp-main ${sidebarOpen ? 'sidebar-open' : ''}`}>
           {/* Top Bar */}
-          <div className="sp-topbar">
+          {topbarFixed && <div style={{ height: 'calc(var(--sp-topbar-h) + 16px)', flexShrink: 0 }} />}
+          <div className={`sp-topbar${topbarFixed ? ' sp-topbar-fixed' : ''}`}>
               <div className="sp-topbar-left">
                   <button 
                     className="sp-menu-toggle" 
@@ -278,7 +334,7 @@ if (path.startsWith('/dossier-patient')) return 'Dossier Patient';
               <div className="sp-topbar-right">
                   <div className="sp-date-display">
                       <Clock size={16} />
-                      <span>{new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} à {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                      <LiveClock />
                   </div>
                   {user?.role === 'medecin' && (
                     <div ref={bellRef} style={{ position: 'relative' }}>
@@ -418,6 +474,7 @@ function AppContent() {
         <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" replace />} />
         <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/" replace />} />
         <Route path="/" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
+        <Route path="/analytique" element={<PrivateRoute><Layout><Analytics /></Layout></PrivateRoute>} />
         <Route path="/consultations" element={<PrivateRoute noAdmin><Layout><Consultations /></Layout></PrivateRoute>} />
         <Route path="/consultation/nouvelle" element={<PrivateRoute noAdmin medicalOnly><Layout><ConsultationWorkflow /></Layout></PrivateRoute>} />
         <Route path="/consultation/:consultationId/details" element={<PrivateRoute noAdmin noInfirmier><Layout><ConsultationDetails /></Layout></PrivateRoute>} />
@@ -428,6 +485,8 @@ function AppContent() {
         <Route path="/utilisateurs" element={<PrivateRoute adminOnly><Layout><Utilisateurs /></Layout></PrivateRoute>} />
         <Route path="/identifiants" element={<PrivateRoute adminOnly><Layout><Identifiants /></Layout></PrivateRoute>} />
         <Route path="/admin/systeme" element={<PrivateRoute adminOnly><Layout><AdminSystem /></Layout></PrivateRoute>} />
+        <Route path="/admin/dataset" element={<PrivateRoute adminOnly><Layout><AdminDataset /></Layout></PrivateRoute>} />
+        <Route path="/admin/ml" element={<PrivateRoute adminOnly><Layout><AdminML /></Layout></PrivateRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

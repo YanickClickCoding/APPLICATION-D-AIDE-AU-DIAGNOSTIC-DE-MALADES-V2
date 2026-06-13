@@ -428,7 +428,10 @@ def create_consultation_workflow(data: dict, db: Session = Depends(get_db)):
                 unite_mesure=ex.get('unite_mesure') or None,
                 statut='REALISE',
                 date_examen=datetime.strptime(de, '%Y-%m-%d').date() if de else None,
-                is_suggested=ex.get('isSuggested', False),  # Marquer si suggéré par l'IA
+                # Examen « réel » uniquement si le médecin l'a rempli.
+                # La UI ne renvoie pas isValidated : on considère qu'un examen est validé
+                # si une valeur numérique est fournie.
+                is_suggested=bool(ex.get('isSuggested', False) and ex.get('valeur_numerique') is not None),
             ))
 
         # ── 6. Dossier médical (integer PK, integer FK patient_id) ──────────
@@ -792,6 +795,19 @@ def affecter_medecin(consultation_id: int, data: dict, db: Session = Depends(get
     return {"success": True, "consultation_id": consultation_id, "medecin_id": medecin_id}
 
 
+@router.patch("/{consultation_id}/step")
+def update_step_consultation(consultation_id: int, data: dict, db: Session = Depends(get_db)):
+    """Met à jour l'étape courante du workflow pour permettre la reprise après déconnexion."""
+    c = db.query(Consultation).filter(Consultation.consultation_id == consultation_id).first()
+    if not c:
+        raise HTTPException(status_code=404, detail="Consultation non trouvée")
+    step = data.get('step')
+    if step is not None:
+        c.step_courant = int(step)
+    db.commit()
+    return {"success": True}
+
+
 @router.patch("/{consultation_id}/statut")
 def update_statut_consultation(consultation_id: int, data: dict, db: Session = Depends(get_db)):
     """
@@ -1026,7 +1042,9 @@ def get_donnees_resume(consultation_id: int, db: Session = Depends(get_db)):
         "consultation_id": c.consultation_id,
         "medecin_id": c.medecin_id,
         "motif": c.motif or '',
+        "step_courant": c.step_courant or 1,
         "patient": {
+            "patient_id": patient.patient_id if patient else None,
             "nom": patient.nom if patient else '',
             "prenoms": patient.prenoms if patient else '',
             "date_naissance": patient.date_naissance.isoformat() if patient and patient.date_naissance else '',
@@ -1085,6 +1103,12 @@ def complete_consultation_medecin(consultation_id: int, data: dict, db: Session 
             if not (ex.get('nom') or '').strip():
                 continue
             de = ex.get('date_examen')
+            # N'enregistrer que les examens validés par le médecin.
+            # La UI n'envoie pas isValidated : on considère que le médecin valide
+            # dès lors que l'examen a une valeur numérique.
+            if bool(ex.get('isSuggested', False)) and ex.get('valeur_numerique') is None:
+                continue
+
             db.add(Examen(
                 consultation_id=consultation_id,
                 type=ex.get('type', 'BIOLOGIE'),
@@ -1095,7 +1119,8 @@ def complete_consultation_medecin(consultation_id: int, data: dict, db: Session 
                 unite_mesure=ex.get('unite_mesure') or None,
                 statut='REALISE',
                 date_examen=datetime.strptime(de, '%Y-%m-%d').date() if de else None,
-                is_suggested=ex.get('isSuggested', False),  # Marquer si suggéré par l'IA
+                # Une fois validé, l'examen n'est plus considéré « suggéré ».
+                is_suggested=False,
             ))
 
         dossier = db.query(DossierMedical).filter(DossierMedical.patient_id == c.patient_id).first()

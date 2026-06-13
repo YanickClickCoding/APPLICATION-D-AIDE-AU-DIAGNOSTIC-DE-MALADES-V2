@@ -6,8 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import Dict, List
-from datetime import datetime, timedelta
+from typing import Dict, List, Optional
+from datetime import datetime, timedelta, date
 import io, base64
 
 import matplotlib
@@ -43,54 +43,98 @@ def _fig_to_b64(fig: plt.Figure) -> str:
     return encoded
 
 
+def _parse_periode(date_debut: Optional[str], date_fin: Optional[str]):
+    """
+    Convertit les bornes ISO (YYYY-MM-DD) en datetimes inclusifs
+    [date_debut 00:00:00, date_fin 23:59:59.999999]. Retourne (None, None) sans filtre.
+    """
+    try:
+        debut = datetime.combine(date.fromisoformat(date_debut), datetime.min.time()) if date_debut else None
+        fin = datetime.combine(date.fromisoformat(date_fin), datetime.max.time()) if date_fin else None
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Format de date invalide — attendu YYYY-MM-DD",
+        )
+    if debut and fin and debut > fin:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="date_debut doit être antérieure ou égale à date_fin",
+        )
+    return debut, fin
+
+
+def _entre(query, colonne, debut: Optional[datetime], fin: Optional[datetime]):
+    """Applique le filtre de période sur la colonne datetime donnée."""
+    if debut is not None:
+        query = query.filter(colonne >= debut)
+    if fin is not None:
+        query = query.filter(colonne <= fin)
+    return query
+
+
 @router.get("/dashboard")
-def get_dashboard_stats(db: Session = Depends(get_db)) -> Dict:
+def get_dashboard_stats(
+    date_debut: Optional[str] = None,
+    date_fin: Optional[str] = None,
+    db: Session = Depends(get_db),
+) -> Dict:
     """
-    US-044: Dashboard avec statistiques globales
+    US-044: Dashboard avec statistiques globales.
+    date_debut / date_fin (YYYY-MM-DD, optionnels) filtrent toutes les statistiques
+    sur la période : patients par date de création, consultations par date_heure,
+    diagnostics par date de leur consultation.
     """
-    # KPI 1: Nombre total de patients
-    total_patients = db.query(func.count(Patient.patient_id)).scalar()
+    debut, fin = _parse_periode(date_debut, date_fin)
+
+    # KPI 1: Nombre total de patients (créés dans la période)
+    total_patients = _entre(
+        db.query(func.count(Patient.patient_id)), Patient.created_at, debut, fin
+    ).scalar() or 0
 
     # KPI 2: Nombre de patients ce mois
     first_day_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     patients_this_month = db.query(func.count(Patient.patient_id)).filter(
         Patient.created_at >= first_day_month
     ).scalar()
-    
+
+    def count_consultations(statut: Optional[str] = None) -> int:
+        q = _entre(db.query(func.count(Consultation.consultation_id)), Consultation.date_heure, debut, fin)
+        if statut is not None:
+            q = q.filter(Consultation.statut == statut)
+        return q.scalar() or 0
+
     # KPI 3: Nombre de consultations
-    total_consultations = db.query(func.count(Consultation.consultation_id)).scalar()
-    
+    total_consultations = count_consultations()
+
     # KPI 3b: Consultations par statut
-    consultations_en_attente = db.query(func.count(Consultation.consultation_id)).filter(
-        Consultation.statut == "en attente"
-    ).scalar() or 0
-    
-    consultations_en_cours = db.query(func.count(Consultation.consultation_id)).filter(
-        Consultation.statut == "en cours"
-    ).scalar() or 0
-    
-    consultations_terminees = db.query(func.count(Consultation.consultation_id)).filter(
-        Consultation.statut == "terminée"
-    ).scalar() or 0
-    
-    consultations_en_attente_medecin = db.query(func.count(Consultation.consultation_id)).filter(
-        Consultation.statut == "en_attente_medecin"
-    ).scalar() or 0
-    
+    consultations_en_attente = count_consultations("en attente")
+    consultations_en_cours = count_consultations("en cours")
+    consultations_terminees = count_consultations("terminée")
+    consultations_en_attente_medecin = count_consultations("en_attente_medecin")
+
+    # Les diagnostics n'ont pas de date propre : on les rattache à la date de leur consultation
+    def diag_query(*colonnes):
+        q = db.query(*colonnes)
+        if debut is not None or fin is not None:
+            q = q.join(Consultation, Diagnostic.consultation_id == Consultation.consultation_id)
+            q = _entre(q, Consultation.date_heure, debut, fin)
+        return q
+
     # KPI 4: Nombre de diagnostics
-    total_diagnostics = db.query(func.count(Diagnostic.diagnostic_id)).scalar() or 0
+    total_diagnostics = diag_query(func.count(Diagnostic.diagnostic_id)).scalar() or 0
 
     # KPI 5: Taux d'approbation
-    diagnostics_approuves = db.query(func.count(Diagnostic.diagnostic_id)).filter(
+    diagnostics_approuves = diag_query(func.count(Diagnostic.diagnostic_id)).filter(
         Diagnostic.statut == "CONFIRMÉ"
     ).scalar() or 0
-    
+
     taux_approbation = (diagnostics_approuves / total_diagnostics * 100) if total_diagnostics > 0 else 0
-    
+
     # KPI 6: Confiance moyenne (si la colonne existe)
     # Note: La table diagnostics utilise 'certitude' pas 'confiance'
-    avg_confidence = db.query(func.avg(Diagnostic.certitude)).scalar() or 0
-    
+    avg_confidence = diag_query(func.avg(Diagnostic.certitude)).scalar() or 0
+
     # KPI 7: Consultations aujourd'hui
     today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     today_end = datetime.now().replace(hour=23, minute=59, second=59, microsecond=999999)
@@ -98,28 +142,26 @@ def get_dashboard_stats(db: Session = Depends(get_db)) -> Dict:
         Consultation.date_heure >= today_start,
         Consultation.date_heure <= today_end
     ).scalar() or 0
-    
-    # KPI 8: Diagnostics IA approuvés
-    diagnostics_approuves = db.query(func.count(Diagnostic.diagnostic_id)).filter(
-        Diagnostic.statut == "CONFIRMÉ"
-    ).scalar() or 0
-    
+
     # KPI 9: Diagnostics IA rejetés
-    diagnostics_rejetes = db.query(func.count(Diagnostic.diagnostic_id)).filter(
+    diagnostics_rejetes = diag_query(func.count(Diagnostic.diagnostic_id)).filter(
         Diagnostic.statut == "REJETÉ"
     ).scalar() or 0
-    
-    # Tendance patients par jour (7 derniers jours)
-    seven_days_ago = datetime.now() - timedelta(days=7)
-    daily_patients = db.query(
+
+    # Tendance patients par jour (période filtrée, sinon 7 derniers jours)
+    tendance_depuis = debut if debut is not None else datetime.now() - timedelta(days=7)
+    daily_patients_q = db.query(
         func.date(Patient.created_at).label('date'),
         func.count(Patient.patient_id).label('count')
     ).filter(
-        Patient.created_at >= seven_days_ago
-    ).group_by(func.date(Patient.created_at)).all()
+        Patient.created_at >= tendance_depuis
+    )
+    if fin is not None:
+        daily_patients_q = daily_patients_q.filter(Patient.created_at <= fin)
+    daily_patients = daily_patients_q.group_by(func.date(Patient.created_at)).all()
 
     # Top 5 diagnostics (utiliser nom_maladie)
-    top_diagnostics = db.query(
+    top_diagnostics = diag_query(
         Diagnostic.nom_maladie,
         func.count(Diagnostic.diagnostic_id).label('count')
     ).filter(
@@ -127,8 +169,13 @@ def get_dashboard_stats(db: Session = Depends(get_db)) -> Dict:
     ).group_by(Diagnostic.nom_maladie).order_by(
         func.count(Diagnostic.diagnostic_id).desc()
     ).limit(5).all()
-    
+
     return {
+        "periode": {
+            "date_debut": date_debut,
+            "date_fin": date_fin,
+            "filtre_actif": debut is not None or fin is not None,
+        },
         "kpis": {
             "total_patients": total_patients,
             "patients_ce_mois": patients_this_month,
@@ -152,6 +199,101 @@ def get_dashboard_stats(db: Session = Depends(get_db)) -> Dict:
             {"diagnostic": row.nom_maladie, "count": row.count}
             for row in top_diagnostics
         ]
+    }
+
+
+@router.get("/series")
+def get_daily_series(
+    date_debut: Optional[str] = None,
+    date_fin: Optional[str] = None,
+    db: Session = Depends(get_db),
+) -> Dict:
+    """
+    Séries quotidiennes pour la page Analytique.
+    Retourne, jour par jour sur la période (par défaut les 30 derniers jours) :
+    consultations, nouveaux patients, diagnostics IA, diagnostics approuvés
+    et taux d'approbation. Les jours sans activité sont remplis à zéro.
+    """
+    debut, fin = _parse_periode(date_debut, date_fin)
+    if fin is None:
+        fin = datetime.combine(date.today(), datetime.max.time())
+    if debut is None:
+        debut = datetime.combine(fin.date() - timedelta(days=29), datetime.min.time())
+
+    nb_jours = (fin.date() - debut.date()).days + 1
+    if nb_jours > 1000:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Période trop longue — maximum 1000 jours",
+        )
+    jours = [debut.date() + timedelta(days=i) for i in range(nb_jours)]
+
+    def par_jour(rows) -> Dict[str, int]:
+        # func.date() renvoie un str sous SQLite, un objet date ailleurs — on normalise en ISO
+        return {str(r.date): r.count for r in rows}
+
+    consultations = par_jour(
+        _entre(
+            db.query(func.date(Consultation.date_heure).label("date"),
+                     func.count(Consultation.consultation_id).label("count")),
+            Consultation.date_heure, debut, fin,
+        ).group_by(func.date(Consultation.date_heure)).all()
+    )
+
+    patients = par_jour(
+        _entre(
+            db.query(func.date(Patient.created_at).label("date"),
+                     func.count(Patient.patient_id).label("count")),
+            Patient.created_at, debut, fin,
+        ).group_by(func.date(Patient.created_at)).all()
+    )
+
+    def diag_par_jour(statut: Optional[str] = None) -> Dict[str, int]:
+        q = db.query(func.date(Consultation.date_heure).label("date"),
+                     func.count(Diagnostic.diagnostic_id).label("count")
+        ).join(Consultation, Diagnostic.consultation_id == Consultation.consultation_id)
+        q = _entre(q, Consultation.date_heure, debut, fin)
+        if statut is not None:
+            q = q.filter(Diagnostic.statut == statut)
+        return par_jour(q.group_by(func.date(Consultation.date_heure)).all())
+
+    diagnostics = diag_par_jour()
+    approuves = diag_par_jour("CONFIRMÉ")
+    rejetes = diag_par_jour("REJETÉ")
+
+    serie_consultations = [consultations.get(j.isoformat(), 0) for j in jours]
+    serie_patients = [patients.get(j.isoformat(), 0) for j in jours]
+    serie_diagnostics = [diagnostics.get(j.isoformat(), 0) for j in jours]
+    serie_approuves = [approuves.get(j.isoformat(), 0) for j in jours]
+    serie_rejetes = [rejetes.get(j.isoformat(), 0) for j in jours]
+    serie_taux = [
+        round(a / d * 100, 1) if d > 0 else 0
+        for a, d in zip(serie_approuves, serie_diagnostics)
+    ]
+
+    total_diag = sum(serie_diagnostics)
+    total_approuves = sum(serie_approuves)
+
+    return {
+        "periode": {
+            "date_debut": debut.date().isoformat(),
+            "date_fin": fin.date().isoformat(),
+        },
+        "dates": [j.isoformat() for j in jours],
+        "consultations": serie_consultations,
+        "patients": serie_patients,
+        "diagnostics": serie_diagnostics,
+        "diagnostics_approuves": serie_approuves,
+        "diagnostics_rejetes": serie_rejetes,
+        "taux_approbation": serie_taux,
+        "totaux": {
+            "consultations": sum(serie_consultations),
+            "patients": sum(serie_patients),
+            "diagnostics": total_diag,
+            "diagnostics_approuves": total_approuves,
+            "diagnostics_rejetes": sum(serie_rejetes),
+            "taux_approbation": round(total_approuves / total_diag * 100, 1) if total_diag > 0 else 0,
+        },
     }
 
 
@@ -226,17 +368,23 @@ def get_model_performance(db: Session = Depends(get_db)) -> Dict:
 @router.get("/consultations/recent")
 def get_recent_consultations(
     limit: int = 10,
+    date_debut: Optional[str] = None,
+    date_fin: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ) -> List[Dict]:
     """
     Consultations récentes avec patient_id pour accès au dossier.
     Exclut les consultations orphelines (patient supprimé hors API).
+    date_debut / date_fin (YYYY-MM-DD, optionnels) limitent la liste à la période.
     Accès interdit aux administrateurs (données médicales individuelles).
     """
+    debut, fin = _parse_periode(date_debut, date_fin)
     consultations = (
-        db.query(Consultation)
-        .join(Patient, Consultation.patient_id == Patient.patient_id)
+        _entre(
+            db.query(Consultation).join(Patient, Consultation.patient_id == Patient.patient_id),
+            Consultation.date_heure, debut, fin,
+        )
         .order_by(Consultation.date_heure.desc())
         .limit(limit)
         .all()

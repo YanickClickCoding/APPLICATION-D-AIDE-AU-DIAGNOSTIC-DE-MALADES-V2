@@ -40,9 +40,9 @@ log = logging.getLogger("train_v2")
 Path("logs").mkdir(exist_ok=True)
 
 # ── Chargement dataset ─────────────────────────────────────────────────────────
-DATASET = Path("../les ressources dataset/dataset_medical_robust_enhanced.csv")
+DATASET = Path("les ressources dataset/dataset_medical_robust_enhanced.csv")
 if not DATASET.exists():
-    DATASET = Path("../les ressources dataset/dataset_medical_robust_10000_cas.csv")
+    DATASET = Path("les ressources dataset/dataset_medical_robust_10000_cas.csv")
 log.info(f"Dataset : {DATASET}")
 
 from app.ml.data_preprocessing import DataPreprocessor

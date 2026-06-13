@@ -1,6 +1,6 @@
 <mxfile host="Electron">
   <diagram id="3yKrx0kO-pWeYLYvruOX" name="Page-1">
-    <mxGraphModel dx="5213" dy="2188" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="1800" math="0" shadow="0">
+    <mxGraphModel dx="2036" dy="569" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="1800" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -160,6 +160,24 @@
         <mxCell id="e_d3_c3" edge="1" parent="zone2" source="d3" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" target="c3" value="Non">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
+        <mxCell id="amn_inf" parent="zone2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0284C7;fontSize=11;fontStyle=1;fontColor=#0C4A6E;" value="Renseigner l&#39;Anamnèse (Antécédents &amp; Allergies)&#xa;— Section &quot;Anamnèse&quot; affichée en haut de l&#39;Étape 2 —&#xa;• Antécédents personnels (diabète, HTA, asthme…)&#xa;• Antécédents familiaux (cardiopathie familiale…)&#xa;• Allergies (pénicilline, AINS, iode…)" vertex="1">
+          <mxGeometry height="90" width="500" x="180" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="amn_inf_d" parent="zone2" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" value="Antécédents&#xa;à renseigner ?" vertex="1">
+          <mxGeometry height="60" width="160" x="350" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="amn_inf_save" parent="zone2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" value="Cliquer « Enregistrer dans le dossier »&#xa;→ PATCH /api/patients/{id}/dossier&#xa;{ antecedents_personnels, antecedents_familiaux, allergies }" vertex="1">
+          <mxGeometry height="60" width="320" x="530" y="597" as="geometry" />
+        </mxCell>
+        <mxCell id="e_c3_amn" edge="1" parent="zone2" source="c3" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="amn_inf" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_amn_d" edge="1" parent="zone2" source="amn_inf" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="amn_inf_d" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_amnd_save" edge="1" parent="zone2" source="amn_inf_d" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" target="amn_inf_save" value="Oui">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
         <mxCell id="e_join_zone2" edge="1" parent="1" source="join1" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="c0" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
@@ -187,11 +205,10 @@
         <mxCell id="e_d3z3_d4z3" edge="1" parent="zone3" source="d3z3" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="d4z3" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="fin" parent="1" style="ellipse;aspect=fixed;html=1;fillColor=#000000;strokeColor=#000000;shape=doubleEllipse;" value="" vertex="1">
-          <mxGeometry height="30" width="30" x="-460" y="1909" as="geometry" />
-        </mxCell>
-        <mxCell id="e_d4z3_fin" edge="1" parent="1" source="d4z3" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="fin" value="">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="e_d4z3_fin" edge="1" parent="1" source="d4z3" style="edgeStyle=orthogonalEdgeStyle;html=1;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="-445.0000000000002" y="1909" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
         <mxCell id="n1" parent="1" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;size=14;fillColor=#EEF2FF;strokeColor=#4338CA;fontSize=9;fontStyle=1;" value="🔑 Médecin OBLIGATOIRE&#xa;dès l&#39;écran de recherche :&#xa;• Bouton « Sélectionner » désactivé&#xa;• Bouton « Continuer » désactivé&#xa;si aucun médecin n&#39;est choisi" vertex="1">
           <mxGeometry height="78" width="185" x="-1068" y="220" as="geometry" />
@@ -208,35 +225,18 @@
         <mxCell id="n5" parent="1" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;size=14;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;fontStyle=1;" value="⚠ ACCÈS RESTREINT — ADMIN&#xa;/patients et /consultations&#xa;protégés par get_current_non_admin.&#xa;Un admin reçoit 403 Forbidden." vertex="1">
           <mxGeometry height="68" width="185" x="-1072" y="1626" as="geometry" />
         </mxCell>
-
-    <!-- ── ANAMNÈSE — section ajoutée (antécédents & allergies) ── -->
-    <mxCell id="amn_inf" parent="zone2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0284C7;fontSize=11;fontStyle=1;fontColor=#0C4A6E;" value="Renseigner l&apos;Anamnèse (Antécédents &amp; Allergies)&#xa;— Section &quot;Anamnèse&quot; affichée en haut de l&apos;Étape 2 —&#xa;• Antécédents personnels (diabète, HTA, asthme…)&#xa;• Antécédents familiaux (cardiopathie familiale…)&#xa;• Allergies (pénicilline, AINS, iode…)" vertex="1">
-      <mxGeometry height="90" width="500" x="180" y="490" as="geometry" />
-    </mxCell>
-    <mxCell id="amn_inf_d" parent="zone2" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" value="Antécédents&#xa;à renseigner ?" vertex="1">
-      <mxGeometry height="60" width="160" x="350" y="600" as="geometry" />
-    </mxCell>
-    <mxCell id="amn_inf_save" parent="zone2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" value="Cliquer « Enregistrer dans le dossier »&#xa;→ PATCH /api/patients/{id}/dossier&#xa;{ antecedents_personnels, antecedents_familiaux, allergies }" vertex="1">
-      <mxGeometry height="60" width="320" x="530" y="597" as="geometry" />
-    </mxCell>
-    <mxCell id="e_c3_amn" edge="1" parent="zone2" source="c3" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="amn_inf" value="">
-      <mxGeometry relative="1" as="geometry" />
-    </mxCell>
-    <mxCell id="e_amn_d" edge="1" parent="zone2" source="amn_inf" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="amn_inf_d" value="">
-      <mxGeometry relative="1" as="geometry" />
-    </mxCell>
-    <mxCell id="e_amnd_save" edge="1" parent="zone2" source="amn_inf_d" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" target="amn_inf_save" value="Oui">
-      <mxGeometry relative="1" as="geometry" />
-    </mxCell>
-    <mxCell id="e_amn_inf_end" edge="1" parent="1" source="amn_inf_d" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" target="d1z3" value="Non / Passer">
-      <mxGeometry relative="1" as="geometry" />
-    </mxCell>
-    <mxCell id="e_amn_save_end" edge="1" parent="1" source="amn_inf_save" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="d1z3" value="">
-      <mxGeometry relative="1" as="geometry" />
-    </mxCell>
-    <mxCell id="amn_note_inf" parent="1" style="text;html=1;strokeColor=#0284C7;fillColor=#E0F2FE;align=left;verticalAlign=top;spacingLeft=6;whiteSpace=wrap;overflow=hidden;fontSize=10;rounded=1;" value="📋 Anamnèse transmise au modèle IA :&#xa;antecedents_personnels, antecedents_familiaux, allergies&#xa;→ inclus dans payload POST /api/ml/predict-direct&#xa;→ _apply_clinical_rules() booste les maladies correspondantes" vertex="1">
-      <mxGeometry height="70" width="310" x="-874" y="1680" as="geometry" />
-    </mxCell>
+        <mxCell id="e_amn_inf_end" edge="1" parent="1" source="amn_inf_d" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" target="d1z3" value="Non / Passer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_amn_save_end" edge="1" parent="1" source="amn_inf_save" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="d1z3" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="amn_note_inf" parent="1" style="text;html=1;strokeColor=#0284C7;fillColor=#E0F2FE;align=left;verticalAlign=top;spacingLeft=6;whiteSpace=wrap;overflow=hidden;fontSize=10;rounded=1;" value="📋 Anamnèse transmise au modèle IA :&#xa;antecedents_personnels, antecedents_familiaux, allergies&#xa;→ inclus dans payload POST /api/ml/predict-direct&#xa;→ _apply_clinical_rules() booste les maladies correspondantes" vertex="1">
+          <mxGeometry height="70" width="310" x="-874" y="1680" as="geometry" />
+        </mxCell>
+        <mxCell id="z_aSj0pvc-ReKIaSPAjx-2" parent="1" style="ellipse;html=1;shape=endState;fillColor=#000000;strokeColor=light-dark(#0d0c0c, #ff9090);" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="-459" y="1910" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>

@@ -24,7 +24,8 @@ class Consultation(Base):
     motif = Column(Text, nullable=False)
     medecin_id = Column(Integer, ForeignKey("medecins.medecin_id"), index=True)
     statut = Column(String(30), default='en attente', index=True)
-    
+    step_courant = Column(Integer, default=1)
+
     # Timestamps
     created_at = Column(DateTime, server_default=func.now())
     

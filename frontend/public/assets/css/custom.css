@@ -23,11 +23,11 @@
     --sp-gray-700: #334155;
     --sp-gray-800: #1E293B;
     --sp-gray-900: #0F172A;
-    --sp-sidebar-w: 270px;
+    --sp-sidebar-w: 290px;
     --sp-topbar-h: 68px;
     --sp-radius: 14px;
     --sp-radius-sm: 8px;
-    --sp-shadow: 0 4px 24px rgba(10, 75, 140, 0.08);
+    --sp-shadow: 0 2px 6px rgba(10, 75, 140, 0.06), 0 8px 28px rgba(10, 75, 140, 0.14);
     --sp-shadow-lg: 0 8px 40px rgba(10, 75, 140, 0.14);
 }
 
@@ -104,9 +104,13 @@ body.sp-body {
 .sp-logo-name {
     font-family: 'Syne', sans-serif;
     font-weight: 800;
-    font-size: 17px;
+    font-size: 21px;
     color: #fff;
     letter-spacing: 0.03em;
+    display: inline-block;
+    white-space: nowrap;
+    transform: scaleY(1.25);
+    transform-origin: left center;
 }
 .sp-logo-sub {
     font-size: 10.5px;
@@ -255,6 +259,25 @@ body.sp-body {
     box-shadow: 0 4px 12px rgba(10,75,140,0.08);
 }
 
+/* Topbar fixe qui réapparaît en glissant quand on scrolle vers le haut.
+   Pleine largeur de la zone principale, coins supérieurs droits et fond opaque :
+   le contenu qui défile derrière n'est jamais visible. */
+.sp-topbar.sp-topbar-fixed {
+    position: fixed;
+    top: 0;
+    left: calc(var(--sp-sidebar-w) + 16px);
+    right: 0;
+    margin: 0;
+    border-radius: 0 0 var(--sp-radius) var(--sp-radius);
+    z-index: 90;
+    box-shadow: var(--sp-shadow-lg);
+    animation: topbarSlideDown 0.3s ease;
+}
+@keyframes topbarSlideDown {
+    from { transform: translateY(-120%); opacity: 0; }
+    to { transform: none; opacity: 1; }
+}
+
 .sp-topbar-left { display: flex; align-items: center; gap: 16px; }
 .sp-topbar-right { display: flex; align-items: center; gap: 14px; }
 
@@ -268,7 +291,6 @@ body.sp-body {
 }
 .sp-menu-toggle:hover { background: var(--sp-gray-100); }
 .sp-menu-toggle svg { width: 20px; }
-
 .sp-breadcrumb { display: flex; align-items: center; gap: 8px; }
 .sp-breadcrumb-home { font-size: 13px; color: var(--sp-gray-400); }
 .sp-breadcrumb-sep { width: 14px; color: var(--sp-gray-300); }
@@ -434,14 +456,14 @@ body.sp-body {
 }
 
 .sp-number-xl {
-    font-size: 44px !important;
+    font-size: 38px !important;
     font-weight: 800 !important;
     line-height: 1;
     letter-spacing: -0.02em;
 }
 
 .sp-number-lg {
-    font-size: 32px !important;
+    font-size: 26px !important;
     font-weight: 800 !important;
 }
 
@@ -1048,6 +1070,7 @@ body.sp-auth::after {
     .sp-menu-toggle { display: flex; }
     .sp-content { padding: 18px 16px; }
     .sp-topbar { padding: 0 16px; margin: 16px 16px 0 16px; }
+    .sp-topbar.sp-topbar-fixed { left: 0; right: 0; margin: 0; }
     .sp-date-display { display: none; }
     .sp-page-header { flex-direction: column; align-items: flex-start; }
 }
@@ -1055,6 +1078,10 @@ body.sp-auth::after {
 /* ---- ANIMATIONS ---- */
 .sp-fade-in { animation: fadeIn 0.3s ease; }
 @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+/* Entrée de page plus marquée, à combiner avec animation-delay inline pour un effet cascade */
+.sp-fade-in-up { animation: fadeInUp 0.55s cubic-bezier(.22,.9,.35,1) both; }
+@keyframes fadeInUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:none; } }
 
 .sp-pulse { animation: pulse 2s infinite; }
 @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
@@ -1255,7 +1282,7 @@ body.sp-auth::after {
 /* Smaller laptops (1024px - 1280px) */
 @media (max-width: 1280px) {
     :root {
-        --sp-sidebar-w: 260px;
+        --sp-sidebar-w: 280px;
     }
     
     .sp-content {
@@ -1277,17 +1304,17 @@ body.sp-auth::after {
     }
     
     .sp-number-xl {
-        font-size: 38px !important;
+        font-size: 34px !important;
     }
-    
+
     .sp-number-lg {
-        font-size: 28px !important;
+        font-size: 26px !important;
     }
 }
 
 @media (max-width: 1024px) {
     :root {
-        --sp-sidebar-w: 260px;
+        --sp-sidebar-w: 280px;
     }
     
     .sp-dashboard-main-grid {
@@ -1328,7 +1355,11 @@ body.sp-auth::after {
     .sp-topbar {
         padding: 0 16px;
     }
-    
+
+    .sp-topbar.sp-topbar-fixed {
+        left: 0;
+    }
+
     .sp-breadcrumb-home, .sp-breadcrumb-sep {
         display: none;
     }

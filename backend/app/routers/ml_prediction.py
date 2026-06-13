@@ -28,6 +28,12 @@ router = APIRouter(
     dependencies=[Depends(get_current_user)],
 )
 
+# Router public séparé — pas de dépendance auth (symptomes, synonymes, antecedents)
+public_router = APIRouter(
+    prefix="/ml",
+    tags=["ML Public"],
+)
+
 
 def extract_patient_data(consultation_id: int, db: Session) -> Dict:
     """
@@ -315,7 +321,7 @@ def get_model_info():
     return model_manager.get_model_info()
 
 
-@router.get("/synonymes", dependencies=[])
+@public_router.get("/synonymes")
 def get_synonymes():
     """
     Retourne le dictionnaire synonymes → terme canonique.
@@ -332,7 +338,7 @@ def get_synonymes():
     return {"synonymes": merged, "inverse": inverse, "total": len(merged)}
 
 
-@router.get("/symptomes", dependencies=[])
+@public_router.get("/symptomes")
 def get_symptomes_list():
     """
     Retourne tous les symptômes connus du modèle ML — sans authentification requise.
@@ -373,7 +379,7 @@ def get_symptomes_list():
     return {"symptomes": symptomes, "total": len(symptomes), "source": "model"}
 
 
-@router.get("/antecedents", dependencies=[])
+@public_router.get("/antecedents")
 def get_antecedents_list():
     """
     Retourne :

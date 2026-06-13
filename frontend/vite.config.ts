@@ -16,10 +16,10 @@ export default defineConfig({
       output: {
         // Sépare les vendors en chunks distincts — mise en cache navigateur maximale
         manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'lucide': ['lucide-react'],
-          'charts': ['chart.js', 'react-chartjs-2'],
-        },
+          react: ['react', 'react-dom', 'react-router-dom'],
+          lucide: ['lucide-react'],
+          charts: ['chart.js', 'react-chartjs-2'],
+        } as any,
       },
     },
   },

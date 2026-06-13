@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { registerNavigationGuard, unregisterNavigationGuard } from '../utils/navigationGuard';
 import { useToast } from '../components/Toast';
@@ -69,9 +69,11 @@ interface TagsInputProps {
   onChange: (val: string) => void;
   accentColor?: string;
   borderColor?: string;
+  labelColor?: string;
+  icon?: React.ReactNode;
 }
 
-function TagsInput({ label, placeholder, suggestions, value, onChange, accentColor = '#4F46E5', borderColor = '#E5E7EB' }: TagsInputProps) {
+function TagsInput({ label, placeholder, suggestions, value, onChange, accentColor = '#4F46E5', borderColor = '#E5E7EB', labelColor, icon }: TagsInputProps) {
   const [input, setInput] = useState('');
   const [open, setOpen] = useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -107,15 +109,18 @@ function TagsInput({ label, placeholder, suggestions, value, onChange, accentCol
     if (e.key === 'Escape') setOpen(false);
   };
 
+  const isAlert = !!labelColor;
   return (
     <div className="sp-form-group" style={{ margin: 0 }}>
-      <label className="sp-form-label" style={{ color: label.startsWith('⚠') ? '#DC2626' : undefined }}>{label}</label>
+      <label className="sp-form-label" style={{ color: labelColor, display: 'flex', alignItems: 'center', gap: '5px' }}>
+        {icon}{label}
+      </label>
       <div
         style={{ minHeight: '44px', padding: '4px 8px', borderRadius: '8px', border: `1px solid ${borderColor}`, background: '#fff', display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center', cursor: 'text' }}
         onClick={() => inputRef.current?.focus()}
       >
         {tags.map(tag => (
-          <span key={tag} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '999px', background: label.startsWith('⚠') ? '#FEE2E2' : '#EEF2FF', color: label.startsWith('⚠') ? '#991B1B' : '#3730A3', fontSize: '12px', fontWeight: 600, border: `1px solid ${label.startsWith('⚠') ? '#FECACA' : '#C7D2FE'}` }}>
+          <span key={tag} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '999px', background: isAlert ? '#FEE2E2' : '#EEF2FF', color: isAlert ? '#991B1B' : '#3730A3', fontSize: '12px', fontWeight: 600, border: `1px solid ${isAlert ? '#FECACA' : '#C7D2FE'}` }}>
             {tag}
             <button type="button" onMouseDown={e => { e.preventDefault(); removeTag(tag); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1, color: 'inherit', fontSize: '14px', opacity: 0.7 }}>×</button>
           </span>
@@ -274,7 +279,8 @@ const SYMPTOMES_COMMUNS = [
   "Sécheresse buccale", "Sécheresse cutanée", "Sécheresse oculaire", "Selles dures", "Selles pâles",
   "Sensation d'accélération", "Sensation de ballonnement", "Sensation de blocage",
   "Sensation de pressure", "Sensation de satiété rapide", "Sensation vidange incomplète",
-  "Sensibilité à la lumière", "Sensibilité à la palpation", "Soif excessive",
+  "Soif excessive",
+  "Soif excessive (diabète type 2)",
   "Somnolence diurne", "Souvent asymptomatique", "Spasticité", "Splénomégalie",
   "Stridor inspiratoire", "Sueurs", "Sueurs froides", "Sueurs nocturnes", "Syncope",
   "Sang dans les selles", "Sang dans les urines", "Selles liquides", "Selles noires",
@@ -443,6 +449,15 @@ const SYNONYMES_LOCAUX: Record<string, string> = {
   "ongles cassants":"Ongles cassants","ongles fragiles":"Ongles cassants",
   "toujours froid":"Intolérance au froid","frilosité":"Intolérance au froid",
   "transpiration excessive":"Transpiration excessive","hyperhidrose":"Transpiration excessive",
+  "visage qui grossit":"Grossissement du visage","mains et pieds qui grandissent":"Agrandissement des mains/pieds",
+  
+  // Diabète type 2 — Soif excessive (variantes fréquentes)
+  "soif excessive diabete type 2":"Soif excessive (diabète type 2)",
+  "soif excessive diabete de type 2":"Soif excessive (diabète type 2)",
+  "soif excessive diabète type 2":"Soif excessive (diabète type 2)",
+  "soif excessive diabète de type 2":"Soif excessive (diabète type 2)",
+  "soif excessive type 2":"Soif excessive (diabète type 2)",
+  "transpiration excessive":"Transpiration excessive","hyperhidrose":"Transpiration excessive",
   "bosse dans le dos":"Bosse de bison","graisse dans le dos":"Bosse de bison",
   "visage qui grossit":"Grossissement du visage","mains et pieds qui grandissent":"Agrandissement des mains/pieds",
   // Ophtalmologiques
@@ -610,90 +625,158 @@ const UNITES_EXAMEN = [
   'pg/mL', 'sec', 'mEq/L', 'mL/min/1.73m²', 'resp/min', 'Autre'
 ];
 
-function suggestExams(predictions: Prediction[]): Examen[] {
+// Table de correspondance symptôme → examens biologiques suggérés
+const SYMPTOME_EXAM_MAP: Record<string, Array<{ nom: string; description: string }>> = {
+  // Fièvre / inflammation
+  'fièvre':              [{ nom: 'Globules Blancs', description: 'Numération leucocytaire' }, { nom: 'CRP', description: 'Marqueur inflammatoire' }, { nom: 'Paludisme (test rapide)', description: 'Recherche paludisme' }],
+  'fievre':              [{ nom: 'Globules Blancs', description: 'Numération leucocytaire' }, { nom: 'CRP', description: 'Marqueur inflammatoire' }, { nom: 'Paludisme (test rapide)', description: 'Recherche paludisme' }],
+  'hyperthermie':        [{ nom: 'Globules Blancs', description: 'Numération leucocytaire' }, { nom: 'CRP', description: 'Marqueur inflammatoire' }],
+  // Fatigue / asthénie
+  'fatigue':             [{ nom: 'Hémoglobine', description: 'Anémie' }, { nom: 'Fer', description: 'Carence en fer' }, { nom: 'TSH', description: 'Fonction thyroïdienne' }, { nom: 'Glucose à jeun', description: 'Hypoglycémie' }],
+  'asthénie':            [{ nom: 'Hémoglobine', description: 'Anémie' }, { nom: 'Fer', description: 'Carence en fer' }, { nom: 'TSH', description: 'Fonction thyroïdienne' }],
+  'faiblesse':           [{ nom: 'Hémoglobine', description: 'Anémie' }, { nom: 'Potassium', description: 'Hypokaliémie' }, { nom: 'Sodium', description: 'Équilibre électrolytique' }],
+  // Douleurs musculaires / articulaires
+  'douleurs musculaires':[{ nom: 'CK (CPK)', description: 'Lésion musculaire' }, { nom: 'LDH', description: 'Marqueur de lyse cellulaire' }, { nom: 'ESR', description: 'Inflammation systémique' }],
+  'myalgies':            [{ nom: 'CK (CPK)', description: 'Lésion musculaire' }, { nom: 'LDH', description: 'Marqueur de lyse cellulaire' }],
+  'douleurs articulaires':[{ nom: 'ESR', description: 'Inflammation' }, { nom: 'CRP', description: 'Marqueur inflammatoire' }, { nom: 'Acide urique', description: 'Goutte' }, { nom: 'Facteur rhumatoïde', description: 'Polyarthrite' }],
+  'arthralgie':          [{ nom: 'ESR', description: 'Inflammation' }, { nom: 'CRP', description: 'Marqueur inflammatoire' }, { nom: 'Acide urique', description: 'Goutte' }],
+  'arthrite':            [{ nom: 'ESR', description: 'Inflammation' }, { nom: 'CRP', description: 'Marqueur inflammatoire' }, { nom: 'Facteur rhumatoïde', description: 'Polyarthrite' }],
+  // Gorge / voies respiratoires hautes
+  'maux de gorge':       [{ nom: 'Globules Blancs', description: 'Infection bactérienne ou virale' }, { nom: 'CRP', description: 'Inflammation' }, { nom: 'ASLO (résultat)', description: 'Angine à streptocoque' }],
+  'mal de gorge':        [{ nom: 'Globules Blancs', description: 'Infection bactérienne ou virale' }, { nom: 'CRP', description: 'Inflammation' }],
+  'pharyngite':          [{ nom: 'Globules Blancs', description: 'Infection' }, { nom: 'CRP', description: 'Inflammation' }, { nom: 'ASLO (résultat)', description: 'Streptocoque groupe A' }],
+  'toux':                [{ nom: 'Globules Blancs', description: 'Infection respiratoire' }, { nom: 'CRP', description: 'Inflammation' }, { nom: 'Radiographie thoracique (résultat)', description: 'Pneumonie' }],
+  'dyspnée':             [{ nom: 'Gazométrie (résultat)', description: 'Oxygénation' }, { nom: 'Globules Rouges', description: 'Anémie' }, { nom: 'BNP', description: 'Insuffisance cardiaque' }],
+  'essoufflement':       [{ nom: 'Gazométrie (résultat)', description: 'Oxygénation' }, { nom: 'BNP', description: 'Insuffisance cardiaque' }],
+  // Rougeurs / éruptions cutanées
+  'rougeurs':            [{ nom: 'Globules Blancs', description: 'Infection ou réaction immune' }, { nom: 'Éosinophiles', description: 'Réaction allergique' }, { nom: 'IgE totales', description: 'Allergie' }],
+  'éruption cutanée':    [{ nom: 'Globules Blancs', description: 'Infection ou allergie' }, { nom: 'Éosinophiles', description: 'Allergie' }, { nom: 'IgE totales', description: 'Allergie' }],
+  'eruption cutanee':    [{ nom: 'Globules Blancs', description: 'Infection ou allergie' }, { nom: 'Éosinophiles', description: 'Allergie' }],
+  'urticaire':           [{ nom: 'Éosinophiles', description: 'Allergie' }, { nom: 'IgE totales', description: 'Allergie' }],
+  'éruption':            [{ nom: 'Globules Blancs', description: 'Infection ou allergie' }, { nom: 'Éosinophiles', description: 'Allergie' }],
+  'rash':                [{ nom: 'Globules Blancs', description: 'Infection ou allergie' }, { nom: 'Éosinophiles', description: 'Allergie' }],
+  // Maux de tête / neurologiques
+  'maux de tête':        [{ nom: 'Globules Blancs', description: 'Infection méningée' }, { nom: 'CRP', description: 'Inflammation' }],
+  'céphalées':           [{ nom: 'Globules Blancs', description: 'Méningite' }, { nom: 'CRP', description: 'Inflammation' }],
+  'cephalees':           [{ nom: 'Globules Blancs', description: 'Méningite' }, { nom: 'CRP', description: 'Inflammation' }],
+  // Troubles digestifs
+  'nausées':             [{ nom: 'Lipase', description: 'Pancréatite' }, { nom: 'ALT/SGPT', description: 'Atteinte hépatique' }, { nom: 'Globules Blancs', description: 'Infection digestive' }],
+  'nausee':              [{ nom: 'Lipase', description: 'Pancréatite' }, { nom: 'ALT/SGPT', description: 'Atteinte hépatique' }],
+  'vomissements':        [{ nom: 'Sodium', description: 'Déshydratation' }, { nom: 'Potassium', description: 'Hypokaliémie' }, { nom: 'Créatinine', description: 'Insuffisance rénale aiguë' }],
+  'diarrhée':            [{ nom: 'Sodium', description: 'Déshydratation' }, { nom: 'Potassium', description: 'Hypokaliémie' }, { nom: 'Globules Blancs', description: 'Infection intestinale' }],
+  'diarrhee':            [{ nom: 'Sodium', description: 'Déshydratation' }, { nom: 'Potassium', description: 'Hypokaliémie' }],
+  'douleurs abdominales':[{ nom: 'Globules Blancs', description: 'Infection intra-abdominale' }, { nom: 'Lipase', description: 'Pancréatite' }, { nom: 'ALT/SGPT', description: 'Atteinte hépatique' }],
+  // Troubles urinaires
+  'brûlures urinaires':  [{ nom: 'ECBU (résultat)', description: 'Infection urinaire' }, { nom: 'Créatinine', description: 'Fonction rénale' }],
+  'pollakiurie':         [{ nom: 'ECBU (résultat)', description: 'Infection urinaire' }, { nom: 'Globules Blancs', description: 'Infection' }],
+  // Troubles cardiovasculaires
+  'palpitations':        [{ nom: 'Troponine', description: 'Atteinte myocardique' }, { nom: 'TSH', description: 'Thyroïde' }, { nom: 'Potassium', description: 'Arythmie' }],
+  'douleur thoracique':  [{ nom: 'Troponine', description: 'Infarctus' }, { nom: 'CK (CPK)', description: 'Lésion myocardique' }, { nom: 'BNP', description: 'Insuffisance cardiaque' }],
+  // Sueurs
+  'sueurs nocturnes':    [{ nom: 'BAAR (résultat)', description: 'Tuberculose' }, { nom: 'Globules Blancs', description: 'Infection' }, { nom: 'ESR', description: 'Inflammation' }],
+  'sueurs':              [{ nom: 'Glucose à jeun', description: 'Hypoglycémie' }, { nom: 'TSH', description: 'Thyroïde' }],
+  // Perte de poids
+  'perte de poids':      [{ nom: 'Albumine', description: 'Dénutrition' }, { nom: 'Glucose à jeun', description: 'Diabète' }, { nom: 'TSH', description: 'Hyperthyroïdie' }],
+  'amaigrissement':      [{ nom: 'Albumine', description: 'Dénutrition' }, { nom: 'Glucose à jeun', description: 'Diabète' }],
+  // Ictère
+  'jaunisse':            [{ nom: 'Bilirubine totale', description: 'Ictère' }, { nom: 'ALT/SGPT', description: 'Atteinte hépatique' }, { nom: 'AST/SGOT', description: 'Atteinte hépatique' }],
+  'ictère':              [{ nom: 'Bilirubine totale', description: 'Ictère' }, { nom: 'ALT/SGPT', description: 'Atteinte hépatique' }],
+  'icteré':              [{ nom: 'Bilirubine totale', description: 'Ictère' }, { nom: 'ALT/SGPT', description: 'Atteinte hépatique' }],
+};
+
+// Table de correspondance maladie (mots-clés) → examens
+const MALADIE_EXAM_MAP: Array<{ mots: string[]; examens: Array<{ nom: string; description: string }> }> = [
+  { mots: ['malaria', 'paludisme'],
+    examens: [{ nom: 'Globules Rouges', description: 'Anémie hémolytique' }, { nom: 'Plaquettes', description: 'Thrombocytopénie' }, { nom: 'Bilirubine totale', description: 'Hémolyse' }, { nom: 'Paludisme (test rapide)', description: 'Confirmation paludisme' }] },
+  { mots: ['tuberc', ' tb', 'tuberculose'],
+    examens: [{ nom: 'BAAR (résultat)', description: 'Test référence TB' }, { nom: 'ESR', description: 'Vitesse sédimentation élevée' }, { nom: 'Albumine', description: 'Dénutrition' }, { nom: 'Culture Mycobactéries (résultat)', description: 'Confirmation TB' }] },
+  { mots: ['typhoid', 'typhoïde', 'salmonel'],
+    examens: [{ nom: 'ALT/SGPT', description: 'Atteinte hépatique' }, { nom: 'AST/SGOT', description: 'Atteinte hépatique' }, { nom: 'Widal (résultat)', description: 'Sérologie typhoïde' }] },
+  { mots: ['hepat', 'hépatite'],
+    examens: [{ nom: 'ALT/SGPT', description: 'Transaminase hépatique' }, { nom: 'AST/SGOT', description: 'Transaminase hépatique' }, { nom: 'Bilirubine totale', description: 'Évaluation ictère' }, { nom: 'Albumine', description: 'Fonction de synthèse' }] },
+  { mots: ['diabet', 'glucose', 'glyc'],
+    examens: [{ nom: 'Glucose à jeun', description: 'Glucose sanguin' }, { nom: 'HbA1c', description: 'Hémoglobine glyquée' }, { nom: 'Créatinine', description: 'Fonction rénale' }, { nom: 'Cholestérol total', description: 'Bilan lipidique' }] },
+  { mots: ['cardia', 'heart', 'coeur', 'infarct'],
+    examens: [{ nom: 'Troponine', description: 'Nécrose myocardique' }, { nom: 'CK (CPK)', description: 'Créatine kinase' }, { nom: 'BNP', description: 'Insuffisance cardiaque' }] },
+  { mots: ['renal', 'rein', 'nephro', 'kidney'],
+    examens: [{ nom: 'Créatinine', description: 'Fonction rénale' }, { nom: 'Urée', description: 'Fonction rénale' }, { nom: 'TFG', description: 'Filtration glomérulaire' }, { nom: 'Potassium', description: 'Équilibre électrolytique' }] },
+  { mots: ['anemi', 'anémie'],
+    examens: [{ nom: 'Hématocrite', description: 'Volume globulaire' }, { nom: 'VGM', description: 'Volume globulaire moyen' }, { nom: 'Fer', description: 'Carence en fer' }, { nom: 'Ferritine', description: 'Réserves en fer' }] },
+  { mots: ['cholera', 'diarrhee', 'diarrhée', 'gastro'],
+    examens: [{ nom: 'Sodium', description: 'Déshydratation' }, { nom: 'Potassium', description: 'Hypokaliémie' }, { nom: 'Créatinine', description: 'Insuffisance rénale aiguë' }] },
+  { mots: ['pneumon', 'pulmon', 'bronch'],
+    examens: [{ nom: 'Globules Blancs', description: 'Infection' }, { nom: 'Neutrophiles', description: 'Infection bactérienne' }, { nom: 'Radiographie thoracique (résultat)', description: 'Confirmation pneumonie' }] },
+  { mots: ['dengue'],
+    examens: [{ nom: 'Plaquettes', description: 'Thrombocytopénie dengue' }, { nom: 'Globules Blancs', description: 'Leucopénie' }, { nom: 'NS1 dengue (résultat)', description: 'Antigène NS1' }] },
+  { mots: ['vih', 'hiv', 'sida', 'aids'],
+    examens: [{ nom: 'CD4 (résultat)', description: 'Immunité' }, { nom: 'Charge virale VIH (résultat)', description: 'Réplication virale' }, { nom: 'Globules Blancs', description: 'Immunosuppression' }] },
+  { mots: ['mening'],
+    examens: [{ nom: 'Globules Blancs', description: 'Infection méningée' }, { nom: 'PL (résultat)', description: 'Ponction lombaire' }, { nom: 'CRP', description: 'Inflammation' }] },
+  { mots: ['thyro'],
+    examens: [{ nom: 'TSH', description: 'Thyroïde' }, { nom: 'T3 libre', description: 'Hormone thyroïdienne' }, { nom: 'T4 libre', description: 'Hormone thyroïdienne' }] },
+];
+
+function suggestExams(predictions: Prediction[], symptomesEntres: string[] = []): Examen[] {
   const today = new Date().toISOString().split('T')[0];
   const added = new Set<string>();
-  const list: Examen[] = [];
+  const scored: Map<string, { score: number; description: string; type: string }> = new Map();
 
-  const add = (e: Omit<Examen, 'isSuggested'>) => {
-    if (!added.has(e.nom)) {
-      added.add(e.nom);
-      const def = EXAM_DEFAULTS[e.nom] || {};
-      list.push({
-        ...e,
-        resultats: '',
-        isSuggested: true,
-        date_examen: today,
-        valeur_numerique: def.valeur_numerique,
-        unite_mesure: def.unite_mesure ?? '',
-      });
+  const vote = (nom: string, description: string, points: number, type = 'BIOLOGIE') => {
+    const existing = scored.get(nom);
+    if (existing) {
+      existing.score += points;
+    } else {
+      scored.set(nom, { score: points, description, type });
     }
   };
 
-  add({ type: 'BIOLOGIE', nom: 'Hémoglobine', description: 'Bilan sanguin de base' });
-  add({ type: 'BIOLOGIE', nom: 'CRP', description: 'Marqueur inflammatoire' });
+  // Base obligatoire
+  vote('Hémoglobine', 'Bilan sanguin de base', 1);
+  vote('CRP', 'Marqueur inflammatoire', 1);
 
-  predictions.slice(0, 3).forEach(({ maladie }) => {
-    const m = maladie.toLowerCase();
-    if (m.includes('malaria') || m.includes('paludisme'))
-      { // Paludisme : utiliser marqueurs inflammatoires et hématologie
-        add({ type: 'BIOLOGIE', nom: 'Globules Rouges', description: 'Anémie hémolytique' });
-        add({ type: 'BIOLOGIE', nom: 'Plaquettes', description: 'Thrombocytopénie' });
-        add({ type: 'BIOLOGIE', nom: 'Bilirubine totale', description: 'Hémolyse' }); }
-    if (m.includes('tuberc') || m.includes(' tb'))
-      { // Tuberculose : marqueurs inflammatoires, hématologie et tests microbiologiques
-        add({ type: 'BIOLOGIE', nom: 'BAAR (résultat)', description: 'Test de référence pour TB' });
-        add({ type: 'BIOLOGIE', nom: 'ESR', description: 'Vitesse de sédimentation élevée' });
-        add({ type: 'BIOLOGIE', nom: 'Globules Blancs', description: 'Numération leucocytaire' });
-        add({ type: 'BIOLOGIE', nom: 'Lymphocytes', description: 'Lymphocytose relative' });
-        add({ type: 'BIOLOGIE', nom: 'Albumine', description: 'Dénutrition' });
-        add({ type: 'BIOLOGIE', nom: 'Culture Mycobactéries (résultat)', description: 'Confirmation TB' }); }
-    if (m.includes('typhoid') || m.includes('typhoïde') || m.includes('salmonel'))
-      { // Typhoïde : marqueurs hépatiques et inflammatoires
-        add({ type: 'BIOLOGIE', nom: 'ALT/SGPT', description: 'Atteinte hépatique' });
-        add({ type: 'BIOLOGIE', nom: 'AST/SGOT', description: 'Atteinte hépatique' });
-        add({ type: 'BIOLOGIE', nom: 'Globules Blancs', description: 'Leucopénie' }); }
-    if (m.includes('hepat'))
-      { add({ type: 'BIOLOGIE', nom: 'ALT/SGPT', description: 'Transaminase hépatique' });
-        add({ type: 'BIOLOGIE', nom: 'AST/SGOT', description: 'Transaminase hépatique' });
-        add({ type: 'BIOLOGIE', nom: 'Bilirubine totale', description: 'Évaluation ictère' });
-        add({ type: 'BIOLOGIE', nom: 'Albumine', description: 'Fonction de synthèse' }); }
-    if (m.includes('diabet') || m.includes('glucose') || m.includes('glyc'))
-      { add({ type: 'BIOLOGIE', nom: 'Glucose à jeun', description: 'Glucose sanguin' });
-        add({ type: 'BIOLOGIE', nom: 'HbA1c', description: 'Hémoglobine glyquée' });
-        add({ type: 'BIOLOGIE', nom: 'Créatinine', description: 'Fonction rénale' });
-        add({ type: 'BIOLOGIE', nom: 'Cholestérol total', description: 'Bilan lipidique' }); }
-    if (m.includes('cardia') || m.includes('heart') || m.includes('coeur') || m.includes('infarct'))
-      { // Cardiaque : marqueurs cardiaques
-        add({ type: 'BIOLOGIE', nom: 'Troponine', description: 'Nécrose myocardique' });
-        add({ type: 'BIOLOGIE', nom: 'CK', description: 'Créatine kinase' });
-        add({ type: 'BIOLOGIE', nom: 'Myoglobine', description: 'Marqueur précoce' });
-        add({ type: 'BIOLOGIE', nom: 'BNP', description: 'Insuffisance cardiaque' }); }
-    if (m.includes('renal') || m.includes('rein') || m.includes('nephro') || m.includes('kidney'))
-      { add({ type: 'BIOLOGIE', nom: 'Créatinine', description: 'Fonction rénale' });
-        add({ type: 'BIOLOGIE', nom: 'Urée', description: 'Fonction rénale' });
-        add({ type: 'BIOLOGIE', nom: 'TFG', description: 'Filtration glomérulaire' });
-        add({ type: 'BIOLOGIE', nom: 'Potassium', description: 'Équilibre électrolytique' }); }
-    if (m.includes('anemi') || m.includes('anémie'))
-      { add({ type: 'BIOLOGIE', nom: 'Hémoglobine', description: 'Taux d\'hémoglobine' });
-        add({ type: 'BIOLOGIE', nom: 'Hématocrite', description: 'Volume globulaire' });
-        add({ type: 'BIOLOGIE', nom: 'VGM', description: 'Volume globulaire moyen' });
-        add({ type: 'BIOLOGIE', nom: 'Fer', description: 'Carence en fer' });
-        add({ type: 'BIOLOGIE', nom: 'Ferritine', description: 'Réserves en fer' }); }
-    if (m.includes('cholera') || m.includes('diarrhee') || m.includes('diarrhée') || m.includes('gastro'))
-      { // Gastro : électrolytes et fonction rénale
-        add({ type: 'BIOLOGIE', nom: 'Sodium', description: 'Déshydratation' });
-        add({ type: 'BIOLOGIE', nom: 'Potassium', description: 'Hypokaliémie' });
-        add({ type: 'BIOLOGIE', nom: 'Créatinine', description: 'Insuffisance rénale aiguë' });
-        add({ type: 'BIOLOGIE', nom: 'Urée', description: 'Déshydratation' }); }
-    if (m.includes('pneumon') || m.includes('pulmon') || m.includes('bronch'))
-      { // Pneumonie/Bronchite : marqueurs inflammatoires
-        add({ type: 'BIOLOGIE', nom: 'CRP', description: 'Inflammation' });
-        add({ type: 'BIOLOGIE', nom: 'Globules Blancs', description: 'Infection' });
-        add({ type: 'BIOLOGIE', nom: 'Neutrophiles', description: 'Infection bactérienne' }); }
+  // Signal 1 : symptômes entrés par l'infirmier
+  const sympNorm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  symptomesEntres.forEach(symptome => {
+    const sLow = symptome.toLowerCase();
+    // Recherche directe puis partielle dans la table
+    for (const [key, examens] of Object.entries(SYMPTOME_EXAM_MAP)) {
+      if (sLow === key || sLow.includes(key) || key.includes(sLow) ||
+          sympNorm(sLow) === sympNorm(key)) {
+        examens.forEach(e => vote(e.nom, e.description, 3));
+        break;
+      }
+    }
   });
 
-  return list.slice(0, 6);
+  // Signal 2 : 3 maladies candidates de l'analyse préliminaire
+  predictions.slice(0, 3).forEach(({ maladie, probabilite }) => {
+    const m = maladie.toLowerCase();
+    const weight = Math.round((probabilite || 0.5) * 2); // 0–2 pts selon confiance
+    for (const { mots, examens } of MALADIE_EXAM_MAP) {
+      if (mots.some(mot => m.includes(mot))) {
+        examens.forEach(e => vote(e.nom, e.description, 1 + weight));
+      }
+    }
+  });
+
+  // Trier par score décroissant, prendre les 8 premiers
+  const sorted = [...scored.entries()]
+    .sort((a, b) => b[1].score - a[1].score)
+    .slice(0, 8);
+
+  return sorted.map(([nom, { description, type }]) => {
+    const def = EXAM_DEFAULTS[nom] || {};
+    return {
+      type: type as Examen['type'],
+      nom,
+      description,
+      resultats: '',
+      isSuggested: true,
+      date_examen: today,
+      valeur_numerique: def.valeur_numerique,
+      unite_mesure: def.unite_mesure ?? '',
+    };
+  });
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -1274,24 +1357,33 @@ export default function ConsultationWorkflow() {
         if (d.signes_vitaux) setVitaux(v => ({ ...v, ...d.signes_vitaux }));
         if (d.analyse_preliminaire) {
           setAnalysePreliminaire(d.analyse_preliminaire);
-          setExamens(suggestExams(d.analyse_preliminaire.top_predictions || []));
+          const symsFromBackend = (d.symptomes || []).map((s: any) => s.nom as string);
+          setExamens(suggestExams(d.analyse_preliminaire.top_predictions || [], symsFromBackend));
         }
         if (isInfirmier) {
-          // Infirmier reprend son brouillon → symptômes/vitaux
           setDraftConsultationId(activeConsultationId);
           if (d.medecin_id) setMedecinId(d.medecin_id);
-          setStep(2);
+          // Restaurer l'étape exacte depuis la base (entre 1 et 2 pour l'infirmier)
+          const stepInfirmier = d.step_courant && d.step_courant >= 1 && d.step_courant <= 2
+            ? d.step_courant : 2;
+          setStep(stepInfirmier);
         } else {
-          // Médecin : détermine le mode selon les données sauvegardées en base
           if (d.symptomes?.length > 0) {
-            // Symptômes sauvegardés par l'infirmier → dossier préparé, reprendre à Analyse IA
             setDoctorMode('reprendre');
-            setStep(d.analyse_preliminaire ? 4 : 3);
           } else {
-            // Aucun symptôme en base → consultation créée directement par le médecin
             setDoctorMode('nouveau');
             setDraftConsultationId(activeConsultationId);
-            setStep(2);
+          }
+          // Restaurer l'étape exacte depuis la base — fiable même après déconnexion/vidage cache
+          if (d.step_courant && d.step_courant >= 2) {
+            // Vérification de cohérence : ne pas aller à une étape dont les données manquent
+            let targetStep = d.step_courant;
+            if (targetStep >= 4 && !d.analyse_preliminaire) targetStep = 3;
+            if (targetStep >= 3 && !d.symptomes?.length) targetStep = 2;
+            setStep(targetStep);
+          } else {
+            // Fallback : heuristique si step_courant absent (anciennes consultations)
+            setStep(d.analyse_preliminaire ? 4 : d.symptomes?.length > 0 ? 3 : 2);
           }
         }
         setDoctorPhase('workflow');
@@ -1348,13 +1440,8 @@ export default function ConsultationWorkflow() {
     }
   }, [hasSearched, patientSearchResults.length, patientSearchQuery, forceNewPatient]);
 
-  // Garde de navigation — fermeture/actualisation navigateur + liens sidebar
+  // Garde de navigation — liens sidebar uniquement (pas beforeunload : données persistées en base)
   useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      if (isDirty) { e.preventDefault(); e.returnValue = ''; }
-    };
-    window.addEventListener('beforeunload', handler);
-
     if (isDirty) {
       registerNavigationGuard((path) => {
         setPendingNavTo(path);
@@ -1363,11 +1450,7 @@ export default function ConsultationWorkflow() {
     } else {
       unregisterNavigationGuard();
     }
-
-    return () => {
-      window.removeEventListener('beforeunload', handler);
-      unregisterNavigationGuard();
-    };
+    return () => { unregisterNavigationGuard(); };
   }, [isDirty]);
 
   // ── Détection brouillon au montage ────────────────────────────────────────
@@ -1429,7 +1512,7 @@ export default function ConsultationWorkflow() {
     } catch { localStorage.removeItem(key); }
   }, [backendLoadComplete]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Auto-save (debounce 1.5 s) ────────────────────────────────────────────
+  // ── Auto-save localStorage (debounce 1.5 s) ──────────────────────────────
   useEffect(() => {
     const isActive = (isInfirmier ? infirmierPhase === 'workflow' : doctorPhase === 'workflow') && !infirmierSubmitted;
     if (!isActive) return;
@@ -1457,6 +1540,20 @@ export default function ConsultationWorkflow() {
       draftConsultationId, activeConsultationId, symptomes, vitaux, analysePreliminaire,
       examens, analyseFinale, validationDecision, diagnosticFinal, diagnosticCorrection,
       notesValidation, ordonnance, suivi, doctorMode, user?.role]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Persistance step côté backend (résiste à déconnexion + vidage cache) ──
+  useEffect(() => {
+    const id = activeConsultationId || draftConsultationId;
+    if (!id) return;
+    const isActive = (isInfirmier ? infirmierPhase === 'workflow' : doctorPhase === 'workflow') && !infirmierSubmitted;
+    if (!isActive) return;
+    // Envoyer silencieusement, pas de retry — perte acceptable si hors-ligne
+    apiFetch(`http://localhost:8000/api/consultations/${id}/step`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ step }),
+    }).catch(() => {});
+  }, [step, activeConsultationId, draftConsultationId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Médecin sélectionne un patient trouvé
   const handleSelectPatient = async (result: PatientSearchResult) => {
@@ -1625,7 +1722,7 @@ export default function ConsultationWorkflow() {
     try {
       const result = await callIA(false);
       setAnalysePreliminaire(result);
-      const suggestions = suggestExams(result.top_predictions);
+      const suggestions = suggestExams(result.top_predictions, symptomes.map(s => s.nom));
       setExamens(suggestions);
       showToast('Analyse préliminaire effectuée — examens suggérés ci-dessous', 'success');
       // On reste sur l'étape 3 pour visualiser les résultats avant de passer aux examens
@@ -1780,7 +1877,7 @@ export default function ConsultationWorkflow() {
   // ── Stepper ────────────────────────────────────────────────────────────────
   const visibleSteps = useMemo(() => {
     if (isInfirmier) return steps.slice(0, 2);                        // Patient, Symptômes & Vitaux
-    if (doctorMode === 'reprendre') return steps.slice(2);            // Analyse IA → Suivi
+    if (doctorMode === 'reprendre') return steps.slice(1);            // Symptômes & Vitaux → Suivi
     if (doctorMode === 'nouveau') return steps.slice(1);              // Symptômes & Vitaux → Suivi
     return steps;
   }, [isInfirmier, doctorMode]);
@@ -2783,7 +2880,9 @@ export default function ConsultationWorkflow() {
                         borderColor="#C7D2FE"
                       />
                       <TagsInput
-                        label="⚠️ Allergies"
+                        label="Allergies"
+                        icon={<AlertCircle size={13} />}
+                        labelColor="#DC2626"
                         placeholder="Ex: Pénicilline, Acariens…"
                         suggestions={allergenesList}
                         value={editAllergies}
@@ -2837,7 +2936,8 @@ export default function ConsultationWorkflow() {
                         onBlur={() => {
                           setTimeout(() => setOpenSymptomIdx(null), 200);
                           const val = s.nom.trim();
-                          if (val && !ALL_SYMPTOMES_SET.has(val)) {
+                          const allConnus = new Set([...ALL_SYMPTOMES_SET, ...dynamicSymptomes]);
+                          if (val && !allConnus.has(val)) {
                             editSymptome(i, 'nom', '');
                             showToast(`"${val}" n'est pas dans la liste des symptômes disponibles`, 'error');
                           }
@@ -3596,8 +3696,8 @@ export default function ConsultationWorkflow() {
                 }
                 setStep(s => {
                   const next = Math.max(stepMin, s - 1);
-                  // Retour avant l'analyse préliminaire → réinitialiser pour forcer un nouveau calcul
-                  if (next < 3 && analysePreliminaire) {
+                  // Retour à l'étape symptômes → réinitialiser l'analyse pour forcer un nouveau calcul
+                  if (next <= 2 && analysePreliminaire) {
                     setAnalysePreliminaire(null);
                     setExamens([]);
                   }
@@ -3612,7 +3712,7 @@ export default function ConsultationWorkflow() {
               className="sp-btn sp-btn-outline"
               style={{ opacity: step === stepMin && !isMedecin && !isInfirmier ? 0.4 : 1 }}
             >
-              <ArrowLeft size={16} /> {step === stepMin && isMedecin ? (reprendreId ? 'Consultations' : 'Recherche') : step === stepMin && isInfirmier ? 'Recherche' : 'Précédent'}
+              <ArrowLeft size={16} /> {step === stepMin && isMedecin ? (reprendreId ? 'Consultations' : 'Recherche') : step === stepMin && isInfirmier ? 'Recherche' : (reprendreId && step === 2 ? 'Consultations' : 'Précédent')}
             </button>
 
             {/* ── Étape 1 : Suivant pour infirmier/admin ou médecin nouveau ── */}
@@ -3629,8 +3729,8 @@ export default function ConsultationWorkflow() {
               </button>
             )}
 
-            {/* ── Étape 2 : médecin nouveau patient → vers analyse IA ── */}
-            {step === 2 && isMedecin && doctorMode === 'nouveau' && (
+            {/* ── Étape 2 : médecin (nouveau ou reprendre) → vers analyse IA ── */}
+            {step === 2 && isMedecin && (
               <button
                 onClick={() => {
                   if (symptomes.filter(s => s.nom.trim()).length === 0) {

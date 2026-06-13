@@ -19,6 +19,7 @@ from .routers import (
     patients_router,
     consultations_router,
     ml_router,
+    ml_public_router,
     analytics_router,
     admin_router,
 )
@@ -59,7 +60,15 @@ async def lifespan(app: FastAPI):
     else:
         logger.warning("⚠️ Aucun modèle ML chargé")
         logger.warning("   Entraînez un modèle avec le script d'entraînement")
-    
+
+    # Générer le cache des symptômes au démarrage (depuis CSV + règles custom + modèle)
+    try:
+        from .routers.admin import _save_symptomes_cache
+        _save_symptomes_cache()
+        logger.info("✅ Cache symptômes généré au démarrage")
+    except Exception as e:
+        logger.warning(f"⚠️ Cache symptômes non généré au démarrage : {e}")
+
     logger.info("✅ Application prête!")
     
     yield
@@ -114,6 +123,7 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/api")
 app.include_router(patients_router, prefix="/api")
 app.include_router(consultations_router, prefix="/api")
+app.include_router(ml_public_router, prefix="/api")
 app.include_router(ml_router, prefix="/api")
 app.include_router(analytics_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
