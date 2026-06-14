@@ -105,7 +105,7 @@ const DashboardMedecin = () => {
       </div>
 
       {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }} className="sp-fade-in">
+      <div className="sp-auto-grid sp-fade-in" style={{ marginBottom: '24px' }}>
         <div className="sp-card" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
             <span style={{ fontSize: '13px', color: '#6B7280', fontWeight: 500 }}>Total patients</span>

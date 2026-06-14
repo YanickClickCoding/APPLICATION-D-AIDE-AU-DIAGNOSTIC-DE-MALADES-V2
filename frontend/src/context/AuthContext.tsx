@@ -15,6 +15,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<User>;
+  updateUser: (partial: Partial<User>) => void;
   logout: () => void;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -82,6 +83,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Met à jour l'utilisateur en mémoire + localStorage (après édition du profil)
+  const updateUser = (partial: Partial<User>) => {
+    setUser(prev => {
+      if (!prev) return prev;
+      const next = { ...prev, ...partial };
+      localStorage.setItem('sp_user', JSON.stringify(next));
+      return next;
+    });
+  };
+
   const logout = () => {
     // Nettoyer l'état local immédiatement
     setUser(null);
@@ -100,6 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       user,
       token,
       login,
+      updateUser,
       logout,
       isAuthenticated: !!user && !!token,
       isAdmin: user?.role === 'admin',

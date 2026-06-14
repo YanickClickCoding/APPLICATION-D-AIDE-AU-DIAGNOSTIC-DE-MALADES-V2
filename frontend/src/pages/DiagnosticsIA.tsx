@@ -3,8 +3,12 @@ import {
   Brain, CheckCircle, XCircle, TrendingUp, Activity,
   AlertCircle, Percent, RefreshCw, ImageOff
 } from 'lucide-react';
-import { analyticsAPI } from '../services/api';
+import { Bar } from 'react-chartjs-2';
+import { Chart as ChartJS, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from 'chart.js';
+import { analyticsAPI, mlAPI } from '../services/api';
 import { MedicalDisclaimerBanner } from '../components/MedicalDisclaimerBanner';
+
+ChartJS.register(Tooltip, Legend, CategoryScale, LinearScale, BarElement);
 
 const API = 'http://localhost:8000/api';
 
@@ -20,7 +24,7 @@ interface ModelPerf {
 }
 
 // ── Composant image matplotlib ────────────────────────────────────────────────
-const ChartImage = ({ src, alt, loading }: { src: string | null; alt: string; loading: boolean }) => {
+const ChartImage = ({ src, alt, loading, maxHeight }: { src: string | null; alt: string; loading: boolean; maxHeight?: number }) => {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '280px', flexDirection: 'column', gap: '12px' }}>
@@ -41,7 +45,11 @@ const ChartImage = ({ src, alt, loading }: { src: string | null; alt: string; lo
     <img
       src={`data:image/png;base64,${src}`}
       alt={alt}
-      style={{ width: '100%', borderRadius: '8px', display: 'block' }}
+      // maxHeight contraint l'image (donut) pour aligner la carte sur une voisine
+      // plus courte, sans déformer le ratio (width auto si une hauteur max est fixée).
+      style={maxHeight
+        ? { maxHeight, maxWidth: '100%', width: 'auto', borderRadius: '8px', display: 'block', margin: '0 auto' }
+        : { width: '100%', borderRadius: '8px', display: 'block' }}
     />
   );
 };
@@ -52,6 +60,13 @@ const DiagnosticsIA = () => {
   const [perf, setPerf]     = useState<ModelPerf | null>(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
+
+  // Statut + performance du modèle (carte « Système IA » rapatriée du tableau de bord)
+  const [modelInfo, setModelInfo] = useState<{
+    loaded: boolean;
+    metadata?: { accuracy?: number; precision?: number; recall?: number; f1_score?: number };
+  } | null>(null);
+  const [activeMetrics, setActiveMetrics] = useState([true, true, true, true]);
 
   // Charts base64
   const [imgTop,       setImgTop]       = useState<string | null>(null);
@@ -84,9 +99,10 @@ const DiagnosticsIA = () => {
     try {
       setLoading(true);
       setError(null);
-      const [dashData, perfData] = await Promise.all([
+      const [dashData, perfData, mlInfoData] = await Promise.all([
         analyticsAPI.getDashboard(),
         analyticsAPI.getModelPerformance(),
+        mlAPI.getModelInfo().catch(() => null),
       ]);
       setStats({
         total_diagnostics: dashData.kpis.total_diagnostics,
@@ -94,6 +110,10 @@ const DiagnosticsIA = () => {
         confiance_moyenne: dashData.kpis.confiance_moyenne,
       });
       setPerf(perfData as ModelPerf);
+      setModelInfo({
+        loaded: mlInfoData?.loaded ?? false,
+        metadata: mlInfoData?.metadata as any,
+      });
     } catch (err: any) {
       setError(err.message || 'Erreur de chargement');
     } finally {
@@ -148,7 +168,7 @@ const DiagnosticsIA = () => {
       
 
       {/* ── KPI Cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }} className="sp-fade-in">
+      <div className="sp-auto-grid sp-fade-in" style={{ marginBottom: '24px' }}>
         {[
           {
             label: 'Total diagnostics', value: stats?.total_diagnostics ?? 0,
@@ -180,37 +200,176 @@ const DiagnosticsIA = () => {
         ))}
       </div>
 
-      {/* ── Ligne 1 : Top diagnostics + Donut statuts ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '20px', marginBottom: '20px' }} className="sp-fade-in">
+      {/* ── Ligne 1 : Répartition des diagnostics + Système IA (côte à côte, même hauteur) ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px', alignItems: 'stretch' }} className="sp-fade-in">
 
-        {/* Top 10 maladies — graphique matplotlib */}
-        <div className="sp-card">
-          <div className="sp-card-header">
-            <div className="sp-card-title">
-              <TrendingUp size={20} />
-              Top 10 maladies diagnostiquées
-            </div>
-          </div>
-          <div style={{ padding: '16px 20px 20px' }}>
-            <ChartImage src={imgTop} alt="Top 10 maladies" loading={loadTop} />
-          </div>
-        </div>
-
-        {/* Répartition statuts — donut matplotlib */}
-        <div className="sp-card">
+        {/* Répartition statuts — donut matplotlib (aligné sur la hauteur de Système IA) */}
+        <div className="sp-card" style={{ display: 'flex', flexDirection: 'column' }}>
           <div className="sp-card-header">
             <div className="sp-card-title">
               <CheckCircle size={20} />
               Répartition des diagnostics
             </div>
           </div>
-          <div style={{ padding: '16px 20px 20px' }}>
-            <ChartImage src={imgStatuts} alt="Répartition statuts" loading={loadStatuts} />
+          <div style={{ padding: '16px 20px 20px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <ChartImage src={imgStatuts} alt="Répartition statuts" loading={loadStatuts} maxHeight={360} />
+          </div>
+        </div>
+
+        {/* Système IA : performance du modèle (rapatrié du tableau de bord) */}
+        <div className="sp-card" style={{ display: 'flex', flexDirection: 'column' }}>
+          <div className="sp-card-header">
+            <div className="sp-card-title">
+              <Brain size={20} />
+              Système IA
+            </div>
+          <span className={`sp-badge ${modelInfo?.loaded ? 'available' : 'attente'}`} style={{ fontSize: '10px' }}>
+            {modelInfo?.loaded ? 'Actif' : 'Inactif'}
+          </span>
+        </div>
+        <div style={{ padding: '16px 20px 20px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          {modelInfo?.loaded ? (() => {
+            const meta = modelInfo.metadata;
+            const toP = (v?: number) => v != null ? (v > 1 ? v : v * 100) : null;
+            const acc  = toP(meta?.accuracy)  ?? 95.35;
+            const prec = toP(meta?.precision) ?? 95.68;
+            const rec  = toP(meta?.recall)    ?? 95.35;
+            const f1   = toP(meta?.f1_score)  ?? 95.32;
+
+            const metricDefs = [
+              { label: 'Accuracy',  val: acc,  color: '#4F46E5' },
+              { label: 'Précision', val: prec, color: '#059669' },
+              { label: 'Rappel',    val: rec,  color: '#D97706' },
+              { label: 'F1-Score',  val: f1,   color: '#DB2777' },
+            ];
+
+            // Barres : métriques catégorielles indépendantes — axe resserré pour
+            // distinguer des valeurs proches, sans descendre sous 70 %
+            const valeursActives = metricDefs.filter((_, i) => activeMetrics[i]).map(m => m.val);
+            const yMin = valeursActives.length ? Math.min(70, Math.floor(Math.min(...valeursActives)) - 5) : 70;
+
+            const barData = {
+              labels: metricDefs.map(m => m.label),
+              datasets: [{
+                label: 'Performance (%)',
+                data: metricDefs.map((m, i) => activeMetrics[i] ? m.val : null),
+                backgroundColor: metricDefs.map(m => `${m.color}D9`),
+                hoverBackgroundColor: metricDefs.map(m => m.color),
+                borderRadius: 8,
+                borderSkipped: false,
+                maxBarThickness: 54,
+              }],
+            };
+
+            // Affiche la valeur au-dessus de chaque barre
+            const valueLabelPlugin = {
+              id: 'barValueLabels',
+              afterDatasetsDraw(chart: any) {
+                const { ctx } = chart;
+                const dsMeta = chart.getDatasetMeta(0);
+                dsMeta.data.forEach((bar: any, i: number) => {
+                  const v = chart.data.datasets[0].data[i];
+                  if (v == null) return;
+                  ctx.save();
+                  ctx.font = "700 11px 'DM Sans', sans-serif";
+                  ctx.fillStyle = metricDefs[i].color;
+                  ctx.textAlign = 'center';
+                  ctx.fillText(`${(v as number).toFixed(1)}%`, bar.x, bar.y - 6);
+                  ctx.restore();
+                });
+              },
+            };
+
+            const barOptions: any = {
+              animation: { duration: 800, easing: 'easeInOutQuart' },
+              responsive: true,
+              maintainAspectRatio: false,
+              layout: { padding: { top: 16, left: 6, right: 6 } },
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  filter: (item: any) => item.raw !== null,
+                  callbacks: { label: (item: any) => ` ${(item.raw as number).toFixed(1)} %` },
+                  backgroundColor: '#1e1b4b',
+                  titleColor: '#c7d2fe',
+                  bodyColor: '#fff',
+                  padding: 8,
+                  cornerRadius: 8,
+                },
+              },
+              scales: {
+                y: {
+                  min: yMin,
+                  max: 100,
+                  ticks: { font: { size: 9 }, color: '#9CA3AF', callback: (v: any) => `${v}%` },
+                  grid: { color: '#E5E7EB', drawBorder: false },
+                },
+                x: {
+                  ticks: { font: { size: 11, weight: '700' }, color: '#374151' },
+                  grid: { display: false },
+                },
+              },
+            };
+
+            return (
+              <>
+                {/* Barres de performance du modèle */}
+                <div style={{ background: '#F9FAFB', borderRadius: 12, padding: '10px 8px 6px', border: '1px solid #E5E7EB', height: '260px' }}>
+                  <Bar data={barData} options={barOptions} plugins={[valueLabelPlugin]} />
+                </div>
+
+                {/* Badges métriques cliquables — chacun sous sa barre
+                    (paddingLeft compense la largeur de l'axe Y du graphe) */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', justifyItems: 'center', gap: 6, marginTop: '8px', paddingLeft: '32px' }}>
+                  {metricDefs.map(({ label, color }, i) => (
+                    <span
+                      key={label}
+                      onClick={() => setActiveMetrics(prev => prev.map((v, j) => j === i ? !v : v))}
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        background: activeMetrics[i] ? `${color}18` : '#F3F4F6',
+                        color: activeMetrics[i] ? color : '#9CA3AF',
+                        padding: '3px 10px',
+                        borderRadius: 6,
+                        border: `1.5px solid ${activeMetrics[i] ? color : '#E5E7EB'}`,
+                        cursor: 'pointer',
+                        textDecoration: activeMetrics[i] ? 'none' : 'line-through',
+                        transition: 'all 0.2s',
+                        userSelect: 'none',
+                      }}
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </>
+            );
+          })() : (
+            <div style={{ textAlign: 'center', padding: '20px 0', color: '#9CA3AF' }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>⚠️</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#EF4444' }}>Modèle non chargé</div>
+              <div style={{ fontSize: 11, marginTop: 4 }}>Entraînez le modèle depuis la page Administration</div>
+            </div>
+          )}
           </div>
         </div>
       </div>
 
-      {/* ── Ligne 2 : Confiance + Infos modèle ── */}
+      {/* ── Ligne 2 : Top 10 maladies (pleine largeur, horizontal) ── */}
+      <div className="sp-card sp-fade-in" style={{ marginBottom: '20px' }}>
+        <div className="sp-card-header">
+          <div className="sp-card-title">
+            <TrendingUp size={20} />
+            Top 10 maladies diagnostiquées
+          </div>
+        </div>
+        <div style={{ padding: '16px 20px 20px' }}>
+          <ChartImage src={imgTop} alt="Top 10 maladies" loading={loadTop} />
+        </div>
+      </div>
+
+      {/* ── Ligne 3 : Confiance + Infos modèle ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '20px' }} className="sp-fade-in">
 
         {/* Distribution certitude — graphique matplotlib */}

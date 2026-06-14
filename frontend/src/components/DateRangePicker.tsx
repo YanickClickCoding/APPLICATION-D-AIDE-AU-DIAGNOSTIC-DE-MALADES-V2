@@ -1,11 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 
 interface DateRangePickerProps {
   dateDebut: string; // ISO YYYY-MM-DD, '' = pas de borne
   dateFin: string;
   onChange: (debut: string, fin: string) => void;
+  onRefresh?: () => void;
   loading?: boolean;
+  // Période réellement couverte par les données (renvoyée par le backend).
+  // Sert à afficher « du premier enregistrement à aujourd'hui » quand aucune
+  // borne n'est saisie manuellement.
+  periodeEffective?: { debut: string; fin: string };
 }
 
 const JOURS_SEMAINE = ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'];
@@ -88,7 +93,7 @@ const MonthGrid = ({
  * Barre de période cliquable + calendrier déroulant double-mois avec sélection de plage.
  * Premier clic = début, second clic = fin (inversion automatique si antérieure).
  */
-const DateRangePicker = ({ dateDebut, dateFin, onChange, loading = false }: DateRangePickerProps) => {
+const DateRangePicker = ({ dateDebut, dateFin, onChange, onRefresh, loading = false, periodeEffective }: DateRangePickerProps) => {
   const [open, setOpen] = useState(false);
   const [draftStart, setDraftStart] = useState<string | null>(null);
   const [hover, setHover] = useState<string | null>(null);
@@ -152,7 +157,9 @@ const DateRangePicker = ({ dateDebut, dateFin, onChange, loading = false }: Date
   const moisSuivant = new Date(vue.annee, vue.mois + 1);
   const libelle = dateDebut && dateFin
     ? `${formatLong(dateDebut)} – ${formatLong(dateFin)}`
-    : 'Toute la période';
+    : periodeEffective && periodeEffective.debut && periodeEffective.fin
+      ? `${formatLong(periodeEffective.debut)} – ${formatLong(periodeEffective.fin)}`
+      : 'Toute la période';
 
   return (
     <div ref={ref} style={{ position: 'relative', marginBottom: '16px' }} className="sp-fade-in">
@@ -166,16 +173,25 @@ const DateRangePicker = ({ dateDebut, dateFin, onChange, loading = false }: Date
           <Calendar size={16} style={{ color: '#374151' }} />
         </span>
         <span style={{ fontWeight: 700, fontSize: '14px', color: '#1F2937' }}>{libelle}</span>
-        <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {loading && (
-            <span style={{ width: 14, height: 14, border: '2px solid #E5E7EB', borderTopColor: '#4F46E5', borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block' }} />
-          )}
-          <span style={{ position: 'relative', width: 36, height: 36, borderRadius: '10px', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Filter size={15} style={{ color: '#374151' }} />
-            {(dateDebut || dateFin) && (
-              <span style={{ position: 'absolute', top: '-3px', right: '-3px', width: 9, height: 9, borderRadius: '50%', background: '#FBBF24' }} />
-            )}
-          </span>
+        <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onRefresh?.(); }}
+            disabled={loading}
+            title="Rafraîchir les données"
+            style={{
+              width: 36, height: 36, borderRadius: '10px', border: '1px solid #E5E7EB',
+              background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: loading ? 'default' : 'pointer', padding: 0, transition: 'background 0.15s',
+            }}
+            onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = '#F3F4F6'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }}
+          >
+            <RefreshCw
+              size={15}
+              style={{ color: '#374151', animation: loading ? 'spin 0.8s linear infinite' : undefined }}
+            />
+          </button>
         </span>
       </div>
 

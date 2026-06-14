@@ -16,7 +16,6 @@ const ConsultationDetails  = lazy(() => import('./pages/ConsultationDetails'));
 const PersonnelMedical  = lazy(() => import('./pages/PersonnelMedical'));
 const Utilisateurs      = lazy(() => import('./pages/Utilisateurs'));
 const Register          = lazy(() => import('./pages/Register'));
-const Identifiants      = lazy(() => import('./pages/Identifiants'));
 const AdminSystem       = lazy(() => import('./pages/AdminSystem'));
 const AdminDataset      = lazy(() => import('./pages/AdminDataset'));
 const AdminML           = lazy(() => import('./pages/AdminML'));
@@ -24,6 +23,8 @@ const DossierPatient    = lazy(() => import('./pages/DossierPatient'));
 const MesPatients       = lazy(() => import('./pages/MesPatients'));
 const DiagnosticsIA     = lazy(() => import('./pages/DiagnosticsIA'));
 const Analytics         = lazy(() => import('./pages/Analytics'));
+const Profil            = lazy(() => import('./pages/Profil'));
+const MotDePasseOublie  = lazy(() => import('./pages/MotDePasseOublie'));
 
 const PageLoader = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
@@ -142,10 +143,6 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
                       <Users size={18} />
                       <span>Utilisateurs</span>
                   </a>
-                  <a href="/identifiants" className={`sp-nav-item ${location.pathname === '/identifiants' ? 'active' : ''}`} onClick={e => navTo(e, '/identifiants')}>
-                      <i data-feather="key"></i>
-                      <span>Identifiants</span>
-                  </a>
                   <a href="/admin/systeme" className={`sp-nav-item ${location.pathname === '/admin/systeme' ? 'active' : ''}`} onClick={e => navTo(e, '/admin/systeme')}>
                       <Settings size={18} />
                       <span>Système</span>
@@ -164,7 +161,8 @@ const Sidebar = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
       </div>
 
       <div className="sp-sidebar-footer">
-          <div className="sp-user-card">
+          <div className="sp-user-card" onClick={(e) => navTo(e as React.MouseEvent, '/profil')}
+               style={{ cursor: 'pointer' }} title="Voir mon profil">
               <div className="sp-user-avatar">
                   {user?.nom ? user.nom.substring(0, 1).toUpperCase() : '?'}
                   {user?.prenoms ? user.prenoms.substring(0, 1).toUpperCase() : '?'}
@@ -300,7 +298,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     if (path === '/diagnostics') return 'Diagnostics IA';
     if (path === '/personnel') return 'Personnel Médical';
     if (path === '/utilisateurs') return 'Utilisateurs';
-    if (path === '/identifiants') return 'Identifiants';
     if (path === '/admin/systeme') return 'Administration Système';
     if (path === '/admin/dataset') return 'Dataset & Maladies';
     if (path === '/admin/ml') return 'Modèle IA & Entraînement';
@@ -473,7 +470,9 @@ function AppContent() {
       <Routes>
         <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" replace />} />
         <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/" replace />} />
+        <Route path="/mot-de-passe-oublie" element={!isAuthenticated ? <MotDePasseOublie /> : <Navigate to="/" replace />} />
         <Route path="/" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
+        <Route path="/profil" element={<PrivateRoute><Layout><Profil /></Layout></PrivateRoute>} />
         <Route path="/analytique" element={<PrivateRoute><Layout><Analytics /></Layout></PrivateRoute>} />
         <Route path="/consultations" element={<PrivateRoute noAdmin><Layout><Consultations /></Layout></PrivateRoute>} />
         <Route path="/consultation/nouvelle" element={<PrivateRoute noAdmin medicalOnly><Layout><ConsultationWorkflow /></Layout></PrivateRoute>} />
@@ -483,7 +482,6 @@ function AppContent() {
         <Route path="/diagnostics" element={<PrivateRoute noAdmin noInfirmier><Layout><DiagnosticsIA /></Layout></PrivateRoute>} />
         <Route path="/personnel" element={<PrivateRoute><Layout><PersonnelMedical /></Layout></PrivateRoute>} />
         <Route path="/utilisateurs" element={<PrivateRoute adminOnly><Layout><Utilisateurs /></Layout></PrivateRoute>} />
-        <Route path="/identifiants" element={<PrivateRoute adminOnly><Layout><Identifiants /></Layout></PrivateRoute>} />
         <Route path="/admin/systeme" element={<PrivateRoute adminOnly><Layout><AdminSystem /></Layout></PrivateRoute>} />
         <Route path="/admin/dataset" element={<PrivateRoute adminOnly><Layout><AdminDataset /></Layout></PrivateRoute>} />
         <Route path="/admin/ml" element={<PrivateRoute adminOnly><Layout><AdminML /></Layout></PrivateRoute>} />

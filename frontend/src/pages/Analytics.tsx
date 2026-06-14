@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Users, Brain, TrendingUp, BarChart2, Info, AlertCircle, Activity, CheckCircle, XCircle } from 'lucide-react';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler } from 'chart.js';
@@ -27,17 +27,17 @@ interface MetricDef {
 const METRICS: MetricDef[] = [
   { key: 'resume', label: 'Résumé', icon: BarChart2, color: '#374151', bg: '#E5E7EB' },
   {
-    key: 'consultations', label: 'Consultations', icon: Calendar, color: '#059669', bg: '#D1FAE5',
+    key: 'consultations', label: 'Consultations', icon: Calendar, color: '#2563EB', bg: '#DBEAFE',
     titreTotal: 'Nombre total de consultations', titreSerie: 'Consultations quotidiennes',
     serie: d => d.consultations, total: d => d.totaux.consultations,
   },
   {
-    key: 'patients', label: 'Patients', icon: Users, color: '#2563EB', bg: '#DBEAFE',
+    key: 'patients', label: 'Patients', icon: Users, color: '#7C3AED', bg: '#EDE9FE',
     titreTotal: 'Nombre total de nouveaux patients', titreSerie: 'Nouveaux patients quotidiens',
     serie: d => d.patients, total: d => d.totaux.patients,
   },
   {
-    key: 'diagnostics', label: 'Diagnostics IA', icon: Brain, color: '#0D9488', bg: '#CCFBF1',
+    key: 'diagnostics', label: 'Diagnostics IA', icon: Brain, color: '#0891B2', bg: '#CFFAFE',
     titreTotal: 'Nombre total de diagnostics IA', titreSerie: 'Diagnostics IA quotidiens',
     serie: d => d.diagnostics, total: d => d.totaux.diagnostics,
   },
@@ -58,9 +58,6 @@ const METRICS: MetricDef[] = [
   },
 ];
 
-const toISODate = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
 const formatCourt = (iso: string) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
 
@@ -76,18 +73,16 @@ const gradientFill = (hex: string) => (ctx: any) => {
 };
 
 const Analytics = () => {
-  // Période par défaut : les 30 derniers jours (aujourd'hui inclus)
-  const defaultDebut = (() => { const d = new Date(); d.setDate(d.getDate() - 29); return toISODate(d); })();
-  const defaultFin = toISODate(new Date());
-
-  const [dateDebut, setDateDebut] = useState(defaultDebut);
-  const [dateFin, setDateFin] = useState(defaultFin);
+  // Période par défaut : tout l'historique (du premier enregistrement à aujourd'hui).
+  // Bornes vides => le backend remonte au tout premier enregistrement.
+  const [dateDebut, setDateDebut] = useState('');
+  const [dateFin, setDateFin] = useState('');
   const [metric, setMetric] = useState<MetricKey>('resume');
   const [data, setData] = useState<SeriesData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const chargerDonnees = useCallback(() => {
     let cancelled = false;
     setLoading(true);
     analyticsAPI.getSeries({ dateDebut: dateDebut || undefined, dateFin: dateFin || undefined })
@@ -99,6 +94,20 @@ const Analytics = () => {
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [dateDebut, dateFin]);
+
+  useEffect(() => chargerDonnees(), [chargerDonnees]);
+
+  // Rafraîchir : ramène la période à tout l'historique (du premier
+  // enregistrement à aujourd'hui) puis recharge. Si la période est déjà
+  // « toute la période », on recharge directement.
+  const rafraichir = useCallback(() => {
+    if (dateDebut === '' && dateFin === '') {
+      chargerDonnees();
+    } else {
+      setDateDebut('');
+      setDateFin('');
+    }
+  }, [dateDebut, dateFin, chargerDonnees]);
 
   if (loading && !data) {
     return (
@@ -183,19 +192,21 @@ const Analytics = () => {
     }],
   });
 
+  // Mode Résumé : lignes colorées distinctes SANS remplissage — empiler 5 zones
+  // pastel rendait les courbes illisibles. Chaque métrique garde sa couleur propre.
   const resumeDatasets = {
     labels,
     datasets: METRICS.filter(m => m.serie && !m.pourcent).map(m => ({
       label: m.label,
       data: m.serie!(data),
       borderColor: m.color,
-      backgroundColor: gradientFill(m.color),
-      borderWidth: 2,
+      backgroundColor: m.color,
+      borderWidth: 2.5,
       pointRadius: 0,
       pointHoverRadius: 5,
       pointHoverBackgroundColor: m.color,
       tension: 0.45,
-      fill: true,
+      fill: false,
     })),
   };
 
@@ -211,12 +222,16 @@ const Analytics = () => {
       </div>
 
       {/* Barre de période avec calendrier déroulant double-mois */}
-      <div className="sp-fade-in-up" style={{ animationDelay: '0.08s' }}>
+      {/* position+zIndex élevés : le calendrier doit passer AU-DESSUS des cartes qui suivent
+          (chaque wrapper sp-fade-in-up crée son propre contexte d'empilement via transform). */}
+      <div className="sp-fade-in-up" style={{ animationDelay: '0.08s', position: 'relative', zIndex: 50 }}>
         <DateRangePicker
           dateDebut={dateDebut}
           dateFin={dateFin}
           loading={loading}
           onChange={(debut, fin) => { setDateDebut(debut); setDateFin(fin); }}
+          onRefresh={rafraichir}
+          periodeEffective={data ? { debut: data.periode.date_debut, fin: data.periode.date_fin } : undefined}
         />
       </div>
 
@@ -244,6 +259,30 @@ const Analytics = () => {
           );
         })}
       </div>
+
+      {/* Cartes récapitulatives (mode Résumé) */}
+      {metric === 'resume' && (
+        <div
+          className="sp-fade-in-up"
+          style={{ animationDelay: '0.24s', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', marginBottom: '26px' }}
+        >
+          {METRICS.filter(m => m.total !== undefined).map(m => {
+            const Icon = m.icon;
+            const valeur = m.pourcent ? `${m.total!(data)} %` : m.total!(data);
+            return (
+              <div key={m.key} style={{ background: '#fff', borderRadius: '14px', padding: '20px 22px', boxShadow: 'var(--sp-shadow)', borderTop: `3px solid ${m.color}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '34px', height: '34px', borderRadius: '10px', background: m.bg, color: m.color }}>
+                    <Icon size={18} />
+                  </span>
+                </div>
+                <div style={{ fontSize: '30px', fontWeight: 800, color: '#111827', lineHeight: 1.1 }}>{valeur}</div>
+                <div style={{ fontSize: '13px', color: '#6B7280', marginTop: '6px', fontWeight: 500 }}>{m.titreTotal}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Carte de total (métrique sélectionnée) */}
       {metric !== 'resume' && (

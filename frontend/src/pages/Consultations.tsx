@@ -393,7 +393,7 @@ const Consultations = () => {
                 ) : (
                   <div
                     className="sp-grid"
-                    style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px', padding: 0 }}
+                    style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '20px', padding: 0 }}
                   >
                     {patientGroups.map(({ consultations: groupConsults, latest: c }) => {
                       const mName = getMedecinName(c.medecin_id);
@@ -838,7 +838,7 @@ const Consultations = () => {
                     <div className="sp-input-icon-wrap">
                       <Calendar size={18} className="sp-input-icon" />
                       <input type="datetime-local" className="sp-form-input" style={{ paddingLeft: '40px' }} required
-                        max={new Date().toISOString().slice(0, 16)}
+                        max={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
                         value={(formData.date_heure || '').slice(0, 16)}
                         onChange={e => setFormData({ ...formData, date_heure: e.target.value })} />
                     </div>

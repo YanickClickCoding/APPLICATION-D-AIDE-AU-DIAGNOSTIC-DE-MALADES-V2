@@ -9,6 +9,7 @@ from sqlalchemy import func
 from datetime import datetime, timedelta
 from typing import Optional
 import logging
+import secrets
 from jose import JWTError, jwt
 import bcrypt
 
@@ -31,6 +32,12 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = getattr(settings, 'ACCESS_TOKEN_EXPIRE_MINUTES', 1440)
+
+# Codes de réinitialisation de mot de passe — stockés en mémoire (app non en production).
+# Clé = email (minuscule), valeur = (code, datetime d'expiration).
+# En production : remplacer par une table en base + envoi par email.
+_RESET_CODES: dict[str, tuple[str, datetime]] = {}
+RESET_CODE_TTL_MINUTES = 15
 
 
 # ============================================================================
@@ -68,6 +75,31 @@ class UserResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+class UpdateProfileRequest(BaseModel):
+    """Schéma de requête pour la modification du profil"""
+    nom: Optional[str] = None
+    prenoms: Optional[str] = None
+    email: Optional[EmailStr] = None
+
+
+class ChangePasswordRequest(BaseModel):
+    """Schéma de requête pour le changement de mot de passe (utilisateur connecté)"""
+    ancien_mot_de_passe: str
+    nouveau_mot_de_passe: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Schéma de requête pour demander un code de réinitialisation"""
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    """Schéma de requête pour réinitialiser le mot de passe via code"""
+    email: EmailStr
+    code: str
+    nouveau_mot_de_passe: str
 
 
 class RegisterRequest(BaseModel):
@@ -508,3 +540,148 @@ async def refresh_token(current_user: User = Depends(get_current_active_user)):
             "medecin_id": medecin_id
         }
     }
+
+
+# ============================================================================
+# PROFIL & MOT DE PASSE
+# ============================================================================
+
+def _validate_password(password: str):
+    """Valide un nouveau mot de passe (min 8 caractères)."""
+    if len(password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Le mot de passe doit faire au moins 8 caractères",
+        )
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_my_profile(
+    data: UpdateProfileRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Modifie le profil de l'utilisateur connecté (nom, prénoms, email).
+    Seuls les champs fournis (non null) sont mis à jour.
+    """
+    if data.email is not None and data.email != current_user.email:
+        # Vérifier l'unicité du nouvel email
+        existing = db.query(User).filter(
+            User.email == data.email,
+            User.utilisateur_id != current_user.utilisateur_id,
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cette adresse email est déjà utilisée",
+            )
+        current_user.email = data.email
+
+    if data.nom is not None and data.nom.strip():
+        current_user.nom = data.nom.strip().upper()
+    if data.prenoms is not None and data.prenoms.strip():
+        current_user.prenoms = data.prenoms.strip()
+
+    db.commit()
+    db.refresh(current_user)
+    logger.info(f"✏️ Profil mis à jour: {current_user.email}")
+    return current_user
+
+
+@router.post("/change-password")
+async def change_password(
+    data: ChangePasswordRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Change le mot de passe de l'utilisateur connecté.
+    Exige l'ancien mot de passe pour confirmation.
+    """
+    if not verify_password(data.ancien_mot_de_passe, current_user.mot_de_passe):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="L'ancien mot de passe est incorrect",
+        )
+    _validate_password(data.nouveau_mot_de_passe)
+    current_user.mot_de_passe = get_password_hash(data.nouveau_mot_de_passe)
+    db.commit()
+    logger.info(f"🔑 Mot de passe changé: {current_user.email}")
+    return {"success": True, "message": "Mot de passe modifié avec succès"}
+
+
+@router.post("/forgot-password")
+async def forgot_password(
+    data: ForgotPasswordRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Demande un code de réinitialisation de mot de passe.
+
+    Application non en production : le code est AFFICHÉ DANS LES LOGS du backend
+    (pas d'envoi d'email). Réponse volontairement neutre pour ne pas révéler si
+    l'email existe.
+    """
+    email = data.email.lower()
+    user = db.query(User).filter(func.lower(User.email) == email).first()
+
+    if user:
+        # Code à 6 chiffres
+        code = f"{secrets.randbelow(1_000_000):06d}"
+        expiry = datetime.now() + timedelta(minutes=RESET_CODE_TTL_MINUTES)
+        _RESET_CODES[email] = (code, expiry)
+        logger.warning(
+            f"🔐 CODE DE RÉINITIALISATION pour {user.email} : {code} "
+            f"(valide {RESET_CODE_TTL_MINUTES} min)"
+        )
+    else:
+        logger.info(f"Demande de reset pour email inexistant: {email}")
+
+    return {
+        "success": True,
+        "message": "Si cet email existe, un code de réinitialisation a été généré "
+                   "(visible dans les logs du serveur).",
+    }
+
+
+@router.post("/reset-password")
+async def reset_password(
+    data: ResetPasswordRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Réinitialise le mot de passe via le code reçu (affiché dans les logs backend).
+    """
+    email = data.email.lower()
+    entry = _RESET_CODES.get(email)
+
+    if not entry:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Aucun code de réinitialisation actif pour cet email. Refaites une demande.",
+        )
+
+    code, expiry = entry
+    if datetime.now() > expiry:
+        _RESET_CODES.pop(email, None)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Le code a expiré. Refaites une demande.",
+        )
+    if not secrets.compare_digest(code, data.code.strip()):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Code de réinitialisation incorrect",
+        )
+
+    user = db.query(User).filter(func.lower(User.email) == email).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur introuvable")
+
+    _validate_password(data.nouveau_mot_de_passe)
+    user.mot_de_passe = get_password_hash(data.nouveau_mot_de_passe)
+    db.commit()
+    _RESET_CODES.pop(email, None)  # Code à usage unique
+    logger.info(f"🔑 Mot de passe réinitialisé via code: {user.email}")
+    return {"success": True, "message": "Mot de passe réinitialisé avec succès"}

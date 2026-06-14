@@ -208,7 +208,7 @@ const PersonnelMedical = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="sp-stats-grid sp-fade-in" style={{ marginBottom: '24px', gridTemplateColumns: 'repeat(4, 1fr)' }}>
+      <div className="sp-stats-grid sp-fade-in" style={{ marginBottom: '24px', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
         <div className="sp-stat-card" style={{ '--card-accent': '#4F46E5' } as React.CSSProperties}>
           <div className="sp-stat-icon" style={{ background: '#eef2ff', borderRadius: '14px', width: '54px', height: '54px' }}>
             <Stethoscope style={{ color: '#4F46E5', width: '24px', height: '24px' }} />

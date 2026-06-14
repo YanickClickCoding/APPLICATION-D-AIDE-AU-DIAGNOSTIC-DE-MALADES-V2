@@ -69,6 +69,14 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"⚠️ Cache symptômes non généré au démarrage : {e}")
 
+    # Synchroniser en arrière-plan les données géographiques OMS (carte du monde).
+    # Non bloquant : le backend démarre tout de suite, la MAJ se fait en fond.
+    try:
+        from .services.who_data_sync import start_background_sync
+        start_background_sync()
+    except Exception as e:
+        logger.warning(f"⚠️ Sync OMS non lancée au démarrage : {e}")
+
     logger.info("✅ Application prête!")
     
     yield

@@ -218,7 +218,16 @@ def get_daily_series(
     if fin is None:
         fin = datetime.combine(date.today(), datetime.max.time())
     if debut is None:
-        debut = datetime.combine(fin.date() - timedelta(days=29), datetime.min.time())
+        # Sans borne de début : remonter au tout premier enregistrement
+        # (plus ancienne consultation ou plus ancien patient) pour couvrir
+        # l'intégralité de l'historique. Repli sur 30 jours si la base est vide.
+        premiere_consultation = db.query(func.min(Consultation.date_heure)).scalar()
+        premier_patient = db.query(func.min(Patient.created_at)).scalar()
+        premieres = [d for d in (premiere_consultation, premier_patient) if d is not None]
+        if premieres:
+            debut = datetime.combine(min(premieres).date(), datetime.min.time())
+        else:
+            debut = datetime.combine(fin.date() - timedelta(days=29), datetime.min.time())
 
     nb_jours = (fin.date() - debut.date()).days + 1
     if nb_jours > 1000:
@@ -453,6 +462,164 @@ def get_personnel_disponible(db: Session = Depends(get_db)) -> Dict:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  RÉPARTITION GÉOGRAPHIQUE DES MALADIES (carte du monde dynamique)
+#
+#  Deux informations DISTINCTES :
+#   1. Les POURCENTAGES par continent = distribution mondiale de la maladie selon
+#      l'OMS (donnée externe). Pour les maladies à distribution connue, on utilise
+#      les vrais % OMS (table MALADIE_OMS). Pour les autres (la plupart), on
+#      estime la répartition au prorata de la population de chaque continent.
+#   2. Le NOMBRE DE CAS = cas réellement diagnostiqués dans l'application (base).
+#  La carte ne mélange donc plus les deux : les barres = OMS, le bas = nos cas.
+# ══════════════════════════════════════════════════════════════════════════════
+
+# Les 5 continents affichés sur la carte. Ordre = ordre d'affichage des barres.
+CONTINENTS = ["Afrique", "Europe", "Amérique", "Asie", "Océanie"]
+
+# Poids de population mondiale par continent (~2023, en %). Sert d'estimation de
+# répartition pour les maladies ubiquitaires sans donnée OMS spécifique.
+POP_CONTINENT = {
+    "Asie": 59.0, "Afrique": 18.0, "Amérique": 13.0, "Europe": 9.0, "Océanie": 1.0,
+}
+
+# Distribution OMS (% des cas/charge mondiale par continent) pour les maladies à
+# répartition géographique marquée. Valeurs approchées d'après les rapports OMS.
+# Les % reflètent la CHARGE MONDIALE réelle (cas importés inclus) : aucun
+# continent n'est à 0 % strict, car des cas importés (voyageurs) y surviennent.
+# Chaque dict somme ~100. Maladie ABSENTE => estimation par population.
+MALADIE_OMS = {
+    # Europe ~0,1 % = cas importés (paludisme du voyageur), pas de transmission locale.
+    "Paludisme":    {"Afrique": 94.9, "Asie": 2.5, "Amérique": 2.0, "Océanie": 0.5, "Europe": 0.1},
+    "Tuberculose":  {"Asie": 58.0, "Afrique": 25.0, "Europe": 8.0, "Amérique": 8.0, "Océanie": 1.0},
+    "VIH/SIDA":     {"Afrique": 67.0, "Asie": 18.0, "Amérique": 10.0, "Europe": 4.0, "Océanie": 1.0},
+    "Dengue":       {"Asie": 70.0, "Amérique": 16.0, "Afrique": 9.0, "Océanie": 4.0, "Europe": 1.0},
+    "Choléra":      {"Afrique": 60.0, "Asie": 35.0, "Amérique": 4.0, "Europe": 0.5, "Océanie": 0.5},
+    "Typhoïde":     {"Asie": 70.0, "Afrique": 25.0, "Amérique": 4.0, "Europe": 0.5, "Océanie": 0.5},
+    "Hépatite A":   {"Asie": 45.0, "Afrique": 35.0, "Amérique": 15.0, "Europe": 4.0, "Océanie": 1.0},
+    "Hépatite B":   {"Asie": 60.0, "Afrique": 25.0, "Amérique": 8.0, "Europe": 6.0, "Océanie": 1.0},
+    "Hépatite C":   {"Asie": 45.0, "Afrique": 20.0, "Europe": 20.0, "Amérique": 14.0, "Océanie": 1.0},
+    "Rougeole":     {"Afrique": 50.0, "Asie": 40.0, "Amérique": 5.0, "Europe": 4.0, "Océanie": 1.0},
+}
+
+
+def _repartition_oms(nom_maladie: str) -> tuple[Optional[dict], str]:
+    """
+    Renvoie (répartition %, source) pour une maladie, par ordre de priorité :
+      1. données OMS LIVE en cache (synchronisées depuis l'API GHO)  -> "OMS (live)"
+      2. table OMS statique de référence si répertoriée               -> "OMS"
+      3. AUCUNE donnée OMS pour cette maladie -> (None, "aucune").
+    On n'invente PAS de répartition (plus d'estimation par population) : sans
+    source OMS, la carte n'affiche aucun pourcentage.
+    """
+    # 1. Cache OMS d'actualité (mis à jour en arrière-plan au démarrage).
+    try:
+        from ..services.who_data_sync import get_cached_who_data
+        live = get_cached_who_data().get(nom_maladie)
+        if live:
+            return {c: float(live.get(c, 0.0)) for c in CONTINENTS}, "OMS (live)"
+    except Exception:
+        pass
+    # 2. Table OMS statique.
+    if nom_maladie in MALADIE_OMS:
+        return {c: MALADIE_OMS[nom_maladie].get(c, 0.0) for c in CONTINENTS}, "OMS"
+    # 3. Pas de données OMS : ne rien afficher.
+    return None, "aucune"
+
+
+def _liste_maladies(db: Session) -> List[str]:
+    """
+    Liste complète des maladies du dataset/modèle (avec noms d'affichage
+    normalisés, ex. "Malaria" -> "Paludisme"). Repli sur les maladies présentes
+    en base si le modèle n'est pas chargé.
+    """
+    try:
+        from ..ml.model_manager import model_manager, DISEASE_DISPLAY_NAMES
+        classes = model_manager.get_model_info().get("classes", [])
+        liste = sorted({DISEASE_DISPLAY_NAMES.get(str(c), str(c)) for c in classes})
+        if liste:
+            return liste
+    except Exception:
+        pass
+    return [
+        m[0] for m in db.query(Diagnostic.nom_maladie)
+        .distinct().order_by(Diagnostic.nom_maladie).all()
+    ]
+
+
+@router.get("/diagnostics-par-continent")
+def diagnostics_par_continent(
+    maladie: Optional[str] = None,
+    db: Session = Depends(get_db),
+) -> Dict:
+    """
+    Répartition géographique pour la carte du monde du dashboard.
+    - `maladie` (optionnel) : restreint à une maladie précise.
+
+    Les pourcentages par continent reflètent la distribution mondiale OMS de la
+    maladie. Si AUCUNE donnée OMS n'existe pour la maladie, aucun pourcentage
+    n'est renvoyé (source = "aucune"). Le `total` = cas RÉELS diagnostiqués.
+    """
+    # Cas réels diagnostiqués (pour le total).
+    q = db.query(func.count(Diagnostic.diagnostic_id))
+    if maladie:
+        q = q.filter(Diagnostic.nom_maladie == maladie)
+    total_cas = q.scalar() or 0
+
+    # Répartition OMS : si une maladie est sélectionnée, sa distribution ; sinon
+    # moyenne des distributions des maladies diagnostiquées QUI ONT des données OMS.
+    if maladie:
+        repartition, source = _repartition_oms(maladie)
+    else:
+        diag = db.query(Diagnostic.nom_maladie, func.count(Diagnostic.diagnostic_id)) \
+                 .group_by(Diagnostic.nom_maladie).all()
+        acc = {c: 0.0 for c in CONTINENTS}
+        total_poids = 0
+        for nom, nb in diag:
+            rep, _ = _repartition_oms(nom)
+            if rep is None:          # maladie sans données OMS : on l'ignore
+                continue
+            for c in CONTINENTS:
+                acc[c] += rep[c] * nb
+            total_poids += nb
+        if total_poids:
+            repartition = {c: acc[c] / total_poids for c in CONTINENTS}
+            source = "OMS"
+        else:
+            repartition = None       # aucune maladie diagnostiquée n'a de donnée OMS
+            source = "aucune"
+
+    # Aucune donnée OMS : renvoyer une réponse vide (la carte n'affiche rien).
+    if repartition is None:
+        return {
+            "maladie": maladie,
+            "total": total_cas,
+            "source": "aucune",
+            "continents": [],
+            "maladies": _liste_maladies(db),
+        }
+
+    somme = sum(repartition.values()) or 1.0
+    maxpct = max(repartition.values()) or 1.0
+
+    return {
+        "maladie": maladie,
+        "total": total_cas,        # cas RÉELS diagnostiqués (app)
+        "source": source,          # "OMS", "OMS (live)" ou "aucune"
+        "continents": [
+            {
+                "nom": c,
+                # pourcentage = distribution mondiale OMS
+                "pourcentage": round(repartition[c] / somme * 100, 1),
+                # intensité (0–1) pour la couleur : poids OMS relatif du continent
+                "intensite": round(repartition[c] / maxpct, 3),
+            }
+            for c in CONTINENTS
+        ],
+        "maladies": _liste_maladies(db),
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  GRAPHIQUES MATPLOTLIB
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -485,7 +652,9 @@ def chart_top_diagnostics(limit: int = 10, db: Session = Depends(get_db)):
     values = [r.count for r in rows][::-1]
     colors = [PALETTE_BARS[i % len(PALETTE_BARS)] for i in range(len(labels))][::-1]
 
-    fig, ax = plt.subplots(figsize=(9, max(4, len(labels) * 0.55)), facecolor=BG_COLOR)
+    # Hauteur réduite de moitié (0.55 -> 0.28 par barre) : graphique plus compact,
+    # toujours pleine largeur. min 2.2 au lieu de 4.
+    fig, ax = plt.subplots(figsize=(9, max(2.2, len(labels) * 0.28)), facecolor=BG_COLOR)
     ax.set_facecolor(BG_COLOR)
 
     bars = ax.barh(labels, values, color=colors, height=0.62, zorder=3)

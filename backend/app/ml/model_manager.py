@@ -22,8 +22,8 @@ _DATASET_FILENAME = "dataset_medical_robust_enhanced.csv"
 _DATASET_FILENAME_FALLBACK = "dataset_medical_robust_10000_cas.csv"  # Fallback si le nouveau n'existe pas
 # Traduction des noms de maladies : labels internes du modèle → noms affichés
 DISEASE_DISPLAY_NAMES: dict[str, str] = {
-    "Malaria":                          "Malaria (Paludisme)",
-    "Paludisme":                        "Malaria (Paludisme)",
+    "Malaria":                          "Paludisme",
+    "Paludisme":                        "Paludisme",
     "Grippe":                           "Grippe (Influenza)",
     "Influenza A/B":                    "Grippe (Influenza)",
     "Influenza":                        "Grippe (Influenza)",
@@ -2368,9 +2368,20 @@ class ModelManager:
             self.trainer.dataset_means = self.dataset_means
 
             # 5. Garder seulement target + colonnes numériques
+            #
+            # On EXCLUT volontairement les features Lab_ et Vital_ de l'entraînement.
+            # Dans ce dataset, leurs valeurs sont bruitées/non-discriminantes : elles
+            # noient le signal des symptômes (parfaitement distinctifs) et plafonnent
+            # la confiance du modèle (une maladie aux symptômes uniques ressortait à
+            # ~13 % au lieu de 90 %+). Le diagnostic ML repose donc sur les symptômes ;
+            # les signes vitaux restent exploités par les règles cliniques
+            # (_apply_clinical_rules), qui s'appuient sur de vrais seuils médicaux.
             cols_to_keep = ["Maladie_Diagnostic"] + [
                 c for c in df.select_dtypes(include=[np.number]).columns
-                if c != "Maladie_Diagnostic" and c != "ID"
+                if c != "Maladie_Diagnostic"
+                and c != "ID"
+                and not c.startswith("Lab_")
+                and not c.startswith("Vital_")
             ]
             df = df[[c for c in cols_to_keep if c in df.columns]]
 

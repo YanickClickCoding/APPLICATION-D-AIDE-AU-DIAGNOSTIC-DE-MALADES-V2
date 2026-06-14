@@ -808,6 +808,65 @@ def update_step_consultation(consultation_id: int, data: dict, db: Session = Dep
     return {"success": True}
 
 
+@router.patch("/{consultation_id}/workflow-draft")
+def update_workflow_draft(consultation_id: int, data: dict, db: Session = Depends(get_db)):
+    """
+    Sauvegarde idempotente de l'état en cours d'un workflow (médecin ou infirmier) :
+    symptômes + signes vitaux + étape. Rejouable à chaque étape sans créer de doublons
+    (les symptômes/vitaux existants sont remplacés). Ne modifie PAS le statut de la
+    consultation — c'est un simple enregistrement de brouillon serveur qui résiste au
+    rafraîchissement de page, à la déconnexion et au changement d'appareil.
+    """
+    c = db.query(Consultation).filter(Consultation.consultation_id == consultation_id).first()
+    if not c:
+        raise HTTPException(status_code=404, detail="Consultation non trouvée")
+
+    step = data.get('step')
+    if step is not None:
+        c.step_courant = int(step)
+
+    symptomes_data = data.get('symptomes')
+    if symptomes_data is not None:
+        patient = db.query(Patient).filter(Patient.patient_id == c.patient_id).first()
+        noms = {s.get('nom', '').strip() for s in symptomes_data if (s.get('nom') or '').strip()}
+        if patient:
+            _valider_symptomes_par_sexe(patient.sexe, noms)
+        # Remplacer : on efface les symptômes existants avant de réinsérer
+        db.query(Symptome).filter(Symptome.consultation_id == consultation_id).delete()
+        sev_map = {'Légère': 'LEGER', 'Modérée': 'MODERE', 'Sévère': 'SEVERE'}
+        for s in symptomes_data:
+            if not (s.get('nom') or '').strip():
+                continue
+            db.add(Symptome(
+                consultation_id=consultation_id,
+                nom=s['nom'].strip(),
+                description=s.get('description') or None,
+                severite=sev_map.get(s.get('severite', 'Modérée'), 'MODERE'),
+                duree_jours=s.get('duree_jours', 1),
+            ))
+
+    vitaux_data = data.get('signes_vitaux')
+    if vitaux_data is not None:
+        db.query(SignesVitaux).filter(SignesVitaux.consultation_id == consultation_id).delete()
+        poids, taille = vitaux_data.get('poids'), vitaux_data.get('taille')
+        imc = round(poids / (taille / 100) ** 2, 1) if poids and taille else None
+        db.add(SignesVitaux(
+            consultation_id=consultation_id,
+            tension_systolique=vitaux_data.get('tension_systolique'),
+            tension_diastolique=vitaux_data.get('tension_diastolique'),
+            frequence_cardiaque=vitaux_data.get('frequence_cardiaque'),
+            temperature=vitaux_data.get('temperature'),
+            frequence_respiratoire=vitaux_data.get('frequence_respiratoire'),
+            saturation_oxygene=vitaux_data.get('saturation_o2'),
+            poids=poids,
+            taille=taille,
+            imc=imc,
+        ))
+
+    db.commit()
+    return {"success": True}
+
+
 @router.patch("/{consultation_id}/statut")
 def update_statut_consultation(consultation_id: int, data: dict, db: Session = Depends(get_db)):
     """
@@ -834,7 +893,20 @@ def update_consultation(consultation_id: int, data: dict, db: Session = Depends(
     if not c:
         raise HTTPException(status_code=404, detail="Consultation non trouvée")
     if 'nom_patient' in data:
-        c.nom_patient = data['nom_patient']
+        nom_complet = (data['nom_patient'] or '').strip()
+        c.nom_patient = nom_complet
+        # Propager au dossier patient lié (la table `patients` fait foi).
+        # Affichage = "prenoms nom" : le dernier mot devient `nom`, le reste `prenoms`.
+        if c.patient_id and nom_complet:
+            patient = db.query(Patient).filter(Patient.patient_id == c.patient_id).first()
+            if patient:
+                parts = nom_complet.split()
+                if len(parts) == 1:
+                    patient.nom = parts[0]
+                    patient.prenoms = ''
+                else:
+                    patient.nom = parts[-1]
+                    patient.prenoms = ' '.join(parts[:-1])
     if 'motif' in data:
         c.motif = data['motif']
     if 'date_heure' in data and data['date_heure']:
@@ -1094,10 +1166,53 @@ def complete_consultation_medecin(consultation_id: int, data: dict, db: Session 
             raise HTTPException(status_code=404, detail="Consultation non trouvée")
 
         examens_data     = data.get('examens', [])
+        symptomes_data   = data.get('symptomes')
+        vitaux_data      = data.get('signes_vitaux')
         analyse_finale   = data.get('analyse_finale')
         diagnostic_final = data.get('diagnostic_final', '')
         validation_type  = data.get('validation_type', 'confirme')
         notes_validation = data.get('notes_validation', '')
+
+        # ── Symptômes : le médecin a pu les corriger/compléter à l'étape 2.
+        #    On remplace ceux saisis par l'infirmier par la liste reçue.
+        #    (symptomes_data is None ⇒ le client n'a rien envoyé : on n'y touche pas.)
+        if symptomes_data is not None:
+            patient_sx = db.query(Patient).filter(Patient.patient_id == c.patient_id).first()
+            noms_symptomes = {s.get('nom', '').strip() for s in symptomes_data if (s.get('nom') or '').strip()}
+            if patient_sx:
+                _valider_symptomes_par_sexe(patient_sx.sexe, noms_symptomes)
+            db.query(Symptome).filter(Symptome.consultation_id == consultation_id).delete()
+            sev_map = {'Légère': 'LEGER', 'Modérée': 'MODERE', 'Sévère': 'SEVERE'}
+            for s in symptomes_data:
+                if not (s.get('nom') or '').strip():
+                    continue
+                db.add(Symptome(
+                    consultation_id=consultation_id,
+                    nom=s['nom'].strip(),
+                    description=s.get('description') or None,
+                    severite=sev_map.get(s.get('severite', 'Modérée'), 'MODERE'),
+                    duree_jours=s.get('duree_jours', 1),
+                ))
+
+        # ── Signes vitaux : mise à jour de l'enregistrement existant (ou création).
+        if vitaux_data is not None:
+            poids, taille = vitaux_data.get('poids'), vitaux_data.get('taille')
+            imc = round(poids / (taille / 100) ** 2, 1) if poids and taille else None
+            sv = db.query(SignesVitaux).filter(SignesVitaux.consultation_id == consultation_id).first()
+            if not sv:
+                sv = SignesVitaux(consultation_id=consultation_id)
+                db.add(sv)
+            sv.tension_systolique     = vitaux_data.get('tension_systolique')
+            sv.tension_diastolique    = vitaux_data.get('tension_diastolique')
+            sv.frequence_cardiaque    = vitaux_data.get('frequence_cardiaque')
+            sv.temperature            = vitaux_data.get('temperature')
+            sv.frequence_respiratoire = vitaux_data.get('frequence_respiratoire')
+            sv.saturation_oxygene     = vitaux_data.get('saturation_o2')
+            sv.poids                  = poids
+            sv.taille                 = taille
+            sv.imc                    = imc
+
+        db.flush()
 
         for ex in examens_data:
             if not (ex.get('nom') or '').strip():

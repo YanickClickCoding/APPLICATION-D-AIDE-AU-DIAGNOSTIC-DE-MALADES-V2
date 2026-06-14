@@ -89,10 +89,18 @@ class ModelTrainer:
         logger.info(f"   Train: {len(X_train)} cas | Test: {len(X_test)} cas")
         
         # Créer le modèle Random Forest avec entropie (US-012)
+        #
+        # class_weight='balanced' : compense les effectifs inégaux par classe
+        # (6 à 105 cas selon la maladie) pour ne pas écraser les maladies à faible
+        # volume. Le modèle est entraîné uniquement sur les features symptômes
+        # (les colonnes Lab_/Vital_ bruitées du dataset sont exclues en amont, dans
+        # train_new_model), ce qui permet à une maladie aux symptômes distinctifs
+        # de ressortir avec une confiance élevée (90 %+).
         self.model = RandomForestClassifier(
             n_estimators=n_estimators,
             max_depth=max_depth,
             criterion='entropy',  # Utilisation de l'entropie comme demandé
+            class_weight='balanced',
             random_state=random_state,
             n_jobs=-1,  # Utiliser tous les CPU
             verbose=0

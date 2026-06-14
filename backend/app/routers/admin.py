@@ -958,6 +958,51 @@ class NouvellesMaladieRequest(BaseModel):
     categorie: str
     symptomes: List[str] = Field(..., min_length=1)
     n_cas: int = Field(default=80, ge=20, le=300)
+    reentrainer: bool = Field(default=False, description="Lancer le réentraînement aussitôt après l'ajout")
+
+
+def _valider_symptomes_saisis(symptomes: List[str]) -> List[str]:
+    """
+    Valide et nettoie une liste de symptômes saisis par l'admin.
+    Bloque les entrées parasites (vides, purement numériques, caractères répétés
+    anormaux type 'rororor'/'dedededeeded', absence de voyelle) qui pollueraient
+    définitivement le modèle en créant des features symptom_* parasites.
+    Retourne la liste nettoyée (espaces normalisés, doublons retirés).
+    """
+    import re
+
+    propres: List[str] = []
+    vus = set()
+    for s in symptomes:
+        nom = " ".join(str(s).strip().split())  # normalise les espaces
+        if not nom:
+            continue
+        bas = nom.lower()
+        if bas in vus:
+            continue
+        # Refus : trop court
+        if len(nom) < 3:
+            raise HTTPException(status_code=400, detail=f"Symptôme trop court : '{nom}'")
+        # Refus : purement numérique
+        if re.fullmatch(r"[\d\s.,/-]+", nom):
+            raise HTTPException(status_code=400, detail=f"Symptôme invalide (numérique) : '{nom}'")
+        # Refus : aucune voyelle (mot non prononçable, ex. 'qsdfg')
+        if not re.search(r"[aeiouyàâäéèêëîïôöùûü]", bas):
+            raise HTTPException(status_code=400, detail=f"Symptôme invalide (non prononçable) : '{nom}'")
+        # Refus : même caractère répété 3+ fois d'affilée (ex. 'aaaa')
+        if re.search(r"(.)\1{2,}", bas):
+            raise HTTPException(status_code=400, detail=f"Symptôme invalide (caractères répétés) : '{nom}'")
+        # Refus : motif court (1-3 lettres) répété 3+ fois n'importe où
+        # (ex. 'rororor' = 'ro'×, 'dedededeeded' = 'de'×, 'ababab')
+        sans_espace = bas.replace(" ", "")
+        if re.search(r"(.{1,3})\1{2,}", sans_espace):
+            raise HTTPException(status_code=400, detail=f"Symptôme invalide (motif répété) : '{nom}'")
+        propres.append(nom)
+        vus.add(bas)
+
+    if not propres:
+        raise HTTPException(status_code=400, detail="Aucun symptôme valide fourni.")
+    return propres
 
 
 def _generer_cas_synthetiques(nom_maladie: str, symptomes: List[str], n_cas: int) -> List[List]:
@@ -1079,14 +1124,18 @@ def _generer_cas_synthetiques(nom_maladie: str, symptomes: List[str], n_cas: int
             "Medicaments_Actuels": "Aucun",
         }
 
+        # Labs/Vitaux : valeurs NEUTRES constantes (= moyenne normale, sigma 0).
+        # Le modèle est entraîné uniquement sur les symptômes ; générer des
+        # labs/vitaux aléatoires n'apportait que du bruit (cf. règle d'entraînement).
+        # On met la valeur normale moyenne, identique pour tous les cas, ce qui rend
+        # ces colonnes non-discriminantes plutôt que bruitées.
         for col in colonnes_vitaux:
-            mu, sigma = vitaux_normaux.get(col, (50.0, 5.0))
-            row[col] = round(random.gauss(mu, sigma), 2)
+            mu, _ = vitaux_normaux.get(col, (50.0, 5.0))
+            row[col] = mu
 
         for col in colonnes_labs:
-            mu, sigma = labs_normaux.get(col, (10.0, 2.0))
-            val = max(0.0, round(random.gauss(mu, sigma), 3))
-            row[col] = val
+            mu, _ = labs_normaux.get(col, (10.0, 2.0))
+            row[col] = mu
 
         nouveaux_cas.append([row.get(h, "") for h in headers])
 
@@ -1096,6 +1145,9 @@ def _generer_cas_synthetiques(nom_maladie: str, symptomes: List[str], n_cas: int
 @router.post("/dataset/add-disease")
 def add_disease_to_dataset(
     payload: NouvellesMaladieRequest,
+    background_tasks: BackgroundTasks,
+    n_estimators: int = 300,
+    max_depth: int = 0,
     admin: User = Depends(get_current_admin),
 ):
     """
@@ -1121,9 +1173,12 @@ def add_disease_to_dataset(
             detail=f"La maladie '{payload.nom_maladie}' existe déjà dans le dataset."
         )
 
+    # Valider/nettoyer les symptômes avant toute écriture (bloque les parasites)
+    symptomes_propres = _valider_symptomes_saisis(payload.symptomes)
+
     try:
         nouveaux_cas, headers = _generer_cas_synthetiques(
-            payload.nom_maladie, payload.symptomes, payload.n_cas
+            payload.nom_maladie, symptomes_propres, payload.n_cas
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur génération des cas : {str(e)}")
@@ -1159,7 +1214,7 @@ def add_disease_to_dataset(
             "prurit":       ["démangeaisons", "ça gratte", "peau qui gratte"],
             "éruption":     ["boutons", "rash", "plaques rouges"],
         }
-        for symptome in payload.symptomes:
+        for symptome in symptomes_propres:
             s_lower = symptome.lower()
             for terme, variantes in PATTERNS_AUTO.items():
                 if terme in s_lower:
@@ -1182,9 +1237,9 @@ def add_disease_to_dataset(
 
         # Normaliser les symptômes en minuscules pour la correspondance
         existing_rules[payload.nom_maladie] = {
-            "symptomes_boost": payload.symptomes,
+            "symptomes_boost": symptomes_propres,
             "boost_factor": 4.0,
-            "min_symptomes_match": max(1, len(payload.symptomes) // 3),
+            "min_symptomes_match": max(1, len(symptomes_propres) // 3),
         }
         os.makedirs(os.path.dirname(_CUSTOM_RULES_PATH), exist_ok=True)
         with open(_CUSTOM_RULES_PATH, "w", encoding="utf-8") as f:
@@ -1197,13 +1252,98 @@ def add_disease_to_dataset(
         f"({payload.n_cas} cas, catégorie: {payload.categorie}) par {admin.email}"
     )
 
+    # Réentraînement immédiat optionnel — le modèle est un singleton global, donc
+    # train_new_model recharge automatiquement le predictor en mémoire à la fin.
+    reentrainement_lance = False
+    if payload.reentrainer:
+        with _training_lock:
+            if _training_state["status"] == "running":
+                raise HTTPException(status_code=409, detail="Un entraînement est déjà en cours. Réessayez après.")
+            _training_state.update({
+                "status": "running", "started_at": datetime.now().isoformat(),
+                "finished_at": None, "message": "Initialisation…", "results": None, "error": None,
+            })
+        depth = None if max_depth in (0, None) else max_depth
+        background_tasks.add_task(_run_training_task, n_estimators, depth)
+        reentrainement_lance = True
+
+    message = f"{payload.n_cas} cas synthétiques ajoutés pour '{payload.nom_maladie}'."
+    if reentrainement_lance:
+        message += " Réentraînement lancé — suivez l'état via /admin/train/status."
+    else:
+        message += " Relancez l'entraînement pour activer la détection."
+
     return {
         "success": True,
         "maladie": payload.nom_maladie,
         "categorie": payload.categorie,
         "cas_ajoutes": payload.n_cas,
         "total_dataset": total_avant + payload.n_cas,
-        "message": f"{payload.n_cas} cas synthétiques ajoutés pour '{payload.nom_maladie}'. Règles cliniques sauvegardées. Relancez l'entraînement pour activer la détection.",
+        "reentrainement_lance": reentrainement_lance,
+        "message": message,
+    }
+
+
+@router.delete("/dataset/maladies/{nom_maladie}")
+def delete_disease_from_dataset(nom_maladie: str, admin: User = Depends(get_current_admin)):
+    """
+    Supprime toutes les lignes d'une maladie du dataset (réécriture du CSV) et
+    retire ses règles cliniques custom. Il faut ensuite relancer l'entraînement
+    pour que la classe disparaisse réellement du modèle.
+    """
+    import csv
+
+    if not DATASET_PATH or not os.path.exists(DATASET_PATH):
+        raise HTTPException(status_code=404, detail="Dataset introuvable.")
+
+    cible = nom_maladie.strip().lower()
+
+    with open(DATASET_PATH, "r", encoding="utf-8", newline="") as f:
+        reader = csv.reader(f)
+        headers = next(reader)
+        rows = list(reader)
+
+    # Index de la colonne maladie (normalement 1 = Maladie_Diagnostic)
+    try:
+        idx_maladie = headers.index("Maladie_Diagnostic")
+    except ValueError:
+        idx_maladie = 1
+
+    restantes = [r for r in rows if r and r[idx_maladie].strip().lower() != cible]
+    supprimees = len(rows) - len(restantes)
+
+    if supprimees == 0:
+        raise HTTPException(status_code=404, detail=f"Maladie '{nom_maladie}' introuvable dans le dataset.")
+
+    with open(DATASET_PATH, "w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(headers)
+        writer.writerows(restantes)
+
+    # Retirer les règles cliniques custom de cette maladie, si présentes
+    _CUSTOM_RULES_PATH = os.path.join(".", "ml_models", "custom_disease_rules.json")
+    try:
+        if os.path.exists(_CUSTOM_RULES_PATH):
+            with open(_CUSTOM_RULES_PATH, "r", encoding="utf-8") as f:
+                rules = json.load(f)
+            removed = None
+            for k in list(rules.keys()):
+                if k.strip().lower() == cible:
+                    removed = rules.pop(k)
+            if removed is not None:
+                with open(_CUSTOM_RULES_PATH, "w", encoding="utf-8") as f:
+                    json.dump(rules, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logging.warning(f"[ADMIN] Règles custom non nettoyées pour '{nom_maladie}': {e}")
+
+    logging.info(f"[ADMIN] Maladie supprimée du dataset : '{nom_maladie}' ({supprimees} cas) par {admin.email}")
+
+    return {
+        "success": True,
+        "maladie": nom_maladie,
+        "cas_supprimes": supprimees,
+        "total_restant": len(restantes),
+        "message": f"{supprimees} cas supprimés. Relancez l'entraînement pour retirer la maladie du modèle.",
     }
 
 

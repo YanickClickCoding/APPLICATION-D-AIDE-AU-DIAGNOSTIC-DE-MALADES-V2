@@ -253,7 +253,7 @@ const MesPatients = () => {
             </p>
           </div>
         ) : view === 'grid' ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', padding: '20px', background: '#EEF2F7' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '16px', padding: '20px', background: '#EEF2F7' }}>
             {filtered.map(patient => (
               <div
                 key={patient.patient_id}
@@ -268,7 +268,7 @@ const MesPatients = () => {
                     opacity: 0, transform: 'translateY(-6px)', transition: 'all 0.2s ease',
                   }}>
                     <button onClick={() => openForm(patient)} className="sp-btn sp-btn-ghost sp-btn-sm" style={{ background: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', padding: '6px' }} title="Modifier">
-                      <Edit2 size={14} style={{ color: '#4F46E5' }} />
+                      <Edit2 size={14} />
                     </button>
                     <button onClick={() => openDelete(patient)} className="sp-btn sp-btn-ghost sp-btn-sm" style={{ background: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', padding: '6px' }} title="Supprimer">
                       <Trash2 size={14} style={{ color: '#EF4444' }} />
@@ -434,16 +434,12 @@ const MesPatients = () => {
                         <Link to={`/dossier-patient/${patient.patient_id}`} className="sp-btn sp-btn-ghost sp-btn-sm" title="Voir dossier">
                           <Clipboard size={14} />
                         </Link>
-                        {isAdmin && (
-                          <>
-                            <button onClick={() => openForm(patient)} className="sp-btn sp-btn-ghost sp-btn-sm" title="Modifier">
-                              <Edit2 size={14} style={{ color: '#4F46E5' }} />
-                            </button>
-                            <button onClick={() => openDelete(patient)} className="sp-btn sp-btn-ghost sp-btn-sm" title="Supprimer">
-                              <Trash2 size={14} style={{ color: '#EF4444' }} />
-                            </button>
-                          </>
-                        )}
+                        <button onClick={() => openForm(patient)} className="sp-btn sp-btn-ghost sp-btn-sm" title="Modifier">
+                          <Edit2 size={14} />
+                        </button>
+                        <button onClick={() => openDelete(patient)} className="sp-btn sp-btn-ghost sp-btn-sm" title="Supprimer">
+                          <Trash2 size={14} style={{ color: '#EF4444' }} />
+                        </button>
                       </div>
                     </td>
                   </tr>

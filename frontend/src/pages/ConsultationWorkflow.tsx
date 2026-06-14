@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { registerNavigationGuard, unregisterNavigationGuard } from '../utils/navigationGuard';
+import { unregisterNavigationGuard } from '../utils/navigationGuard';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { MedicalDisclaimerBanner } from '../components/MedicalDisclaimerBanner';
@@ -832,7 +832,7 @@ export default function ConsultationWorkflow() {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { user } = useAuth();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const reprendreId = searchParams.get('reprendre');
   const directPatientId = searchParams.get('patientId'); // Nouveau: patient depuis dossier
@@ -907,7 +907,6 @@ export default function ConsultationWorkflow() {
   const [savedDraft, setSavedDraft] = useState<any>(null);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
   const [pendingDrafts, setPendingDrafts] = useState<any[]>([]);
-  const [needsMotif, setNeedsMotif] = useState(false);
   const [backendLoadComplete, setBackendLoadComplete] = useState(false);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -974,8 +973,6 @@ export default function ConsultationWorkflow() {
   const [catalogueLoading, setCatalogueLoading] = useState(false);
 
   // Navigation guard
-  const [leaveModalOpen, setLeaveModalOpen] = useState(false);
-  const [pendingNavTo, setPendingNavTo] = useState<string | number | null>(null);
 
   const filteredMedecins = medecins.filter(m => {
     const term = medecinSearch.toLowerCase();
@@ -1103,17 +1100,12 @@ export default function ConsultationWorkflow() {
     if (draft.suivi) setSuivi(v => ({ ...v, ...draft.suivi }));
     setShowResumeModal(false);
     setSavedDraft(null);
-    const draftMotif = draft.motif?.trim() ?? '';
-    if (draftMotif === '' || draftMotif === 'Consultation médicale') {
-      setNeedsMotif(true);
-    }
     showToast('Consultation restaurée — vous reprenez là où vous en étiez', 'success');
   };
 
-  const safeNavigate = (to: string) => {
-    if (isDirty) { setPendingNavTo(to); setLeaveModalOpen(true); }
-    else navigate(to);
-  };
+  // Navigation directe : les données du workflow sont persistées en base au fil de
+  // l'eau (workflow-draft), donc quitter ne perd rien — plus de modal de confirmation.
+  const safeNavigate = (to: string) => navigate(to);
 
   const isQuickStart = !patient.date_naissance || patient.date_naissance === '';
 
@@ -1348,9 +1340,12 @@ export default function ConsultationWorkflow() {
         if (d.motif) setMotif(d.motif);
         if (d.symptomes?.length) {
           const rev: Record<string, string> = { LEGER: 'Légère', MODERE: 'Modérée', SEVERE: 'Sévère' };
+          // Accepter aussi les symptômes dynamiques (issus du modèle ML) : ils sont
+          // valides à la saisie, donc ne pas les écarter à la restauration.
+          const connus = new Set([...ALL_SYMPTOMES_SET, ...dynamicSymptomes]);
           setSymptomes(
             d.symptomes
-              .filter((s: any) => ALL_SYMPTOMES_SET.has(s.nom))
+              .filter((s: any) => connus.has(s.nom))
               .map((s: any) => ({ nom: s.nom, severite: rev[s.severite] || 'Modérée', duree_jours: s.duree_jours, description: s.description || '' }))
           );
         }
@@ -1440,18 +1435,12 @@ export default function ConsultationWorkflow() {
     }
   }, [hasSearched, patientSearchResults.length, patientSearchQuery, forceNewPatient]);
 
-  // Garde de navigation — liens sidebar uniquement (pas beforeunload : données persistées en base)
+  // Plus de garde de navigation : les données sont persistées en base au fil de l'eau,
+  // quitter ne perd rien. On s'assure simplement qu'aucun guard résiduel ne traîne.
   useEffect(() => {
-    if (isDirty) {
-      registerNavigationGuard((path) => {
-        setPendingNavTo(path);
-        setLeaveModalOpen(true);
-      });
-    } else {
-      unregisterNavigationGuard();
-    }
+    unregisterNavigationGuard();
     return () => { unregisterNavigationGuard(); };
-  }, [isDirty]);
+  }, []);
 
   // ── Détection brouillon au montage ────────────────────────────────────────
   useEffect(() => {
@@ -1490,7 +1479,28 @@ export default function ConsultationWorkflow() {
       }
       // Trier du plus récent au plus ancien
       found.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
-      if (found.length > 0) setPendingDrafts(found);
+
+      // Purger les brouillons orphelins : si la consultation liée n'existe plus
+      // en base (patient supprimé, consultation clôturée/supprimée), on retire la
+      // clé localStorage correspondante au lieu de proposer un « Reprendre » mort.
+      apiFetch('http://localhost:8000/api/consultations/?skip=0&limit=500')
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then((consults: any[]) => {
+          const idsExistants = new Set((consults || []).map((c: any) => c.id ?? c.consultation_id));
+          const valides = found.filter(d => {
+            const cid = parseInt((d._key as string).replace('sp_draft_med_', ''), 10);
+            if (!Number.isNaN(cid) && !idsExistants.has(cid)) {
+              localStorage.removeItem(d._key);
+              return false;
+            }
+            return true;
+          });
+          if (valides.length > 0) setPendingDrafts(valides);
+        })
+        .catch(() => {
+          // En cas d'échec réseau : ne pas bloquer, afficher les brouillons trouvés.
+          if (found.length > 0) setPendingDrafts(found);
+        });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1541,19 +1551,47 @@ export default function ConsultationWorkflow() {
       examens, analyseFinale, validationDecision, diagnosticFinal, diagnosticCorrection,
       notesValidation, ordonnance, suivi, doctorMode, user?.role]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Persistance step côté backend (résiste à déconnexion + vidage cache) ──
+  // ── Persistance du brouillon côté backend (résiste à F5 + déconnexion + appareil) ──
+  // Sauvegarde idempotente de l'étape ET des symptômes/vitaux saisis. Indispensable
+  // pour le médecin en flux « nouveau » : sans ça, ses données n'étaient écrites qu'à
+  // la clôture finale, donc un F5 à l'étape 3 perdait tout et renvoyait à l'étape 1/2.
+  // Debounce 1 s pour ne pas spammer le serveur à chaque frappe.
   useEffect(() => {
     const id = activeConsultationId || draftConsultationId;
     if (!id) return;
     const isActive = (isInfirmier ? infirmierPhase === 'workflow' : doctorPhase === 'workflow') && !infirmierSubmitted;
     if (!isActive) return;
-    // Envoyer silencieusement, pas de retry — perte acceptable si hors-ligne
-    apiFetch(`http://localhost:8000/api/consultations/${id}/step`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ step }),
-    }).catch(() => {});
-  }, [step, activeConsultationId, draftConsultationId]); // eslint-disable-line react-hooks/exhaustive-deps
+    const t = setTimeout(() => {
+      apiFetch(`http://localhost:8000/api/consultations/${id}/workflow-draft`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          step,
+          symptomes: symptomes.filter(s => (s.nom || '').trim()),
+          signes_vitaux: vitaux,
+        }),
+      }).catch(() => {});
+    }, 1000);
+    return () => clearTimeout(t);
+  }, [step, symptomes, vitaux, activeConsultationId, draftConsultationId, // eslint-disable-line react-hooks/exhaustive-deps
+      isInfirmier, infirmierPhase, doctorPhase, infirmierSubmitted]);
+
+  // ── Synchroniser l'URL avec l'ID de consultation (résiste au F5) ──────────────
+  // Dès qu'une consultation médecin existe (créée via /init), on inscrit son id
+  // dans l'URL (?reprendre=<id>). Sans ça, après un rafraîchissement la page perd
+  // l'id (qui n'était que dans le state React) → activeConsultationId repart à null
+  // → l'effet de restauration backend ne se déclenche pas → retour à l'étape 1.
+  // Avec l'id dans l'URL, le F5 relit activeConsultationId et restaure step_courant.
+  useEffect(() => {
+    if (!isMedecin) return;
+    const id = activeConsultationId || draftConsultationId;
+    if (!id) return;
+    if (searchParams.get('reprendre') === String(id)) return; // déjà à jour
+    const next = new URLSearchParams(searchParams);
+    next.set('reprendre', String(id));
+    next.delete('patientId'); // évite que l'effet directPatientId recrée un doublon au F5
+    setSearchParams(next, { replace: true });
+  }, [isMedecin, activeConsultationId, draftConsultationId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Médecin sélectionne un patient trouvé
   const handleSelectPatient = async (result: PatientSearchResult) => {
@@ -1795,7 +1833,7 @@ export default function ConsultationWorkflow() {
       const finalDiag = validationDecision === 'rejete' ? diagnosticCorrection : diagnosticFinal;
       const res = await apiFetch(`http://localhost:8000/api/consultations/${activeConsultationId}/workflow-complet`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ examens, analyse_finale: analyseFinale, diagnostic_final: finalDiag, validation_type: validationDecision, notes_validation: notesValidation, ordonnance, suivi }),
+        body: JSON.stringify({ symptomes, signes_vitaux: vitaux, examens, analyse_finale: analyseFinale, diagnostic_final: finalDiag, validation_type: validationDecision, notes_validation: notesValidation, ordonnance, suivi }),
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Erreur serveur'); }
       const result = await res.json();
@@ -2691,28 +2729,6 @@ export default function ConsultationWorkflow() {
       )}
 
       {/* ── Bandeau motif manquant (brouillon repris sans motif) ── */}
-      {needsMotif && step > 1 && (
-        <div style={{ marginBottom: '12px', padding: '14px 18px', background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <AlertCircle size={18} style={{ color: '#EA580C', flexShrink: 0 }} />
-          <div style={{ flex: 1 }}>
-            <label style={{ fontSize: '12px', fontWeight: 700, color: '#C2410C', display: 'block', marginBottom: '6px' }}>
-              Motif de consultation manquant
-            </label>
-            <input
-              type="text"
-              className="sp-form-input"
-              style={{ marginBottom: 0, height: '34px', fontSize: '13px' }}
-              value={motif === 'Consultation médicale' ? '' : motif}
-              onChange={e => setMotif(e.target.value)}
-              onBlur={() => { if (motif.trim() && motif.trim() !== 'Consultation médicale') setNeedsMotif(false); }}
-              placeholder="Ex : douleur thoracique, fièvre, suivi diabète…"
-              autoFocus
-              maxLength={200}
-            />
-          </div>
-        </div>
-      )}
-
       {/* ── Content ── */}
       <div className="sp-card sp-fade-in">
         <div style={{ padding: '32px' }}>
@@ -3109,7 +3125,7 @@ export default function ConsultationWorkflow() {
               )}
 
               {/* Récap données saisies */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px', marginBottom: '24px' }}>
                 <VitalBadge label="Symptômes" value={symptomes.filter(s => s.nom.trim()).length} unit="saisis" icon={Activity} />
                 <VitalBadge label="Température" value={`${vitaux.temperature}°C`} unit="" icon={Thermometer} alert={vitaux.temperature >= 38.5} />
                 <VitalBadge label="FC" value={vitaux.frequence_cardiaque} unit="bpm" icon={Heart} alert={vitaux.frequence_cardiaque > 100} />
@@ -3687,11 +3703,11 @@ export default function ConsultationWorkflow() {
             <button
               onClick={() => {
                 if (step <= stepMin && isMedecin) {
-                  if (reprendreId) { safeNavigate('/consultations'); } else { isDirty ? (setPendingNavTo('search'), setLeaveModalOpen(true)) : setDoctorPhase('search'); }
+                  if (reprendreId) { safeNavigate('/consultations'); } else { setDoctorPhase('search'); }
                   return;
                 }
                 if (step <= stepMin && isInfirmier) {
-                  isDirty ? (setPendingNavTo('infirmier-search'), setLeaveModalOpen(true)) : setInfirmierPhase('search');
+                  setInfirmierPhase('search');
                   return;
                 }
                 setStep(s => {
@@ -3792,57 +3808,6 @@ export default function ConsultationWorkflow() {
         </div>
       </div>
     </div>
-
-    {/* ── Modal confirmation quitter ── */}
-    {leaveModalOpen && (
-      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ background: '#fff', borderRadius: '16px', padding: '32px', maxWidth: '440px', width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-            <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <AlertCircle size={22} style={{ color: '#D97706' }} />
-            </div>
-            <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#1F2937', margin: 0 }}>Quitter la consultation ?</h3>
-          </div>
-          <p style={{ color: '#6B7280', fontSize: '14px', marginBottom: '12px', lineHeight: 1.6 }}>
-            Vous allez quitter la consultation en cours.
-          </p>
-          {draftSavedAt ? (
-            <div style={{ background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: '8px', padding: '10px 14px', marginBottom: '20px', fontSize: '13px', color: '#166534', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <CheckCircle size={14} style={{ flexShrink: 0 }} />
-              <span>Vos données ont été sauvegardées automatiquement {formatDraftAge(draftSavedAt)}. Vous pourrez reprendre là où vous en étiez.</span>
-            </div>
-          ) : (
-            <div style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: '8px', padding: '10px 14px', marginBottom: '20px', fontSize: '13px', color: '#92400E', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertCircle size={14} style={{ flexShrink: 0 }} />
-              <span>Les données saisies mais non encore sauvegardées seront perdues.</span>
-            </div>
-          )}
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button
-              onClick={() => { setLeaveModalOpen(false); setPendingNavTo(null); }}
-              className="sp-btn sp-btn-outline"
-              style={{ flex: 1 }}
-            >
-              Rester sur la page
-            </button>
-            <button
-              onClick={() => {
-                setLeaveModalOpen(false);
-                if (pendingNavTo === 'search') { setDoctorPhase('search'); }
-                else if (pendingNavTo === 'infirmier-search') { setInfirmierPhase('search'); }
-                else if (pendingNavTo === -1) { navigate(-1); }
-                else if (pendingNavTo) { navigate(pendingNavTo as string); }
-                setPendingNavTo(null);
-              }}
-              className="sp-btn"
-              style={{ flex: 1, background: '#EF4444', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-            >
-              Quitter quand même
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
 
     {/* ── Modal Symptômes & Signes Vitaux ── */}
     {showDonneesModal && (

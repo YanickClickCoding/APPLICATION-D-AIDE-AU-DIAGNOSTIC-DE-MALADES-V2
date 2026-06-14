@@ -169,7 +169,7 @@ const Medecins = () => {
                 <div className="sp-empty-title">Aucun médecin trouvé</div>
               </div>
             ) : (
-              <div className="sp-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+              <div className="sp-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
                 {filtered.map(m => {
                   const initiales = ((m.prenoms || '?').substring(0, 1) + (m.nom || '?').substring(0, 1)).toUpperCase();
                   const dispo = m.disponible;

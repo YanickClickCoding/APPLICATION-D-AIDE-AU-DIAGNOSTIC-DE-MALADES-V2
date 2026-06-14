@@ -308,7 +308,7 @@ const Utilisateurs = () => {
                     <div className="sp-empty-title">Aucun utilisateur trouvé</div>
                   </div>
                 ) : (
-                  <div className="sp-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px' }}>
+                  <div className="sp-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
                     {filtered.map(u => {
                       const initiales = ((u.prenoms || '?')[0] + (u.nom || '?')[0]).toUpperCase();
                       const isAdminRole = u.role === 'admin';

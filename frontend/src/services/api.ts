@@ -411,6 +411,19 @@ export const analyticsAPI = {
       `/api/analytics/diagnostics/distribution?limit=${limit}`
     ),
 
+  // Répartition géographique des maladies (carte du monde du dashboard)
+  // - pourcentage = distribution mondiale OMS (ou estimée) par continent
+  // - intensite = poids OMS relatif (0–1) pour la couleur
+  // - total = cas RÉELS diagnostiqués dans l'app
+  getDiagnosticsParContinent: (maladie?: string) =>
+    fetchAPI<{
+      maladie: string | null;
+      total: number;
+      source: string;
+      continents: Array<{ nom: string; pourcentage: number; intensite: number }>;
+      maladies: string[];
+    }>(`/api/analytics/diagnostics-par-continent${maladie ? `?maladie=${encodeURIComponent(maladie)}` : ''}`),
+
   // Performance du modèle
   getModelPerformance: () =>
     fetchAPI<{
@@ -529,6 +542,36 @@ export const authAPI = {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
+    }),
+
+  // Modifier le profil de l'utilisateur connecté
+  updateProfile: (token: string, data: { nom?: string; prenoms?: string; email?: string }) =>
+    fetchAPI<UserInfo>('/api/auth/me', {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
+    }),
+
+  // Changer le mot de passe (utilisateur connecté)
+  changePassword: (token: string, data: { ancien_mot_de_passe: string; nouveau_mot_de_passe: string }) =>
+    fetchAPI<{ success: boolean; message: string }>('/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
+    }),
+
+  // Demander un code de réinitialisation (code affiché dans les logs backend)
+  forgotPassword: (email: string) =>
+    fetchAPI<{ success: boolean; message: string }>('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
+  // Réinitialiser le mot de passe via le code reçu
+  resetPassword: (data: { email: string; code: string; nouveau_mot_de_passe: string }) =>
+    fetchAPI<{ success: boolean; message: string }>('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
     }),
 
   // Rafraîchir le token

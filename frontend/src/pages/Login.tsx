@@ -132,14 +132,19 @@ const Login = () => {
                 disabled={isLoading}
                 style={{ paddingRight: '40px' }}
               />
-              <button 
-                type="button" 
-                className="sp-pw-toggle" 
+              <button
+                type="button"
+                className="sp-pw-toggle"
                 onClick={() => setShowPassword(!showPassword)}
                 disabled={isLoading}
               >
                 {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
+            </div>
+            <div style={{ textAlign: 'right', marginTop: '8px' }}>
+              <Link to="/mot-de-passe-oublie" style={{ fontSize: '13px', color: 'var(--sp-primary)', fontWeight: 600, textDecoration: 'none' }}>
+                Mot de passe oublié ?
+              </Link>
             </div>
           </div>
 

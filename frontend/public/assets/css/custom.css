@@ -331,6 +331,17 @@ body.sp-body {
     max-width: 100%;
 }
 
+/* ---- GRILLE DE CARTES AUTO-ADAPTATIVE ----
+   Remplace les grilles à colonnes fixes (repeat(4,1fr)…) qui débordaient sur
+   petits écrans. Les cartes se replient automatiquement selon la largeur
+   disponible, identiquement quel que soit l'écran.
+   --sp-card-min = largeur minimale d'une carte (surchargeable inline). */
+.sp-auto-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(var(--sp-card-min, 180px), 1fr));
+    gap: 16px;
+}
+
 /* ---- PAGE HEADER ---- */
 .sp-page-header {
     display: flex;
@@ -1274,7 +1285,10 @@ body.sp-auth::after {
     }
     
     .sp-stats-grid {
-        grid-template-columns: repeat(2, 1fr);
+        /* auto-fit : les cartes se répartissent selon la largeur réelle au
+           lieu d'être bloquées à 2 colonnes (sinon la grille s'allonge et
+           déborde verticalement sur les écrans de portable). */
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 16px;
     }
 }
@@ -1284,18 +1298,18 @@ body.sp-auth::after {
     :root {
         --sp-sidebar-w: 280px;
     }
-    
+
     .sp-content {
         padding: 24px 20px;
     }
-    
+
     .sp-dashboard-main-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 16px;
     }
-    
+
     .sp-stats-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
         gap: 14px;
     }
     
@@ -1466,3 +1480,141 @@ body.sp-auth::after {
         font-size: 32px !important;
     }
 }
+
+/* ============================================
+   MODE SOMBRE
+   Active via <html data-theme="dark"> (ThemeContext).
+   Deux niveaux : (1) override des variables --sp-*,
+   (2) règles ciblant les styles inline les plus courants
+   (fonds blancs, cartes, textes sombres) pour couvrir
+   les pages qui utilisent des couleurs codées en dur.
+   ============================================ */
+
+html[data-theme="dark"] {
+    --sp-gray-50:  #0F172A;
+    --sp-gray-100: #1E293B;
+    --sp-gray-200: #334155;
+    --sp-gray-300: #475569;
+    --sp-gray-400: #64748B;
+    --sp-gray-500: #94A3B8;
+    --sp-gray-600: #CBD5E1;
+    --sp-gray-700: #E2E8F0;
+    --sp-gray-800: #F1F5F9;
+    --sp-gray-900: #F8FAFC;
+    --sp-shadow: 0 2px 6px rgba(0,0,0,0.4), 0 8px 28px rgba(0,0,0,0.5);
+    --sp-shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
+    color-scheme: dark;
+}
+
+html[data-theme="dark"] body.sp-body {
+    background: #0B1220;
+    color: #E2E8F0;
+}
+
+/* Surfaces génériques (cartes, panneaux) */
+html[data-theme="dark"] .sp-card,
+html[data-theme="dark"] .sp-page-header,
+html[data-theme="dark"] .sp-topbar,
+html[data-theme="dark"] .sp-stat-card,
+html[data-theme="dark"] .sp-modal,
+html[data-theme="dark"] [style*="background: white"],
+html[data-theme="dark"] [style*="background:#fff"],
+html[data-theme="dark"] [style*="background: #fff"],
+html[data-theme="dark"] [style*="background:#FFFFFF"],
+html[data-theme="dark"] [style*="background: #FFFFFF"],
+html[data-theme="dark"] [style*="background:#ffffff"] {
+    background: #131C2E !important;
+    border-color: #243049 !important;
+}
+
+/* Fonds clairs secondaires (gris très clairs) → surface sombre légère */
+html[data-theme="dark"] [style*="#F8FAFC"],
+html[data-theme="dark"] [style*="#F9FAFB"],
+html[data-theme="dark"] [style*="#F3F4F6"],
+html[data-theme="dark"] [style*="#F1F5F9"],
+html[data-theme="dark"] [style*="#FCFDFE"],
+html[data-theme="dark"] [style*="#FFFBEB"],
+html[data-theme="dark"] [style*="background:#E8F0FA"],
+html[data-theme="dark"] [style*="background: #E8F0FA"] {
+    background-color: #1B2740 !important;
+}
+
+/* Textes sombres codés en dur → clairs */
+html[data-theme="dark"] [style*="color:#111827"],
+html[data-theme="dark"] [style*="color: #111827"],
+html[data-theme="dark"] [style*="color:#1F2937"],
+html[data-theme="dark"] [style*="color: #1F2937"],
+html[data-theme="dark"] [style*="color:#1E293B"],
+html[data-theme="dark"] [style*="color: #1E293B"],
+html[data-theme="dark"] [style*="color:#374151"],
+html[data-theme="dark"] [style*="color: #374151"],
+html[data-theme="dark"] [style*="color:#334155"],
+html[data-theme="dark"] [style*="color: #334155"] {
+    color: #E2E8F0 !important;
+}
+
+/* Textes gris moyens → gris clair lisible */
+html[data-theme="dark"] [style*="color:#6B7280"],
+html[data-theme="dark"] [style*="color: #6B7280"],
+html[data-theme="dark"] [style*="color:#64748B"],
+html[data-theme="dark"] [style*="color: #64748B"],
+html[data-theme="dark"] [style*="color:#9CA3AF"],
+html[data-theme="dark"] [style*="color: #9CA3AF"],
+html[data-theme="dark"] [style*="color:#94A3B8"],
+html[data-theme="dark"] [style*="color: #94A3B8"] {
+    color: #9FB0C8 !important;
+}
+
+/* Bordures claires → bordures sombres */
+html[data-theme="dark"] [style*="#E5E7EB"],
+html[data-theme="dark"] [style*="#E2E8F0"],
+html[data-theme="dark"] [style*="#D1D5DB"] {
+    border-color: #2A3A57 !important;
+}
+
+/* Champs de formulaire */
+html[data-theme="dark"] .sp-form-input,
+html[data-theme="dark"] .sp-form-select,
+html[data-theme="dark"] .sp-form-textarea,
+html[data-theme="dark"] input,
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea {
+    background: #0F1A2E !important;
+    border-color: #2A3A57 !important;
+    color: #E2E8F0 !important;
+}
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder { color: #5B6B85 !important; }
+
+/* Tables */
+html[data-theme="dark"] table thead tr,
+html[data-theme="dark"] table th { background: #1B2740 !important; color: #9FB0C8 !important; }
+html[data-theme="dark"] table td { color: #CBD5E1 !important; }
+
+/* Liens d'accent : garder lisibles */
+html[data-theme="dark"] [style*="color:#0A4B8C"],
+html[data-theme="dark"] [style*="color: #0A4B8C"],
+html[data-theme="dark"] [style*="color:#4F46E5"],
+html[data-theme="dark"] [style*="color: #4F46E5"] {
+    color: #6BA6E8 !important;
+}
+
+/* La sidebar reste en dégradé bleu (déjà sombre) — on ne la touche pas */
+html[data-theme="dark"] .sp-sidebar { filter: brightness(0.92); }
+
+/* Toggle thème (interrupteur) */
+.sp-theme-toggle {
+    display: inline-flex; align-items: center; gap: 10px;
+    cursor: pointer; user-select: none;
+}
+.sp-theme-switch {
+    position: relative; width: 52px; height: 28px; border-radius: 99px;
+    background: var(--sp-gray-300); transition: background .25s; flex-shrink: 0;
+}
+html[data-theme="dark"] .sp-theme-switch { background: var(--sp-primary-light); }
+.sp-theme-switch::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 22px; height: 22px; border-radius: 50%; background: #fff;
+    transition: transform .25s; box-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+html[data-theme="dark"] .sp-theme-switch::after { transform: translateX(24px); }

@@ -68,3 +68,6 @@ server/ai_engine.py
 
 # Fichiers Office temporaires
 ~$*
+
+# Cache régénérable (géocodage WHO)
+backend/app/who_geo_cache.json

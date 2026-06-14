@@ -543,7 +543,7 @@ const ConsultationDetails = () => {
                     <div style={{ fontWeight: 700, color: '#1F2937', fontSize: '16px', marginBottom: '8px' }}>
                       {medicament.nom}
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '8px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '12px', marginBottom: '8px' }}>
                       <div>
                         <div style={{ fontSize: '11px', color: '#6B7280', marginBottom: '2px' }}>Dosage</div>
                         <div style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>{medicament.dosage}</div>
