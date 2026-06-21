@@ -5,6 +5,7 @@ import {
   LayoutGrid, PencilLine, Search,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useConfirm } from '../components/ConfirmDialog';
 
 interface DatasetStats {
   total_maladies: number;
@@ -75,6 +76,7 @@ type Tab = 'overview' | 'add' | 'edit';
 
 export default function AdminDataset() {
   const { token } = useAuth();
+  const confirm = useConfirm();
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
 
@@ -290,7 +292,13 @@ export default function AdminDataset() {
   const handleDeleteDisease = async () => {
     if (!token || !updateDiseaseName.trim()) return;
     const nom = updateDiseaseName.trim();
-    if (!window.confirm(`Supprimer définitivement la maladie « ${nom} » et tous ses cas du dataset ?\n\nUn réentraînement sera nécessaire pour la retirer du modèle.`)) return;
+    const ok = await confirm({
+      title: 'Supprimer la maladie',
+      message: `Supprimer définitivement la maladie « ${nom} » et tous ses cas du dataset ?\n\nUn réentraînement sera nécessaire pour la retirer du modèle.`,
+      confirmLabel: 'Supprimer',
+      danger: true,
+    });
+    if (!ok) return;
     setDeleteLoading(true);
     setUpdateResult(null);
     try {

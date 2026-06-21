@@ -270,11 +270,38 @@ def get_consultation(consultation_id: int, db: Session = Depends(get_db)):
 @router.get("/patient/{patient_id}")
 def get_patient_consultations(patient_id: int, db: Session = Depends(get_db)):
     """
-    US-004: Récupère l'historique des consultations d'un patient avec diagnostics
+    US-004: Récupère l'historique des consultations d'un patient avec diagnostics.
+
+    Certaines consultations (créées en mode rapide ou via le workflow avant que le
+    patient ne soit lié) ne portent qu'un `nom_patient` sans `patient_id`. Pour que
+    le dossier affiche bien TOUTES les consultations du patient — comme le total
+    montré ailleurs dans l'app — on les rattache aussi par nom complet.
     """
-    consultations = db.query(Consultation).filter(
-        Consultation.patient_id == patient_id
-    ).order_by(Consultation.date_heure.desc()).all()
+    from sqlalchemy import or_, func
+
+    patient = db.query(Patient).filter(Patient.patient_id == patient_id).first()
+
+    # Variantes de nom complet possibles ("Prénoms Nom" et "Nom Prénoms")
+    noms_complets = set()
+    if patient:
+        prenoms = (patient.prenoms or "").strip()
+        nom = (patient.nom or "").strip()
+        if prenoms or nom:
+            noms_complets.add(f"{prenoms} {nom}".strip())
+            noms_complets.add(f"{nom} {prenoms}".strip())
+
+    filtre = Consultation.patient_id == patient_id
+    if noms_complets:
+        filtre = or_(
+            filtre,
+            func.lower(func.trim(Consultation.nom_patient)).in_(
+                {n.lower() for n in noms_complets}
+            ),
+        )
+
+    consultations = db.query(Consultation).filter(filtre).order_by(
+        Consultation.date_heure.desc()
+    ).all()
 
     result = []
     for c in consultations:
@@ -991,6 +1018,14 @@ def create_consultation_partielle(data: dict, db: Session = Depends(get_db)):
             ).first()
 
         if db_consultation:
+            # Garde métier : une consultation déjà clôturée par le médecin n'est plus
+            # modifiable par l'infirmier. Tant qu'elle est en_attente_medecin (ou un
+            # statut antérieur), la modification + renvoi restent autorisés.
+            if db_consultation.statut == 'terminée':
+                raise HTTPException(
+                    status_code=409,
+                    detail="Cette consultation a été clôturée par le médecin et ne peut plus être modifiée.",
+                )
             # Mettre à jour la consultation draft créée à l'étape 1
             if motif:
                 db_consultation.motif = motif
@@ -1000,6 +1035,36 @@ def create_consultation_partielle(data: dict, db: Session = Depends(get_db)):
             db.flush()
             cid = db_consultation.consultation_id
             patient = db.query(Patient).filter(Patient.patient_id == db_consultation.patient_id).first()
+
+            # L'infirmier peut corriger les informations d'enregistrement du patient
+            # lors d'une re-soumission (consultation déjà en_attente_medecin) : on
+            # répercute les champs modifiés sur le patient existant.
+            if patient and patient_data:
+                if patient_data.get('nom'):
+                    patient.nom = patient_data['nom']
+                if patient_data.get('prenoms'):
+                    patient.prenoms = patient_data['prenoms']
+                dn = patient_data.get('date_naissance')
+                if dn:
+                    patient.date_naissance = datetime.strptime(dn, '%Y-%m-%d').date()
+                if patient_data.get('sexe'):
+                    patient.sexe = patient_data['sexe']
+                if 'telephone' in patient_data:
+                    patient.telephone = patient_data.get('telephone') or None
+                if 'email' in patient_data:
+                    patient.email = (patient_data.get('email') or '').strip() or None
+                if 'groupe_sanguin' in patient_data:
+                    patient.groupe_sanguin = patient_data.get('groupe_sanguin') or None
+                # Rafraîchir la dénormalisation nom_patient sur la consultation
+                db_consultation.nom_patient = f"{patient.prenoms or ''} {patient.nom or ''}".strip()
+
+            # Re-soumission : effacer les anciens symptômes / signes vitaux / analyse
+            # préliminaire pour éviter les doublons (le bloc d'insertion plus bas les
+            # recrée à partir des données fraîches envoyées par l'infirmier).
+            db.query(Symptome).filter(Symptome.consultation_id == cid).delete()
+            db.query(SignesVitaux).filter(SignesVitaux.consultation_id == cid).delete()
+            db.query(AnalyseIA).filter(AnalyseIA.consultation_id == cid).delete()
+            db.flush()
         else:
             # Créer patient + consultation (flux sans init préalable)
             patient_email = (patient_data.get('email') or '').strip()
@@ -1083,6 +1148,10 @@ def create_consultation_partielle(data: dict, db: Session = Depends(get_db)):
             "consultation_id": cid,
             "patient_id": patient.patient_id,
         }
+    except HTTPException:
+        # Erreurs métier explicites (ex: consultation clôturée) : ne pas masquer en 500
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
@@ -1113,6 +1182,7 @@ def get_donnees_resume(consultation_id: int, db: Session = Depends(get_db)):
     return {
         "consultation_id": c.consultation_id,
         "medecin_id": c.medecin_id,
+        "statut": c.statut,
         "motif": c.motif or '',
         "step_courant": c.step_courant or 1,
         "patient": {

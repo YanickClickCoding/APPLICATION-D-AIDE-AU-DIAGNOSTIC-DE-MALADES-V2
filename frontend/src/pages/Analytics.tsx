@@ -147,7 +147,12 @@ const Analytics = () => {
     interaction: { mode: 'index', intersect: false },
     plugins: {
       legend: metric === 'resume'
-        ? { display: true, position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 11 }, color: '#374151' } }
+        ? {
+            display: true, position: 'top',
+            labels: { usePointStyle: true, boxWidth: 8, font: { size: 11 }, color: '#374151' },
+            onHover: (e: any) => { if (e?.native?.target) e.native.target.style.cursor = 'pointer'; },
+            onLeave: (e: any) => { if (e?.native?.target) e.native.target.style.cursor = 'default'; },
+          }
         : { display: false },
       tooltip: {
         backgroundColor: '#1F2937',
@@ -264,20 +269,20 @@ const Analytics = () => {
       {metric === 'resume' && (
         <div
           className="sp-fade-in-up"
-          style={{ animationDelay: '0.24s', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', marginBottom: '26px' }}
+          style={{ animationDelay: '0.24s', display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '14px', marginBottom: '26px' }}
         >
           {METRICS.filter(m => m.total !== undefined).map(m => {
             const Icon = m.icon;
             const valeur = m.pourcent ? `${m.total!(data)} %` : m.total!(data);
             return (
-              <div key={m.key} style={{ background: '#fff', borderRadius: '14px', padding: '20px 22px', boxShadow: 'var(--sp-shadow)', borderTop: `3px solid ${m.color}` }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '34px', height: '34px', borderRadius: '10px', background: m.bg, color: m.color }}>
-                    <Icon size={18} />
+              <div key={m.key} style={{ background: '#fff', borderRadius: '12px', padding: '14px 16px', boxShadow: 'var(--sp-shadow)', borderTop: `3px solid ${m.color}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                  <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px', borderRadius: '10px', background: m.bg, color: m.color }}>
+                    <Icon size={20} />
                   </span>
+                  <div style={{ fontSize: '26px', fontWeight: 800, color: '#111827', lineHeight: 1.1 }}>{valeur}</div>
                 </div>
-                <div style={{ fontSize: '30px', fontWeight: 800, color: '#111827', lineHeight: 1.1 }}>{valeur}</div>
-                <div style={{ fontSize: '13px', color: '#6B7280', marginTop: '6px', fontWeight: 500 }}>{m.titreTotal}</div>
+                <div style={{ fontSize: '12px', color: '#6B7280', fontWeight: 500 }}>{m.titreTotal}</div>
               </div>
             );
           })}

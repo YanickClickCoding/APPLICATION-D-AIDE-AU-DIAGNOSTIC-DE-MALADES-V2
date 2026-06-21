@@ -22,6 +22,8 @@ from ..models.infirmier import Infirmier
 from ..ml.model_manager import model_manager
 from .auth import get_current_admin, get_password_hash
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/admin", tags=["Administration"])
 
 # ─── Config IA en mémoire (persistable si besoin) ─────────────────────────────
@@ -110,6 +112,7 @@ class UserUpdate(BaseModel):
     role: Optional[str] = Field(None, pattern="^(admin|medecin|infirmier)$")
     actif: Optional[bool] = None
     password: Optional[str] = Field(None, min_length=6)
+    specialite: Optional[str] = Field(None, max_length=150)
 
 class MedecinCreate(BaseModel):
     nom: str = Field(..., min_length=1, max_length=100)
@@ -333,8 +336,26 @@ def update_user(
     if data.actif is not None:      user.actif = data.actif
     if data.password is not None:   user.mot_de_passe = get_password_hash(data.password)
 
+    # Si l'utilisateur est (ou devient) médecin, synchroniser la fiche Medecin
+    if user.role == "medecin":
+        medecin = db.query(Medecin).filter(
+            Medecin.nom == user.nom, Medecin.prenoms == user.prenoms
+        ).first()
+        if medecin:
+            if data.specialite:
+                medecin.specialite = data.specialite
+        else:
+            db.add(Medecin(
+                nom=user.nom,
+                prenoms=user.prenoms,
+                specialite=data.specialite or "Médecine Générale",
+                telephone="N/A",
+                disponible=True,
+            ))
+
     db.commit()
     db.refresh(user)
+    logger.info(f"✏️ Utilisateur modifié par admin: {user.email} ({user.role})")
     return _user_to_dict(user)
 
 

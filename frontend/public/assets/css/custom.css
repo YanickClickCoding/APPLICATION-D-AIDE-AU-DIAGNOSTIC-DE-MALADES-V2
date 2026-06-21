@@ -618,12 +618,14 @@ body.sp-body {
 .sp-item-card {
     background: #fff;
     border-radius: var(--sp-radius);
-    border: 1.5px solid var(--sp-gray-100);
+    /* Réduit la visibilité des bordures (cartes utilisateurs) */
+    border: 1px solid rgba(148, 163, 184, 0.18);
     padding: 20px;
     transition: all 0.25s;
     position: relative;
     overflow: hidden;
 }
+
 .sp-item-card::before {
     content: '';
     position: absolute;
@@ -691,6 +693,21 @@ body.sp-body {
     gap: 8px;
     padding-top: 14px;
     border-top: 1px solid var(--sp-gray-100);
+}
+
+/* Actions révélées au survol de la carte */
+.sp-actions-hover {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(4px);
+    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
+    pointer-events: none;
+}
+.sp-item-card:hover .sp-actions-hover {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
 }
 
 /* ---- BADGES ---- */

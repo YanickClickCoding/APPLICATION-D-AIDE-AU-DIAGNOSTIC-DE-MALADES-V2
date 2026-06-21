@@ -137,7 +137,12 @@ const Consultations = () => {
     const medName = (getMedecinName(c.medecin_id) || '').toLowerCase();
     const nomPatient = (c.nom_patient || '').toLowerCase();
     const motif = (c.motif || '').toLowerCase();
-    const matchesSearch = nomPatient.includes(term) || motif.includes(term) || medName.includes(term);
+    // Recherche par ID patient / ID consultation : on retire « # » et les zéros de tête
+    const idToken = term.replace(/^#/, '').replace(/^0+/, '');
+    const matchesId = idToken !== '' && /^\d+$/.test(idToken) && (
+      String(c.patient_id ?? '') === idToken || String(c.id) === idToken
+    );
+    const matchesSearch = nomPatient.includes(term) || motif.includes(term) || medName.includes(term) || matchesId;
     const effectiveStatut = !c.statut ? 'en_attente_medecin' : c.statut;
     const matchesStatus = statusFilter === 'tous' || effectiveStatut === statusFilter;
     return matchesSearch && matchesStatus;
@@ -350,7 +355,7 @@ const Consultations = () => {
                   <Search size={15} />
                   <input
                     type="text"
-                    placeholder="Rechercher patient, motif, r..."
+                    placeholder="Rechercher patient, ID patient (#0001), motif..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                   />
@@ -419,7 +424,19 @@ const Consultations = () => {
 
                             {/* Nom + badges */}
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              {(user?.role === 'admin' || user?.role === 'medecin') && c.patient_id ? (
+                              {isInfirmier && (!c.statut || c.statut === 'en_attente_medecin') ? (
+                                <Link
+                                  to={`/consultation/nouvelle?reprendre=${c.id}`}
+                                  title="Modifier les symptômes ou les informations du patient, puis renvoyer au médecin"
+                                  style={{
+                                    fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '15px',
+                                    color: 'var(--sp-primary)', textDecoration: 'none', display: 'block',
+                                    marginBottom: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                                  }}
+                                >
+                                  {c.nom_patient}
+                                </Link>
+                              ) : (user?.role === 'admin' || user?.role === 'medecin') && c.patient_id ? (
                                 <Link
                                   to={`/dossier-patient/${c.patient_id}`}
                                   style={{
@@ -516,6 +533,15 @@ const Consultations = () => {
                                 >
                                   <Play size={14} /> Continuer
                                 </Link>
+                            ) : (!c.statut || c.statut === 'en_attente_medecin') && isInfirmier ? (
+                                <Link
+                                  to={`/consultation/nouvelle?reprendre=${c.id}`}
+                                  className="sp-btn sp-btn-outline sp-actions-hover"
+                                  title="Modifier les symptômes ou les informations du patient, puis renvoyer au médecin"
+                                  style={{ padding: '6px 14px', fontSize: '12px', height: '34px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
+                                >
+                                  <Edit2 size={14} /> Modifier
+                                </Link>
                             ) : count > 1 ? (
                               <button
                                 className="sp-btn sp-btn-outline"
@@ -573,6 +599,7 @@ const Consultations = () => {
                     <thead>
                       <tr>
                         <th>#ID</th>
+                        <th>ID Patient</th>
                         <th>Patient</th>
                         <th>Date & Heure</th>
                         <th>Motif</th>
@@ -589,6 +616,7 @@ const Consultations = () => {
                         return (
                           <tr key={c.id}>
                             <td style={{ color: 'var(--sp-gray-400)', fontSize: '12px' }}>#{String(c.id).padStart(4, '0')}</td>
+                            <td style={{ fontSize: '12px', fontWeight: 600, color: 'var(--sp-primary)' }}>{c.patient_id ? `#${String(c.patient_id).padStart(4, '0')}` : '—'}</td>
                             <td><div style={{ fontWeight: 600 }}>{c.nom_patient}</div></td>
                             <td>{formatDate(c.date_heure || c.date)}</td>
                             <td style={{ maxWidth: '200px' }}>
@@ -632,6 +660,11 @@ const Consultations = () => {
                                 {c.statut === 'en attente' && isInfirmier && (
                                   <Link to={`/consultation/nouvelle?reprendre=${c.id}`} className="sp-btn sp-btn-primary sp-btn-sm" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                     <Play size={14} /> Continuer
+                                  </Link>
+                                )}
+                                {(!c.statut || c.statut === 'en_attente_medecin') && isInfirmier && (
+                                  <Link to={`/consultation/nouvelle?reprendre=${c.id}`} className="sp-btn sp-btn-outline sp-btn-sm" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }} title="Modifier les symptômes ou les informations du patient, puis renvoyer au médecin">
+                                    <Edit2 size={14} /> Modifier
                                   </Link>
                                 )}
                                 {c.statut === 'en cours' && (

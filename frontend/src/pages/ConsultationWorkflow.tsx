@@ -8,7 +8,7 @@ import {
   User, Activity, Stethoscope, Brain, CheckCircle,
   ArrowRight, ArrowLeft, X, AlertCircle, Thermometer,
   Heart, Wind, Droplet, Weight, Ruler, FlaskConical,
-  Pill, Calendar, Plus, Lightbulb, RefreshCw, ClipboardList,
+  Pill, Calendar, Plus, PlusCircle, Lightbulb, RefreshCw, ClipboardList,
   UserCheck, Send, Search, UserX, UserPlus, FileText
 } from 'lucide-react';
 
@@ -58,6 +58,8 @@ interface PatientSearchResult {
   derniere_consultation_date?: string;
   consultation_en_attente_id?: number;
   consultation_en_attente_medecin_id?: number | null;
+  consultation_en_cours_id?: number;
+  consultation_en_cours_statut?: string;
 }
 
 // ─── TagsInput — autocomplete avec tags (antécédents & allergies) ─────────────
@@ -955,6 +957,10 @@ export default function ConsultationWorkflow() {
   const [motif, setMotif] = useState('');
   const [symptomes, setSymptomes] = useState<Symptome[]>([]);
   const [openSymptomIdx, setOpenSymptomIdx] = useState<number | null>(null);
+  // Refs vers les champs « Symptôme » pour activer le curseur automatiquement
+  const symptomeInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  // Index du champ symptôme à focaliser au prochain rendu (null = aucun)
+  const focusSymptomIdxRef = useRef<number | null>(null);
   const [vitaux, setVitaux] = useState<SignesVitaux>({ tension_systolique: 120, tension_diastolique: 80, frequence_cardiaque: 70, frequence_respiratoire: 16, temperature: 37.0, saturation_o2: 98 });
   const [analysePreliminaire, setAnalysePreliminaire] = useState<AnalyseIA | null>(null);
   const [examens, setExamens] = useState<Examen[]>([]);
@@ -1227,6 +1233,30 @@ export default function ConsultationWorkflow() {
       .catch(() => {});
   }, [patient.patient_id]);
 
+  // À l'arrivée sur l'étape « Symptômes & Vitaux » (step 2), créer
+  // automatiquement un premier champ symptôme vide pour que l'utilisateur
+  // (infirmier ou médecin) puisse saisir immédiatement, curseur actif.
+  useEffect(() => {
+    if (step === 2 && symptomes.length === 0) {
+      focusSymptomIdxRef.current = 0;
+      setSymptomes([{ nom: '', severite: 'Modérée', duree_jours: 1 }]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  // Place le curseur dans le champ symptôme demandé (ajout manuel ou
+  // arrivée sur l'étape) une fois qu'il est rendu dans le DOM.
+  useEffect(() => {
+    const idx = focusSymptomIdxRef.current;
+    if (idx === null) return;
+    const el = symptomeInputRefs.current[idx];
+    if (el) {
+      el.focus();
+      setOpenSymptomIdx(idx); // ouvrir aussi la liste d'autocomplétion
+      focusSymptomIdxRef.current = null;
+    }
+  }, [symptomes.length]);
+
   // Infirmier : charger la liste des médecins
   useEffect(() => {
     if (!isInfirmier) return;
@@ -1336,6 +1366,12 @@ export default function ConsultationWorkflow() {
           navigate('/consultations');
           return;
         }
+        // Garde métier : l'infirmier ne peut plus modifier une consultation clôturée.
+        if (isInfirmier && d.statut === 'terminée') {
+          showToast('Cette consultation a été clôturée par le médecin et ne peut plus être modifiée.', 'error');
+          navigate('/consultations');
+          return;
+        }
         if (d.patient) setPatient(p => ({ ...p, ...d.patient }));
         if (d.motif) setMotif(d.motif);
         if (d.symptomes?.length) {
@@ -1426,14 +1462,25 @@ export default function ConsultationWorkflow() {
   }, [patientSearchQuery]);
 
 
+  // Détecte une recherche par ID (« #0091 », « 0091 » ou « 91 ») : dans ce cas,
+  // une absence de résultat ne doit PAS proposer la création d'un nouveau patient
+  // (un ID n'est jamais un nom de famille). On affiche juste « ID introuvable ».
+  const isIdSearch = (() => {
+    const t = patientSearchQuery.trim();
+    if (!t) return false;
+    if (t.startsWith('#')) return true;          // « # » = intention explicite d'ID
+    return /^\d+$/.test(t);                       // purement numérique
+  })();
+
   // Découpe nom/prénoms automatique quand patient introuvable ou création forcée
   useEffect(() => {
+    if (isIdSearch) return; // une recherche par ID ne pré-remplit pas le formulaire
     if (hasSearched && (patientSearchResults.length === 0 || forceNewPatient) && patientSearchQuery.trim()) {
       const { nom, prenoms } = splitNameSmart(patientSearchQuery);
       setQuickStartNom(nom);
       setQuickStartPrenoms(prenoms);
     }
-  }, [hasSearched, patientSearchResults.length, patientSearchQuery, forceNewPatient]);
+  }, [hasSearched, patientSearchResults.length, patientSearchQuery, forceNewPatient, isIdSearch]);
 
   // Plus de garde de navigation : les données sont persistées en base au fil de l'eau,
   // quitter ne perd rien. On s'assure simplement qu'aucun guard résiduel ne traîne.
@@ -1636,10 +1683,33 @@ export default function ConsultationWorkflow() {
     }
   };
 
-  // Infirmier sélectionne un patient trouvé — crée le brouillon et va directement à l'étape 2
-  const handleInfirmierSelectPatient = async (result: PatientSearchResult) => {
+  // Infirmier sélectionne un patient trouvé.
+  //   - 'reprendre' : recharge une consultation déjà commencée (en attente / en cours)
+  //   - 'nouveau'   : crée un nouveau brouillon, même si une autre est en attente
+  // Par défaut, on reprend automatiquement s'il existe une consultation en attente.
+  const handleInfirmierSelectPatient = async (
+    result: PatientSearchResult,
+    mode: 'reprendre' | 'nouveau' = result.consultation_en_cours_id ? 'reprendre' : 'nouveau'
+  ) => {
     setSelectLoading(true);
     try {
+      // ── Reprendre une consultation non terminée ───────────────────────────
+      if (mode === 'reprendre' && result.consultation_en_cours_id) {
+        setPatient({
+          nom: result.nom,
+          prenoms: result.prenoms,
+          date_naissance: result.date_naissance || '',
+          sexe: (result.sexe as 'M' | 'F') || 'M',
+          groupe_sanguin: '',
+        });
+        setInfirmierPhase('workflow');
+        setActiveConsultationId(result.consultation_en_cours_id);
+        setDraftConsultationId(result.consultation_en_cours_id);
+        // L'effect sur activeConsultationId charge symptômes, vitaux et l'étape.
+        return;
+      }
+
+      // ── Nouvelle consultation pour ce patient ─────────────────────────────
       setPatient({
         nom: result.nom,
         prenoms: result.prenoms,
@@ -1826,6 +1896,69 @@ export default function ConsultationWorkflow() {
     finally { setLoading(false); }
   };
 
+  const handleNewConsultationSamePatientInfirmier = async () => {
+    if (!medecinId) { showToast('Veuillez sélectionner un médecin', 'error'); return; }
+
+    // Le patient_id est dans la state seulement si l'étape précédente l'a déjà créé.
+    // Dans ce composant, lors du submit infirmier, patient.patient_id est rempli par le backend.
+    const patientId = (patient as any).patient_id as number | undefined;
+    if (!patientId) {
+      showToast('Patient non identifié : impossible de créer une nouvelle consultation pour le même patient', 'error');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // 1) Créer une consultation draft en utilisant le patient existant
+      const res = await apiFetch('http://localhost:8000/api/consultations/init', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patient_id: patientId,
+          patient: {
+            nom: patient.nom,
+            prenoms: patient.prenoms,
+            date_naissance: patient.date_naissance,
+            sexe: patient.sexe,
+          },
+          motif: 'Consultation infirmière',
+          medecin_id: medecinId,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Erreur serveur');
+      }
+      const data = await res.json();
+
+      // 2) Démarrer directement l'infirmier sur l'étape 2 (symptômes & vitaux)
+      setDraftConsultationId(data.consultation_id);
+      setInfirmierSubmitted(false);
+      setInfirmierPhase('workflow');
+      setDoctorPhase('search');
+      setStep(2);
+
+      // Optionnel : on garde les champs patient pour enchaîner la nouvelle consultation
+      // mais on réinitialise les données cliniques
+      setMotif('Consultation infirmière');
+      setSymptomes([]);
+      setExamens([]);
+      setAnalysePreliminaire(null);
+      setAnalyseFinale(null);
+      setDiagnosticFinal('');
+      setDiagnosticCorrection('');
+      setOrdonnance([]);
+      setSuivi({ date_prochain_rdv: '', instructions_patient: '', notes_medecin: '' });
+
+      showToast('Nouvelle consultation créée pour le même patient', 'success');
+    } catch (e: any) {
+      showToast(e.message || 'Erreur', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   // Médecin finalise une consultation reprise (étapes 4-9)
   const handleSubmitComplet = async () => {
     setLoading(true);
@@ -1850,7 +1983,11 @@ export default function ConsultationWorkflow() {
     if (analyseFinale)       { setAnalyseFinale(null); }
   };
 
-  const addSymptome = () => { invalidateAnalyse(); setSymptomes([...symptomes, { nom: '', severite: 'Modérée', duree_jours: 1 }]); };
+  const addSymptome = () => {
+    invalidateAnalyse();
+    focusSymptomIdxRef.current = symptomes.length; // focaliser le nouveau champ
+    setSymptomes([...symptomes, { nom: '', severite: 'Modérée', duree_jours: 1 }]);
+  };
   const removeSymptome = (i: number) => { invalidateAnalyse(); setSymptomes(symptomes.filter((_, idx) => idx !== i)); };
   const editSymptome = (i: number, f: keyof Symptome, v: any) => {
     if (f === 'nom' && typeof v === 'string' && v.trim()) {
@@ -2008,7 +2145,7 @@ export default function ConsultationWorkflow() {
                 type="text"
                 className="sp-form-input"
                 style={{ paddingLeft: '38px', width: '100%' }}
-                placeholder="Rechercher avec nom prénom"
+                placeholder="Rechercher par nom, prénom ou ID (ex : #0091)"
                 value={patientSearchQuery}
                 onChange={e => setPatientSearchQuery(e.target.value)}
                 autoFocus
@@ -2174,8 +2311,19 @@ export default function ConsultationWorkflow() {
               </div>
             )}
 
+            {/* Recherche par ID sans résultat → pas de formulaire de création (un ID n'est pas un nom) */}
+            {hasSearched && patientSearchResults.length === 0 && !forceNewPatient && isIdSearch && (
+              <div style={{ padding: '20px', background: '#FFF7ED', borderRadius: '10px', border: '1px solid #FED7AA', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <UserX size={20} style={{ color: '#EA580C', flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontWeight: 700, color: '#9A3412', fontSize: '15px' }}>Aucun patient avec l'ID « {patientSearchQuery} »</div>
+                  <div style={{ fontSize: '13px', color: '#C2410C' }}>Vérifiez le numéro, ou recherchez par nom/prénom pour créer un nouveau dossier.</div>
+                </div>
+              </div>
+            )}
+
             {/* Patient introuvable ou création forcée — mini-formulaire avec découpe intelligente */}
-            {hasSearched && (patientSearchResults.length === 0 || forceNewPatient) && (
+            {hasSearched && (patientSearchResults.length === 0 || forceNewPatient) && !isIdSearch && (
               <div style={{ padding: '20px', background: '#EFF6FF', borderRadius: '10px', border: '1px solid #BFDBFE', marginBottom: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px', marginBottom: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -2363,7 +2511,7 @@ export default function ConsultationWorkflow() {
                 type="text"
                 className="sp-form-input"
                 style={{ paddingLeft: '38px', width: '100%' }}
-                placeholder="Rechercher par nom ou prénom..."
+                placeholder="Rechercher par nom, prénom ou ID (ex : #0091)"
                 value={patientSearchQuery}
                 onChange={e => setPatientSearchQuery(e.target.value)}
                 autoFocus
@@ -2442,7 +2590,7 @@ export default function ConsultationWorkflow() {
                     const monthDiff = today.getMonth() - birth.getMonth();
                     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
                   }
-                  const hasPending = !!r.consultation_en_attente_id;
+                  const hasPending = !!r.consultation_en_cours_id;
 
                   return (
                     <div key={r.patient_id} style={{
@@ -2468,7 +2616,7 @@ export default function ConsultationWorkflow() {
                         </div>
                         {hasPending ? (
                           <div style={{ fontSize: '12px', color: '#D97706', marginTop: '4px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <AlertCircle size={12} /> Consultation en attente chez le médecin
+                            <AlertCircle size={12} /> Consultation {r.consultation_en_cours_statut === 'en_attente_medecin' ? 'transmise au médecin' : 'non terminée'} — reprenez-la ou démarrez-en une nouvelle
                           </div>
                         ) : r.derniere_consultation_id ? (
                           <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
@@ -2478,17 +2626,41 @@ export default function ConsultationWorkflow() {
                           <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '4px' }}>Aucune consultation antérieure</div>
                         )}
                       </div>
-                      <button
-                        onClick={() => handleInfirmierSelectPatient(r)}
-                        disabled={selectLoading || !medecinId}
-                        className="sp-btn sp-btn-primary"
-                        style={{ minWidth: '130px', opacity: !medecinId ? 0.5 : 1 }}
-                        title={!medecinId ? 'Sélectionnez d\'abord un médecin' : ''}
-                      >
-                        {selectLoading
-                          ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                          : <><UserCheck size={14} /> Sélectionner</>}
-                      </button>
+                      {hasPending ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0 }}>
+                          <button
+                            onClick={() => handleInfirmierSelectPatient(r, 'reprendre')}
+                            disabled={selectLoading}
+                            className="sp-btn sp-btn-primary"
+                            style={{ minWidth: '150px', whiteSpace: 'nowrap' }}
+                          >
+                            {selectLoading
+                              ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                              : <><ArrowRight size={14} /> Reprendre</>}
+                          </button>
+                          <button
+                            onClick={() => handleInfirmierSelectPatient(r, 'nouveau')}
+                            disabled={selectLoading || !medecinId}
+                            className="sp-btn sp-btn-outline"
+                            style={{ minWidth: '150px', whiteSpace: 'nowrap', fontSize: '12px', opacity: !medecinId ? 0.5 : 1 }}
+                            title={!medecinId ? 'Sélectionnez d\'abord un médecin' : 'Démarrer une nouvelle consultation'}
+                          >
+                            <Plus size={13} /> Nouvelle consultation
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleInfirmierSelectPatient(r, 'nouveau')}
+                          disabled={selectLoading || !medecinId}
+                          className="sp-btn sp-btn-primary"
+                          style={{ minWidth: '130px', opacity: !medecinId ? 0.5 : 1 }}
+                          title={!medecinId ? 'Sélectionnez d\'abord un médecin' : ''}
+                        >
+                          {selectLoading
+                            ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                            : <><UserCheck size={14} /> Sélectionner</>}
+                        </button>
+                      )}
                     </div>
                   );
                 })}
@@ -2506,8 +2678,19 @@ export default function ConsultationWorkflow() {
               </div>
             )}
 
+            {/* Recherche par ID sans résultat → pas de formulaire de création (un ID n'est pas un nom) */}
+            {hasSearched && patientSearchResults.length === 0 && !forceNewPatient && isIdSearch && (
+              <div style={{ padding: '20px', background: '#FFF7ED', borderRadius: '10px', border: '1px solid #FED7AA', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <UserX size={20} style={{ color: '#EA580C', flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontWeight: 700, color: '#9A3412', fontSize: '15px' }}>Aucun patient avec l'ID « {patientSearchQuery} »</div>
+                  <div style={{ fontSize: '13px', color: '#C2410C' }}>Vérifiez le numéro, ou recherchez par nom/prénom pour créer un nouveau dossier.</div>
+                </div>
+              </div>
+            )}
+
             {/* Patient introuvable → bouton pour aller directement au formulaire complet */}
-            {hasSearched && (patientSearchResults.length === 0 || forceNewPatient) && (
+            {hasSearched && (patientSearchResults.length === 0 || forceNewPatient) && !isIdSearch && (
               <div style={{ padding: '20px', background: '#EFF6FF', borderRadius: '10px', border: '1px solid #BFDBFE', marginBottom: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
                   <UserX size={22} style={{ color: '#2563EB', flexShrink: 0 }} />
@@ -2594,7 +2777,7 @@ export default function ConsultationWorkflow() {
   // ── Écran de confirmation infirmier après soumission ────────────────────────
   if (infirmierSubmitted) {
     return (
-      <div style={{ maxWidth: '600px', margin: '60px auto' }}>
+      <div style={{ maxWidth: '650px', margin: '60px auto' }}>
         <div className="sp-card sp-fade-in">
           <div style={{ padding: '60px 40px', textAlign: 'center' }}>
             <div style={{ width: '80px', height: '80px', margin: '0 auto 24px', background: 'linear-gradient(135deg,#059669,#10B981)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -2604,17 +2787,31 @@ export default function ConsultationWorkflow() {
             <p style={{ color: '#6B7280', marginBottom: '8px', fontSize: '15px' }}>
               Les données ont été enregistrées et le médecin assigné a été notifié.
             </p>
-            <p style={{ color: '#9CA3AF', marginBottom: '36px', fontSize: '13px' }}>
+            <p style={{ color: '#9CA3AF', marginBottom: '18px', fontSize: '13px' }}>
               Le médecin pourra continuer directement à partir de l'Analyse IA pour finaliser le diagnostic.
             </p>
-            <button onClick={() => navigate('/consultations')} className="sp-btn sp-btn-primary">
-              Retour aux consultations
-            </button>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '30px' }}>
+              <button
+                onClick={() => handleNewConsultationSamePatientInfirmier()}
+                className="sp-btn sp-btn-primary"
+                disabled={loading || !patient || !(patient as any).patient_id}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              >
+                <PlusCircle size={16} />
+                Nouvelle consultation (même patient)
+              </button>
+
+              <button onClick={() => navigate('/consultations')} className="sp-btn sp-btn-ghost">
+                Retour aux consultations
+              </button>
+            </div>
           </div>
         </div>
       </div>
     );
   }
+
 
   return (
     <>
@@ -2944,6 +3141,7 @@ export default function ConsultationWorkflow() {
                     <div className="sp-form-group" style={{ position: 'relative' }}>
                       <label className="sp-form-label">Symptôme</label>
                       <input
+                        ref={el => { symptomeInputRefs.current[i] = el; }}
                         type="text"
                         className="sp-form-input"
                         value={s.nom}

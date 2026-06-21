@@ -3,7 +3,7 @@ Patients API Router (US-001, US-004)
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import or_
+from sqlalchemy import or_, cast, String
 from typing import List
 from uuid import UUID
 
@@ -72,16 +72,46 @@ def update_dossier(patient_id: int, payload: DossierUpdate, db: Session = Depend
 @router.get("/search")
 def search_patients(q: str = Query(..., min_length=1), db: Session = Depends(get_db)):
     """
-    Recherche de patients par nom ou prénoms.
+    Recherche de patients par nom, prénoms ou ID (ex: "#0091", "0091" ou "91").
     Retourne les patients avec leur dernière consultation (si elle existe et est EN ATTENTE).
     """
-    # Utiliser distinct() pour éviter les doublons et group by patient_id
-    patients = db.query(Patient).filter(
-        or_(
+    # ── Recherche par ID (préfixe « # ») ─────────────────────────────────────
+    # « # » seul        → tous les patients
+    # « #0 », « #00 », … → patients dont l'ID commence par ces chiffres
+    # On filtre par préfixe sur l'ID casté en texte (sans zéros de tête saisis).
+    q_strip = q.strip()
+    if q_strip.startswith("#"):
+        id_token = q_strip.lstrip("#").strip().lstrip("0")
+        id_str = cast(Patient.patient_id, String)
+        if id_token == "":
+            # « # » (ou « #000 ») : aucun chiffre significatif → tous les patients,
+            # les plus récents (ID le plus élevé) en premier.
+            patients = (
+                db.query(Patient)
+                .order_by(Patient.patient_id.desc())
+                .distinct()
+                .limit(100)
+                .all()
+            )
+        else:
+            patients = (
+                db.query(Patient)
+                .filter(id_str.like(f"{id_token}%"))
+                .order_by(Patient.patient_id.desc())
+                .distinct()
+                .limit(100)
+                .all()
+            )
+    else:
+        # ── Recherche par nom / prénoms (+ ID exact si purement numérique) ────
+        filtres = [
             Patient.nom.ilike(f"%{q}%"),
             Patient.prenoms.ilike(f"%{q}%"),
-        )
-    ).distinct().limit(10).all()
+        ]
+        if q_strip.isdigit():
+            filtres.append(cast(Patient.patient_id, String).like(f"{q_strip.lstrip('0') or '0'}%"))
+        # Utiliser distinct() pour éviter les doublons et group by patient_id
+        patients = db.query(Patient).filter(or_(*filtres)).distinct().limit(10).all()
 
     results = []
     seen_patient_ids = set()  # Pour éviter les doublons
@@ -103,8 +133,19 @@ def search_patients(q: str = Query(..., min_length=1), db: Session = Depends(get
             .order_by(Consultation.date_heure.desc())
             .first()
         )
+        # Consultation NON terminée que l'infirmier peut reprendre (brouillon en
+        # cours de saisie, pas encore transmis au médecin OU en attente médecin).
+        en_cours = (
+            db.query(Consultation)
+            .filter(
+                Consultation.patient_id == p.patient_id,
+                Consultation.statut.in_(["en attente", "en cours", "en_attente_medecin"]),
+            )
+            .order_by(Consultation.date_heure.desc())
+            .first()
+        )
         # Sinon, la dernière consultation quel que soit le statut
-        latest = pending or (
+        latest = pending or en_cours or (
             db.query(Consultation)
             .filter(Consultation.patient_id == p.patient_id)
             .order_by(Consultation.date_heure.desc())
@@ -121,6 +162,9 @@ def search_patients(q: str = Query(..., min_length=1), db: Session = Depends(get
             "derniere_consultation_date": str(latest.date_heure) if latest else None,
             "consultation_en_attente_id": pending.consultation_id if pending else None,
             "consultation_en_attente_medecin_id": pending.medecin_id if pending else None,
+            # Consultation reprenable par l'infirmier (toute consultation non terminée)
+            "consultation_en_cours_id": en_cours.consultation_id if en_cours else None,
+            "consultation_en_cours_statut": en_cours.statut if en_cours else None,
         })
     return results
 

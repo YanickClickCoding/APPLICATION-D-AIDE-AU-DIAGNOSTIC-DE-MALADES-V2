@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from
 import { triggerNavigationGuard } from './utils/navigationGuard';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './components/Toast';
+import { ConfirmProvider } from './components/ConfirmDialog';
 import { initDB } from './db';
 import { Users, Calendar, LogOut, UserCheck, Clock, Settings, Brain, User, Bell, UserPlus, Database, BarChart2, TrendingUp } from 'lucide-react';
 import { adminAPI } from './services/api';
@@ -261,6 +262,24 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Verrouiller le scroll de la page quand un dropdown de notifications est ouvert.
+  // La liste interne (overflowY:auto) reste scrollable ; seul le défilement de
+  // l'arrière-plan (page) est bloqué. On compense la largeur de la scrollbar pour
+  // éviter le décalage horizontal du contenu lors du verrouillage.
+  React.useEffect(() => {
+    const anyOpen = dropdownOpen || adminDropdownOpen;
+    if (!anyOpen) return;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const prevOverflow = document.body.style.overflow;
+    const prevPaddingRight = document.body.style.paddingRight;
+    document.body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) document.body.style.paddingRight = `${scrollbarWidth}px`;
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.body.style.paddingRight = prevPaddingRight;
+    };
+  }, [dropdownOpen, adminDropdownOpen]);
+
   const pendingCount = pendingList.length;
 
   React.useEffect(() => {
@@ -363,7 +382,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                               Aucune consultation en attente
                             </div>
                           ) : (
-                            <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
+                            <div style={{ maxHeight: '320px', overflowY: 'auto', overscrollBehavior: 'contain' }}>
                               {pendingList.map(c => (
                                 <div
                                   key={c.consultation_id}
@@ -498,9 +517,11 @@ function App() {
   return (
     <AuthProvider>
       <ToastProvider>
-        <BrowserRouter>
-          <AppContent />
-        </BrowserRouter>
+        <ConfirmProvider>
+          <BrowserRouter>
+            <AppContent />
+          </BrowserRouter>
+        </ConfirmProvider>
       </ToastProvider>
     </AuthProvider>
   );

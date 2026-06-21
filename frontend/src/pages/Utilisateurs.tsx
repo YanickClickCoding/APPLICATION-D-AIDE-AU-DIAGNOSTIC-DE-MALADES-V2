@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
 import { adminAPI, type AdminUser, type AdminUserCreate } from '../services/api';
 import {
   Users, Search, Trash2, Shield, User, Grid, List,
   Mail, Calendar, Lock, X, Plus, Edit2, ToggleLeft, ToggleRight,
-  UserPlus, CheckCircle, Clock,
+  UserPlus, CheckCircle, Clock, ArrowUpDown,
 } from 'lucide-react';
 
 const EMPTY_CREATE: AdminUserCreate = { nom: '', prenoms: '', email: '', password: '', role: 'medecin', specialite: '', telephone: '' };
@@ -25,6 +27,8 @@ const SPECIALITES = [
 
 const Utilisateurs = () => {
   const { user: currentUser, token, isLoading: authLoading } = useAuth();
+  const { showToast } = useToast();
+  const confirm = useConfirm();
   const [utilisateurs, setUtilisateurs] = useState<AdminUser[]>([]);
   const [pendingUsers, setPendingUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +36,9 @@ const Utilisateurs = () => {
   const [search, setSearch] = useState('');
   const [view, setView] = useState<'grid' | 'table'>(
     () => (localStorage.getItem('sp_usr_view') as 'grid' | 'table') || 'grid'
+  );
+  const [sortBy, setSortBy] = useState<'name' | 'role' | 'date' | 'status'>(
+    () => (localStorage.getItem('sp_usr_sort') as any) || 'name'
   );
   const [activatingId, setActivatingId] = useState<number | null>(null);
   const [rejectingId, setRejectingId] = useState<number | null>(null);
@@ -48,6 +55,7 @@ const Utilisateurs = () => {
 
   // Edit form
   const [editRole, setEditRole] = useState<'admin' | 'medecin' | 'infirmier'>('medecin');
+  const [editSpecialite, setEditSpecialite] = useState('');
   const [editLoading, setEditLoading] = useState(false);
 
   const loadUsers = useCallback(async () => {
@@ -77,8 +85,9 @@ const Utilisateurs = () => {
       await adminAPI.activateUser(token, u.utilisateur_id);
       setPendingUsers(prev => prev.filter(x => x.utilisateur_id !== u.utilisateur_id));
       setUtilisateurs(prev => [...prev, { ...u, actif: true }]);
+      showToast(`Compte de ${u.prenoms} ${u.nom} activé`, 'success');
     } catch (e: any) {
-      alert(e.detail || 'Erreur lors de l\'activation');
+      showToast(e.detail || 'Erreur lors de l\'activation', 'error');
     } finally {
       setActivatingId(null);
     }
@@ -86,13 +95,20 @@ const Utilisateurs = () => {
 
   const handleReject = async (u: AdminUser) => {
     if (!token) return;
-    if (!confirm(`Rejeter et supprimer le compte de ${u.prenoms} ${u.nom} ?`)) return;
+    const ok = await confirm({
+      title: 'Rejeter le compte',
+      message: `Rejeter et supprimer le compte de ${u.prenoms} ${u.nom} ?`,
+      confirmLabel: 'Rejeter',
+      danger: true,
+    });
+    if (!ok) return;
     setRejectingId(u.utilisateur_id);
     try {
       await adminAPI.deleteUser(token, u.utilisateur_id);
       setPendingUsers(prev => prev.filter(x => x.utilisateur_id !== u.utilisateur_id));
+      showToast(`Compte de ${u.prenoms} ${u.nom} rejeté`, 'success');
     } catch (e: any) {
-      alert(e.detail || 'Erreur lors du rejet');
+      showToast(e.detail || 'Erreur lors du rejet', 'error');
     } finally {
       setRejectingId(null);
     }
@@ -103,14 +119,35 @@ const Utilisateurs = () => {
     localStorage.setItem('sp_usr_view', v);
   };
 
-  const filtered = utilisateurs.filter(u => {
-    const term = search.toLowerCase();
-    return (
-      (u.nom || '').toLowerCase().includes(term) ||
-      (u.prenoms || '').toLowerCase().includes(term) ||
-      (u.email || '').toLowerCase().includes(term)
-    );
-  });
+  const ROLE_ORDER: Record<string, number> = { admin: 0, medecin: 1, infirmier: 2 };
+
+  const filtered = utilisateurs
+    .filter(u => {
+      const term = search.toLowerCase();
+      return (
+        (u.nom || '').toLowerCase().includes(term) ||
+        (u.prenoms || '').toLowerCase().includes(term) ||
+        (u.email || '').toLowerCase().includes(term)
+      );
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'role':
+          return (ROLE_ORDER[a.role] ?? 9) - (ROLE_ORDER[b.role] ?? 9);
+        case 'date':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'status':
+          return Number(b.actif) - Number(a.actif);
+        case 'name':
+        default:
+          return `${a.nom} ${a.prenoms}`.localeCompare(`${b.nom} ${b.prenoms}`, 'fr');
+      }
+    });
+
+  const handleSortChange = (s: typeof sortBy) => {
+    setSortBy(s);
+    localStorage.setItem('sp_usr_sort', s);
+  };
 
 
 
@@ -120,8 +157,9 @@ const Utilisateurs = () => {
       await adminAPI.deleteUser(token, deleteModal.id);
       setUtilisateurs(prev => prev.filter(u => u.utilisateur_id !== deleteModal.id));
       setDeleteModal(null);
+      showToast('Utilisateur supprimé', 'success');
     } catch (e: any) {
-      alert(e.detail || 'Erreur lors de la suppression');
+      showToast(e.detail || 'Erreur lors de la suppression', 'error');
     }
   };
 
@@ -144,13 +182,21 @@ const Utilisateurs = () => {
 
   const handleEditSave = async () => {
     if (!editModal || !token) return;
+    if (editRole === 'medecin' && !editSpecialite) {
+      showToast('Veuillez sélectionner une spécialité', 'error');
+      return;
+    }
     setEditLoading(true);
     try {
-      const updated = await adminAPI.updateUser(token, editModal.utilisateur_id, { role: editRole });
+      const updated = await adminAPI.updateUser(token, editModal.utilisateur_id, {
+        role: editRole,
+        ...(editRole === 'medecin' ? { specialite: editSpecialite } : {}),
+      });
       setUtilisateurs(prev => prev.map(u => u.utilisateur_id === updated.utilisateur_id ? updated : u));
       setEditModal(null);
+      showToast('Rôle mis à jour', 'success');
     } catch (e: any) {
-      alert(e.detail || 'Erreur lors de la mise à jour');
+      showToast(e.detail || 'Erreur lors de la mise à jour', 'error');
     } finally {
       setEditLoading(false);
     }
@@ -161,8 +207,9 @@ const Utilisateurs = () => {
     try {
       const updated = await adminAPI.updateUser(token, u.utilisateur_id, { actif: !u.actif });
       setUtilisateurs(prev => prev.map(x => x.utilisateur_id === updated.utilisateur_id ? updated : x));
+      showToast(updated.actif ? 'Compte activé' : 'Compte désactivé', 'success');
     } catch (e: any) {
-      alert(e.detail || 'Erreur');
+      showToast(e.detail || 'Erreur', 'error');
     }
   };
 
@@ -284,6 +331,20 @@ const Utilisateurs = () => {
               />
               {search && <X size={14} style={{ cursor: 'pointer' }} onClick={() => setSearch('')} />}
             </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <ArrowUpDown size={15} style={{ color: 'var(--sp-gray-400)' }} />
+              <select
+                value={sortBy}
+                onChange={e => handleSortChange(e.target.value as any)}
+                title="Trier les comptes"
+                style={{ padding: '7px 10px', border: '1px solid var(--sp-gray-200)', borderRadius: 8, fontSize: 13, color: '#374151', cursor: 'pointer', background: '#fff' }}
+              >
+                <option value="name">Nom (A→Z)</option>
+                <option value="role">Rôle</option>
+                <option value="date">Plus récents</option>
+                <option value="status">Statut (actifs d'abord)</option>
+              </select>
+            </div>
             <div className="sp-view-toggle">
               <button className={`sp-view-btn ${view === 'grid' ? 'active' : ''}`} onClick={() => handleViewChange('grid')} title="Vue cartes">
                 <Grid size={18} />
@@ -345,11 +406,11 @@ const Utilisateurs = () => {
                             </div>
                           </div>
 
-                          <div className="sp-item-actions" style={{ paddingTop: '14px', borderTop: '1px solid var(--sp-gray-100)', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <div className="sp-item-actions" style={{ paddingTop: '14px', borderTop: '1px solid var(--sp-gray-100)', display: 'flex', gap: '8px', alignItems: 'center', minHeight: '46px' }}>
                             {!isCurrentUser ? (
-                              <>
+                              <div className="sp-actions-hover" style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
                                 <button
-                                  onClick={() => { setEditModal(u); setEditRole(u.role); }}
+                                  onClick={() => { setEditModal(u); setEditRole(u.role); setEditSpecialite(''); }}
                                   className="sp-btn sp-btn-outline sp-btn-sm"
                                   style={{ padding: '6px 10px', fontSize: '12px', height: '32px' }}
                                 >
@@ -370,7 +431,7 @@ const Utilisateurs = () => {
                                 >
                                   <Trash2 size={14} />
                                 </button>
-                              </>
+                              </div>
                             ) : (
                               <div style={{ padding: '4px 0', fontSize: '12px', color: 'var(--sp-gray-400)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <Lock size={12} /> Compte courant
@@ -429,7 +490,7 @@ const Utilisateurs = () => {
                             {!isCurrentUser ? (
                               <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                                 <button
-                                  onClick={() => { setEditModal(u); setEditRole(u.role); }}
+                                  onClick={() => { setEditModal(u); setEditRole(u.role); setEditSpecialite(''); }}
                                   className="sp-btn sp-btn-outline sp-btn-sm"
                                   title="Modifier le rôle"
                                 >
@@ -562,6 +623,15 @@ const Utilisateurs = () => {
                 <option value="admin">Administrateur</option>
               </select>
             </div>
+            {editRole === 'medecin' && (
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Spécialité *</label>
+                <select value={editSpecialite} onChange={e => setEditSpecialite(e.target.value)} style={inputStyle}>
+                  <option value="" disabled>Sélectionner</option>
+                  {SPECIALITES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            )}
             <div className="sp-modal-actions">
               <button className="sp-btn sp-btn-ghost" onClick={() => setEditModal(null)}>Annuler</button>
               <button className="sp-btn sp-btn-primary" onClick={handleEditSave} disabled={editLoading}>

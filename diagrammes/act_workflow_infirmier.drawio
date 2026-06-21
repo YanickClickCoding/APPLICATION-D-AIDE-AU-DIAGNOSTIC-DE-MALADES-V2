@@ -1,241 +1,257 @@
 <mxfile host="Electron">
-  <diagram id="3yKrx0kO-pWeYLYvruOX" name="Page-1">
-    <mxGraphModel dx="2036" dy="569" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="1800" math="0" shadow="0">
+  <diagram id="diagram_id" name="Page-1">
+    <mxGraphModel dx="2289" dy="1391" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1374" pageHeight="2600" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=15;fontStyle=1;" value="Diagramme d&#39;Activité — Workflow Infirmier (Sélection Médecin Obligatoire + Recherche Patient)" vertex="1">
-          <mxGeometry height="26" width="717" x="-856.5" y="20" as="geometry" />
+        <mxCell id="title_id" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=15;fontStyle=1;" value="Diagramme d&#39;Activité — Workflow Infirmier" vertex="1">
+          <mxGeometry height="30" width="1174" x="100" y="20" as="geometry" />
         </mxCell>
-        <mxCell id="start" parent="1" style="ellipse;aspect=fixed;html=1;fillColor=#000000;strokeColor=#000000;" value="" vertex="1">
-          <mxGeometry height="30" width="30" x="-469" y="70" as="geometry" />
+        <mxCell id="group_container" parent="1" style="group;fontStyle=1;fontSize=13;" value="" vertex="1">
+          <mxGeometry height="2180" width="1174" x="100" y="70" as="geometry" />
         </mxCell>
-        <mxCell id="a0" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" value="Accéder à l&#39;interface infirmier (après authentification réussie)" vertex="1">
-          <mxGeometry height="44" width="310" x="-609" y="118" as="geometry" />
+        <mxCell id="subgroup" parent="group_container" style="group;fontStyle=1;fontSize=13;" value="" vertex="1">
+          <mxGeometry height="2180" width="1174" x="-1" as="geometry" />
         </mxCell>
-        <mxCell id="e_start_a0" edge="1" parent="1" source="start" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="a0" value="">
+        <mxCell id="Pbz0OKZ0kFoukWxKzfTh-1" connectable="0" parent="subgroup" style="group;fontStyle=1" value="" vertex="1">
+          <mxGeometry height="2143.6666666666665" width="1174" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_u" parent="Pbz0OKZ0kFoukWxKzfTh-1" style="swimlane;whiteSpace=wrap;html=1;fontStyle=1;fontSize=13;fillColor=#f5f5f5;strokeColor=#666666;" value="Utilisateur" vertex="1">
+          <mxGeometry height="1740" width="700" as="geometry" />
+        </mxCell>
+        <mxCell id="start" parent="lane_u" style="ellipse;aspect=fixed;html=1;fillColor=#000000;strokeColor=#000000;fontStyle=1;fontSize=13;" value="" vertex="1">
+          <mxGeometry height="27.249999999999996" width="27.249999999999996" x="227" y="36.33333333333333" as="geometry" />
+        </mxCell>
+        <mxCell id="access" parent="lane_u" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Accéder à l&#39;interface infirmier" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="112" y="90.83333333333331" as="geometry" />
+        </mxCell>
+        <mxCell id="select_medecin" parent="lane_u" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Sélectionner le médecin assigné (OBLIGATOIRE)" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="112" y="163.49999999999997" as="geometry" />
+        </mxCell>
+        <mxCell id="search_patient" parent="lane_u" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Rechercher le patient par nom/prénom" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="112" y="227.08333333333331" as="geometry" />
+        </mxCell>
+        <mxCell id="click_select" parent="lane_u" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Cliquer « Sélectionner »" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="360" y="407.84166666666664" as="geometry" />
+        </mxCell>
+        <mxCell id="mini_form" parent="lane_u" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Saisir mini-formulaire quick-start (nom, prénom)&#xa;et cliquer continuer" vertex="1">
+          <mxGeometry height="45.41666666666666" width="200" x="50" y="399.66666666666663" as="geometry" />
+        </mxCell>
+        <mxCell id="complete_info" parent="lane_u" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Compléter les informations du patient&#xa;(date naissance, sexe, groupe sanguin, tel)" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="112" y="481.41666666666663" as="geometry" />
+        </mxCell>
+        <mxCell id="motif" parent="lane_u" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Saisir le motif de consultation&#xa;et cliquer « Suivant »" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="112" y="554.0833333333333" as="geometry" />
+        </mxCell>
+        <mxCell id="add_symptom" parent="lane_u" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Ajouter un symptôme&#xa;(nom, sévérité, durée)" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="112" y="726.6666666666665" as="geometry" />
+        </mxCell>
+        <mxCell id="save_vitals" parent="lane_u" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Renseigner les signes vitaux&lt;br&gt;(TA, FC, T°, FR, SpO2, Poids, Taille)" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="112" y="980.9999999999999" as="geometry" />
+        </mxCell>
+        <mxCell id="anamnese" parent="lane_u" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Renseigner l&#39;anamnèse&#xa;(antécédents personnels, familiaux, allergies)" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="112" y="1053.6666666666665" as="geometry" />
+        </mxCell>
+        <mxCell id="has_antecedents" parent="lane_u" style="rhombus;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Antécédents à enregistrer ?" vertex="1">
+          <mxGeometry height="63.58333333333333" width="180" x="152" y="1119.975" as="geometry" />
+        </mxCell>
+        <mxCell id="save_dossier" parent="lane_u" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Cliquer « Enregistrer dans le dossier »" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="112" y="1198.9999999999998" as="geometry" />
+        </mxCell>
+        <mxCell id="merge_anamnese" parent="lane_u" style="rhombus;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="" vertex="1">
+          <mxGeometry height="36.33333333333333" width="60" x="212" y="1289.8333333333333" as="geometry" />
+        </mxCell>
+        <mxCell id="send_medecin" parent="lane_u" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Cliquer « Envoyer au médecin »" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="112" y="1362.4999999999998" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_start_access" edge="1" parent="lane_u" source="start" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="access" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="zone0" parent="1" style="swimlane;startSize=24;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=10;fontStyle=2;swimlaneLine=1;" value="ÉCRAN DE RECHERCHE DÉDIÉ — infirmierPhase = &#39;search&#39;" vertex="1">
-          <mxGeometry height="400" width="860" x="-874" y="182" as="geometry" />
-        </mxCell>
-        <mxCell id="a1" parent="zone0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF2FF;strokeColor=#4338CA;fontSize=11;fontStyle=1;fontColor=#1E3A8A;" value="Sélectionner le médecin assigné dans le sélecteur dédié&#xa;(OBLIGATOIRE — active les boutons « Sélectionner » et « Continuer »)" vertex="1">
-          <mxGeometry height="52" width="540" x="160" y="34" as="geometry" />
-        </mxCell>
-        <mxCell id="a2" parent="zone0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" value="Rechercher le patient par nom / prénom&#xa;(barre de recherche avec debounce 500 ms)" vertex="1">
-          <mxGeometry height="50" width="310" x="265" y="112" as="geometry" />
-        </mxCell>
-        <mxCell id="e_a1_a2" edge="1" parent="zone0" source="a1" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="a2" value="">
+        <mxCell id="edge_select_medecin_search_patient" edge="1" parent="lane_u" source="select_medecin" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="search_patient" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="d1" parent="zone0" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" value="Patient trouvé ?" vertex="1">
-          <mxGeometry height="70" width="180" x="330" y="190" as="geometry" />
-        </mxCell>
-        <mxCell id="e_a2_d1" edge="1" parent="zone0" source="a2" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="d1" value="">
+        <mxCell id="edge_mini_form_complete_info" edge="1" parent="lane_u" source="mini_form" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="complete_info" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="a3" parent="zone0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" value="Cliquer « Sélectionner »&#xa;→ POST /api/consultations/init&#xa;   { patient_id, medecin_id }&#xa;→ draftConsultationId mémorisé&#xa;→ Étape 2 directement (step = 2)" vertex="1">
-          <mxGeometry height="100" width="220" x="30" y="162" as="geometry" />
+        <mxCell id="edge_complete_info_motif" edge="1" parent="lane_u" source="complete_info" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="motif" value="">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_d1_a3" edge="1" parent="zone0" source="d1" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" target="a3" value="Oui">
-          <mxGeometry relative="1" x="0.1408" y="-14" as="geometry">
+        <mxCell id="edge_anamnese_has_antecedents" edge="1" parent="lane_u" source="anamnese" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="has_antecedents" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_has_antecedents_save_dossier" edge="1" parent="lane_u" source="has_antecedents" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="save_dossier" value="Oui">
+          <mxGeometry relative="1" x="0.759" y="29" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="a4" parent="zone0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" value="Saisir le mini-formulaire quick-start :&#xa;nom de famille, prénom(s) seulement&#xa;→ cliquer « Continuer vers le formulaire »&#xa;(âge et sexe complétés à l&#39;Étape 1)" vertex="1">
-          <mxGeometry height="90" width="230" x="600" y="166" as="geometry" />
-        </mxCell>
-        <mxCell id="e_d1_a4" edge="1" parent="zone0" source="d1" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" target="a4" value="Non / Homonyme">
-          <mxGeometry relative="1" x="0.1346" y="13" as="geometry">
+        <mxCell id="edge_has_antecedents_merge_anamnese" edge="1" parent="lane_u" source="has_antecedents" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="merge_anamnese" value="Non">
+          <mxGeometry relative="1" x="0.0678" y="21" as="geometry">
             <mxPoint as="offset" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="a3b" parent="zone0" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff8e1;strokeColor=#d79b00;fontSize=10;" value="⚠ Avertissement affiché si&#xa;consultation déjà en attente&#xa;(sélection reste possible)" vertex="1">
-          <mxGeometry height="52" width="200" x="40" y="300" as="geometry" />
-        </mxCell>
-        <mxCell id="e_a3_a3b" edge="1" parent="zone0" source="a3" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;fontSize=9;" target="a3b" value="si consultation en attente">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e_a0_zone0" edge="1" parent="1" source="a0" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="a1" value="">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="zone1" parent="1" style="swimlane;startSize=24;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=10;fontStyle=2;swimlaneLine=1;" value="ÉTAPE 1 — Patient (uniquement si patient introuvable — médecin déjà sélectionné)" vertex="1">
-          <mxGeometry height="220" width="700" x="-789" y="614" as="geometry" />
-        </mxCell>
-        <mxCell id="b1" parent="zone1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" value="Vérifier et compléter les informations du patient&#xa;(date naissance, sexe, groupe sanguin, téléphone, email...)" vertex="1">
-          <mxGeometry height="50" width="310" x="195" y="34" as="geometry" />
-        </mxCell>
-        <mxCell id="b2" parent="zone1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" value="Saisir le motif de consultation" vertex="1">
-          <mxGeometry height="44" width="310" x="195" y="108" as="geometry" />
-        </mxCell>
-        <mxCell id="e_b1_b2" edge="1" parent="zone1" source="b1" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="b2" value="">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="b3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" value="Cliquer « Suivant »&#xa;→ POST /api/consultations/init { patient, motif, medecin_id }&#xa;→ Consultation brouillon créée (draftConsultationId retourné)" vertex="1">
-          <mxGeometry height="56" width="440" x="-664" y="860" as="geometry" />
-        </mxCell>
-        <mxCell id="e_b2_b3" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;html=1;" value="">
-          <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="-445" y="766" />
-            </Array>
-            <mxPoint x="-439.9999999999998" y="766" as="sourcePoint" />
-            <mxPoint x="-445.0344827586207" y="860" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e_a4_zone1" edge="1" parent="1" source="a4" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="b1" value="">
-          <mxGeometry relative="1" as="geometry">
-            <Array as="points">
-              <mxPoint x="-274" y="590" />
-              <mxPoint x="-439" y="590" />
+              <mxPoint x="380" y="1158.1249999999998" />
+              <mxPoint x="380" y="1307.9999999999998" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="join1" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;" value="" vertex="1">
-          <mxGeometry height="30" width="30" x="-459" y="942" as="geometry" />
+        <mxCell id="edge_merge_anamnese_send_medecin" edge="1" parent="lane_u" source="merge_anamnese" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="send_medecin" value="">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_a3_join" edge="1" parent="1" source="a3" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="join1" value="">
-          <mxGeometry relative="1" as="geometry">
+        <mxCell id="lane_s" parent="Pbz0OKZ0kFoukWxKzfTh-1" style="swimlane;whiteSpace=wrap;html=1;fontStyle=1;fontSize=13;fillColor=#f5f5f5;strokeColor=#666666;" value="Système" vertex="1">
+          <mxGeometry height="1740" width="474" x="700" as="geometry" />
+        </mxCell>
+        <mxCell id="show_search" parent="lane_s" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Afficher l&#39;écran de recherche" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="36" y="90.83333333333331" as="geometry" />
+        </mxCell>
+        <mxCell id="db_search" parent="lane_s" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Rechercher dans la base de données&#xa;(debounce 500ms)" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="36" y="227.08333333333331" as="geometry" />
+        </mxCell>
+        <mxCell id="patient_found" parent="lane_s" style="rhombus;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Patient trouvé ?" vertex="1">
+          <mxGeometry height="63.58333333333333" width="180" x="76" y="308.8333333333333" as="geometry" />
+        </mxCell>
+        <mxCell id="init_consult" parent="lane_s" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Initialiser la consultation&#xa;(POST /api/consultations/init)" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="36" y="398.75833333333327" as="geometry" />
+        </mxCell>
+        <mxCell id="create_draft" parent="lane_s" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Créer consultation brouillon&#xa;(POST /api/consultations/init)" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="91" y="554.0833333333333" as="geometry" />
+        </mxCell>
+        <mxCell id="merge_consult" parent="lane_s" style="rhombus;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="" vertex="1">
+          <mxGeometry height="36.33333333333333" width="60" x="136" y="653.9999999999999" as="geometry" />
+        </mxCell>
+        <mxCell id="check_sex" parent="lane_s" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Vérifier la compatibilité avec le sexe du patient" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="26" y="726.6666666666665" as="geometry" />
+        </mxCell>
+        <mxCell id="symptom_compat" parent="lane_s" style="rhombus;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Symptôme compatible ?" vertex="1">
+          <mxGeometry height="63.58333333333333" width="180" x="68" y="799.3333333333333" as="geometry" />
+        </mxCell>
+        <mxCell id="err_compat" parent="lane_s" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Afficher erreur de compatibilité" vertex="1">
+          <mxGeometry height="45.41666666666666" width="160" x="300" y="808.4166666666665" as="geometry" />
+        </mxCell>
+        <mxCell id="calc_imc" parent="lane_s" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Calculer IMC automatiquement" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="201" y="980.9999999999999" as="geometry" />
+        </mxCell>
+        <mxCell id="db_save_dossier" parent="lane_s" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Sauvegarder (PATCH /api/patients/{id}/dossier)" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="200" y="1198.9999999999998" as="geometry" />
+        </mxCell>
+        <mxCell id="submit_consult" parent="lane_s" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Soumettre la consultation&#xa;(POST /api/consultations/workflow-partiel)" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="181" y="1362.4999999999998" as="geometry" />
+        </mxCell>
+        <mxCell id="ia_prelim" parent="lane_s" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Exécuter l&#39;analyse IA préliminaire (RandomForest)" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="181" y="1435.1666666666665" as="geometry" />
+        </mxCell>
+        <mxCell id="update_status" parent="lane_s" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Mettre à jour le statut → en_attente_medecin" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="181" y="1507.833333333333" as="geometry" />
+        </mxCell>
+        <mxCell id="show_confirm" parent="lane_s" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fontStyle=1;" value="Afficher confirmation + résumé IA préliminaire" vertex="1">
+          <mxGeometry height="45.41666666666666" width="260" x="181" y="1580.4999999999998" as="geometry" />
+        </mxCell>
+        <mxCell id="end" parent="lane_s" style="ellipse;html=1;shape=endState;fillColor=#000000;strokeColor=default;fontStyle=1;fontSize=13;" value="" vertex="1">
+          <mxGeometry height="27.249999999999996" width="30" x="296" y="1653.1666666666665" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_db_search_patient_found" edge="1" parent="lane_s" source="db_search" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="patient_found" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_init_consult_merge_consult" edge="1" parent="lane_s" source="init_consult" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="merge_consult" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_create_draft_merge_consult" edge="1" parent="lane_s" source="create_draft" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="merge_consult" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_check_sex_symptom_compat" edge="1" parent="lane_s" source="check_sex" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="symptom_compat" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_symptom_compat_err_compat" edge="1" parent="lane_s" source="symptom_compat" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="err_compat" value="Non">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_submit_consult_ia_prelim" edge="1" parent="lane_s" source="submit_consult" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="ia_prelim" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_ia_prelim_update_status" edge="1" parent="lane_s" source="ia_prelim" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="update_status" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_update_status_show_confirm" edge="1" parent="lane_s" source="update_status" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="show_confirm" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_show_confirm_end" edge="1" parent="lane_s" source="show_confirm" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="end" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_access_show_search" edge="1" parent="Pbz0OKZ0kFoukWxKzfTh-1" source="access" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="show_search" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_search_patient_db_search" edge="1" parent="Pbz0OKZ0kFoukWxKzfTh-1" source="search_patient" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="db_search" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_patient_found_click_select" edge="1" parent="Pbz0OKZ0kFoukWxKzfTh-1" source="patient_found" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="click_select" value="Oui">
+          <mxGeometry relative="1" x="0.0892" y="-10" as="geometry">
+            <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="-849" y="572" />
-              <mxPoint x="-849" y="935" />
-              <mxPoint x="-454" y="935" />
+              <mxPoint x="866" y="390.58333333333326" />
+              <mxPoint x="490" y="390.58333333333326" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e_b3_join" edge="1" parent="1" source="b3" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="join1" value="">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="zone2" parent="1" style="swimlane;startSize=24;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=10;fontStyle=2;swimlaneLine=1;" value="ÉTAPE 2 — Symptômes &amp; Signes Vitaux (step = 2 — les deux chemins convergent ici)" vertex="1">
-          <mxGeometry height="640" width="860" x="-874" y="998" as="geometry" />
-        </mxCell>
-        <mxCell id="c0" parent="zone2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF2FF;strokeColor=#4338CA;fontSize=10;fontColor=#4338CA;" value="Médecin assigné pré-sélectionné (sélectionné à l&#39;écran de recherche) — modifiable si nécessaire" vertex="1">
-          <mxGeometry height="34" width="500" x="180" y="30" as="geometry" />
-        </mxCell>
-        <mxCell id="c1" parent="zone2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" value="Ajouter un symptôme&#xa;(nom avec autocomplete, sévérité : LEGER / MODERE / SEVERE,&#xa; durée en jours, description optionnelle)" vertex="1">
-          <mxGeometry height="68" width="300" x="280" y="86" as="geometry" />
-        </mxCell>
-        <mxCell id="e_c0_c1" edge="1" parent="zone2" source="c0" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="c1" value="">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="d2" parent="zone2" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" value="Symptôme compatible&#xa;avec le sexe du patient ?" vertex="1">
-          <mxGeometry height="80" width="200" x="330" y="180" as="geometry" />
-        </mxCell>
-        <mxCell id="e_c1_d2" edge="1" parent="zone2" source="c1" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="d2" value="">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="c2" parent="zone2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" value="Afficher erreur de compatibilité&#xa;(ex : symptôme féminin pour patient M)" vertex="1">
-          <mxGeometry height="58" width="240" x="600" y="190" as="geometry" />
-        </mxCell>
-        <mxCell id="e_d2_c2" edge="1" parent="zone2" source="d2" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" target="c2" value="Non">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e_c2_c1" edge="1" parent="zone2" source="c2" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="c1" value="">
-          <mxGeometry relative="1" as="geometry">
+        <mxCell id="edge_patient_found_mini_form" edge="1" parent="Pbz0OKZ0kFoukWxKzfTh-1" source="patient_found" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="mini_form" value="Non">
+          <mxGeometry relative="1" x="-0.0207" y="-10" as="geometry">
+            <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="720" y="120" />
-              <mxPoint x="430" y="120" />
+              <mxPoint x="150" y="340.62499999999994" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="d3" parent="zone2" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" value="Ajouter un autre&#xa;symptôme ?" vertex="1">
-          <mxGeometry height="70" width="190" x="335" y="296" as="geometry" />
-        </mxCell>
-        <mxCell id="e_d2_d3" edge="1" parent="zone2" source="d2" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" target="d3" value="Oui (compatible)">
+        <mxCell id="edge_click_select_init_consult" edge="1" parent="Pbz0OKZ0kFoukWxKzfTh-1" source="click_select" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" target="init_consult" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_d3_c1" edge="1" parent="zone2" source="d3" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" target="c1" value="Oui">
+        <mxCell id="edge_motif_create_draft" edge="1" parent="Pbz0OKZ0kFoukWxKzfTh-1" source="motif" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="create_draft" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_merge_consult_add_symptom" edge="1" parent="Pbz0OKZ0kFoukWxKzfTh-1" source="merge_consult" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="add_symptom" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_add_symptom_check_sex" edge="1" parent="Pbz0OKZ0kFoukWxKzfTh-1" source="add_symptom" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="check_sex" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_symptom_compat_another_symptom" edge="1" parent="Pbz0OKZ0kFoukWxKzfTh-1" source="symptom_compat" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="save_vitals" value="Oui">
+          <mxGeometry relative="1" x="-0.8748" y="15" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="241.99999999999977" y="890.1666666666665" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge_err_compat_add_symptom" edge="1" parent="Pbz0OKZ0kFoukWxKzfTh-1" source="symptom_compat" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=0;endSize=12;fontStyle=1;fontSize=13;startArrow=none;startFill=0;exitX=0.097;exitY=0.555;exitDx=0;exitDy=0;exitPerimeter=0;" target="add_symptom" value="">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="335" y="331" />
-              <mxPoint x="180" y="331" />
-              <mxPoint x="180" y="120" />
-              <mxPoint x="280" y="120" />
+              <mxPoint x="786" y="831.1249999999999" />
+              <mxPoint x="342" y="831.1249999999999" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="c3" parent="zone2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" value="Enregistrer les signes vitaux :&#xa;TA systolique/diastolique, FC, Température (°C),&#xa;FR, SpO2 (%), Poids (kg), Taille (cm)&#xa;→ IMC calculé automatiquement côté serveur" vertex="1">
-          <mxGeometry height="78" width="320" x="270" y="400" as="geometry" />
-        </mxCell>
-        <mxCell id="e_d3_c3" edge="1" parent="zone2" source="d3" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" target="c3" value="Non">
+        <mxCell id="edge_save_vitals_calc_imc" edge="1" parent="Pbz0OKZ0kFoukWxKzfTh-1" source="save_vitals" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="calc_imc" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="amn_inf" parent="zone2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2FE;strokeColor=#0284C7;fontSize=11;fontStyle=1;fontColor=#0C4A6E;" value="Renseigner l&#39;Anamnèse (Antécédents &amp; Allergies)&#xa;— Section &quot;Anamnèse&quot; affichée en haut de l&#39;Étape 2 —&#xa;• Antécédents personnels (diabète, HTA, asthme…)&#xa;• Antécédents familiaux (cardiopathie familiale…)&#xa;• Allergies (pénicilline, AINS, iode…)" vertex="1">
-          <mxGeometry height="90" width="500" x="180" y="490" as="geometry" />
-        </mxCell>
-        <mxCell id="amn_inf_d" parent="zone2" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" value="Antécédents&#xa;à renseigner ?" vertex="1">
-          <mxGeometry height="60" width="160" x="350" y="600" as="geometry" />
-        </mxCell>
-        <mxCell id="amn_inf_save" parent="zone2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" value="Cliquer « Enregistrer dans le dossier »&#xa;→ PATCH /api/patients/{id}/dossier&#xa;{ antecedents_personnels, antecedents_familiaux, allergies }" vertex="1">
-          <mxGeometry height="60" width="320" x="530" y="597" as="geometry" />
-        </mxCell>
-        <mxCell id="e_c3_amn" edge="1" parent="zone2" source="c3" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="amn_inf" value="">
+        <mxCell id="edge_calc_imc_anamnese" edge="1" parent="Pbz0OKZ0kFoukWxKzfTh-1" source="calc_imc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;endFill=0;endSize=12;fontStyle=1;fontSize=13;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="save_vitals" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_amn_d" edge="1" parent="zone2" source="amn_inf" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="amn_inf_d" value="">
+        <mxCell id="edge_save_dossier_db_save_dossier" edge="1" parent="Pbz0OKZ0kFoukWxKzfTh-1" source="save_dossier" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="db_save_dossier" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_amnd_save" edge="1" parent="zone2" source="amn_inf_d" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" target="amn_inf_save" value="Oui">
+        <mxCell id="edge_db_save_dossier_merge_anamnese" edge="1" parent="Pbz0OKZ0kFoukWxKzfTh-1" source="db_save_dossier" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;endFill=0;endSize=12;fontStyle=1;fontSize=13;entryX=1;entryY=0.5;entryDx=0;entryDy=0;startArrow=open;startFill=0;" target="save_dossier" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_join_zone2" edge="1" parent="1" source="join1" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="c0" value="">
+        <mxCell id="edge_send_medecin_submit_consult" edge="1" parent="Pbz0OKZ0kFoukWxKzfTh-1" source="send_medecin" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" target="submit_consult" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="zone3" parent="1" style="swimlane;startSize=24;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=10;fontStyle=2;swimlaneLine=1;" value="SOUMISSION ET ANALYSE IA — POST /api/consultations/workflow-partiel" vertex="1">
-          <mxGeometry height="310" width="860" x="-874" y="1537" as="geometry" />
-        </mxCell>
-        <mxCell id="d1z3" parent="zone3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" value="Cliquer « Envoyer au médecin »&#xa;→ POST /api/consultations/workflow-partiel&#xa;   { symptomes[], signes_vitaux, consultation_id, medecin_id }" vertex="1">
-          <mxGeometry height="62" width="380" x="240" y="32" as="geometry" />
-        </mxCell>
-        <mxCell id="d2z3" parent="zone3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" value="Analyse IA préliminaire automatique&#xa;(RandomForest : symptômes + signes vitaux + sexe + âge)" vertex="1">
-          <mxGeometry height="52" width="400" x="230" y="120" as="geometry" />
-        </mxCell>
-        <mxCell id="e_d1z3_d2z3" edge="1" parent="zone3" source="d1z3" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="d2z3" value="">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="d3z3" parent="zone3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;" value="Mise à jour statut consultation → en_attente_medecin&#xa;(consultation visible dans la file du médecin)" vertex="1">
-          <mxGeometry height="52" width="400" x="230" y="194" as="geometry" />
-        </mxCell>
-        <mxCell id="e_d2z3_d3z3" edge="1" parent="zone3" source="d2z3" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="d3z3" value="">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="d4z3" parent="zone3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" value="Afficher confirmation + résumé IA préliminaire&#xa;(maladie suggérée, confiance, top prédictions)" vertex="1">
-          <mxGeometry height="52" width="400" x="230" y="266" as="geometry" />
-        </mxCell>
-        <mxCell id="e_d3z3_d4z3" edge="1" parent="zone3" source="d3z3" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="d4z3" value="">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e_d4z3_fin" edge="1" parent="1" source="d4z3" style="edgeStyle=orthogonalEdgeStyle;html=1;" value="">
+        <mxCell id="Pbz0OKZ0kFoukWxKzfTh-3" edge="1" parent="Pbz0OKZ0kFoukWxKzfTh-1" source="show_search" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="select_medecin" value="">
           <mxGeometry relative="1" as="geometry">
-            <mxPoint x="-445.0000000000002" y="1909" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="866" y="186.20833333333331" />
+            </Array>
+            <mxPoint x="520" y="172.58333333333331" as="sourcePoint" />
+            <mxPoint x="884" y="172.58333333333331" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="n1" parent="1" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;size=14;fillColor=#EEF2FF;strokeColor=#4338CA;fontSize=9;fontStyle=1;" value="🔑 Médecin OBLIGATOIRE&#xa;dès l&#39;écran de recherche :&#xa;• Bouton « Sélectionner » désactivé&#xa;• Bouton « Continuer » désactivé&#xa;si aucun médecin n&#39;est choisi" vertex="1">
-          <mxGeometry height="78" width="185" x="-1068" y="220" as="geometry" />
-        </mxCell>
-        <mxCell id="n2" parent="1" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;size=14;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=9;" value="Recherche intelligente :&#xa;• Debounce 500 ms&#xa;• Déduplique par patient_id&#xa;• Affiche statut consultation&#xa;• Avertit si consultation en attente" vertex="1">
-          <mxGeometry height="78" width="185" x="-1068" y="310" as="geometry" />
-        </mxCell>
-        <mxCell id="n3" parent="1" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;size=14;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9;" value="Quick-start mini-formulaire :&#xa;nom, prénom seulement&#xa;(âge et sexe saisis à l&#39;Étape 1)" vertex="1">
-          <mxGeometry height="56" width="175" x="-1068" y="460" as="geometry" />
-        </mxCell>
-        <mxCell id="n4" parent="1" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;size=14;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=9;" value="Niveaux de confiance IA :&#xa;≥ 75% → HIGH (vert)&#xa;50–74% → MEDIUM (orange)&#xa;&lt; 50% → LOW (rouge)" vertex="1">
-          <mxGeometry height="62" width="185" x="-1072" y="1550" as="geometry" />
-        </mxCell>
-        <mxCell id="n5" parent="1" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;size=14;fillColor=#f8cecc;strokeColor=#b85450;fontSize=9;fontStyle=1;" value="⚠ ACCÈS RESTREINT — ADMIN&#xa;/patients et /consultations&#xa;protégés par get_current_non_admin.&#xa;Un admin reçoit 403 Forbidden." vertex="1">
-          <mxGeometry height="68" width="185" x="-1072" y="1626" as="geometry" />
-        </mxCell>
-        <mxCell id="e_amn_inf_end" edge="1" parent="1" source="amn_inf_d" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=10;" target="d1z3" value="Non / Passer">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e_amn_save_end" edge="1" parent="1" source="amn_inf_save" style="edgeStyle=orthogonalEdgeStyle;html=1;" target="d1z3" value="">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="amn_note_inf" parent="1" style="text;html=1;strokeColor=#0284C7;fillColor=#E0F2FE;align=left;verticalAlign=top;spacingLeft=6;whiteSpace=wrap;overflow=hidden;fontSize=10;rounded=1;" value="📋 Anamnèse transmise au modèle IA :&#xa;antecedents_personnels, antecedents_familiaux, allergies&#xa;→ inclus dans payload POST /api/ml/predict-direct&#xa;→ _apply_clinical_rules() booste les maladies correspondantes" vertex="1">
-          <mxGeometry height="70" width="310" x="-874" y="1680" as="geometry" />
-        </mxCell>
-        <mxCell id="z_aSj0pvc-ReKIaSPAjx-2" parent="1" style="ellipse;html=1;shape=endState;fillColor=#000000;strokeColor=light-dark(#0d0c0c, #ff9090);" value="" vertex="1">
-          <mxGeometry height="30" width="30" x="-459" y="1910" as="geometry" />
+        <mxCell id="Pbz0OKZ0kFoukWxKzfTh-5" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=open;endFill=1;endSize=12;fontStyle=1;fontSize=13;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="340" y="1100" as="sourcePoint" />
+            <mxPoint x="340" y="1121" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>

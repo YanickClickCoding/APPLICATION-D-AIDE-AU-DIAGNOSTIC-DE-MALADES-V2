@@ -84,7 +84,7 @@ const Login = () => {
       </div>
 
       <div className="sp-auth-card sp-fade-in">
-        <h1 className="sp-auth-title">Bon retour 👋</h1>
+        <h1 className="sp-auth-title">Bon retour</h1>
         <p className="sp-auth-subtitle">Connectez-vous pour accéder à votre espace</p>
 
         {error && (
@@ -180,6 +180,32 @@ const Login = () => {
 
       <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '11.5px', color: 'rgba(255,255,255,0.3)' }}>
         © {new Date().getFullYear()} GASA SAD · Système d'Aide au Diagnostic
+        <div
+          style={{
+            marginTop: '6px',
+            overflow: 'hidden',
+            width: '100%',
+            whiteSpace: 'nowrap',
+            borderRadius: '8px',
+            background: 'transparent',
+            border: 'none',
+          }}
+        >
+          <div
+            style={{
+              display: 'inline-block',
+              padding: '6px 10px',
+              fontSize: '11.5px',
+              color: 'rgba(255,255,255,0.85)',
+              letterSpacing: '0.2px',
+              animation: 'gasaSAD_marquee 12s linear infinite',
+            }}
+          >
+            <span style={{ fontStyle: 'italic' }}>Destiné aux personnels de santé.</span> Ne remplace pas l'avis des médecins.
+          </div>
+        </div>
+
+        <style>{`@keyframes gasaSAD_marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }`}</style>
       </div>
     </div>
     </>

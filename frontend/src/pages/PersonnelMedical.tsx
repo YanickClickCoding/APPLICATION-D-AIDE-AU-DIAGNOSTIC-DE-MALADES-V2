@@ -4,6 +4,7 @@ import {
   Search, Plus, Edit2, Trash2, X, ToggleLeft, ToggleRight,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/Toast';
 import { adminAPI, type AdminMedecin, type AdminMedecinCreate, type AdminInfirmier, type AdminInfirmierCreate } from '../services/api';
 
 const EMPTY_MEDECIN: AdminMedecinCreate = { nom: '', prenoms: '', specialite: '', telephone: '', disponible: true };
@@ -30,6 +31,7 @@ const inputStyle: React.CSSProperties = {
 
 const PersonnelMedical = () => {
   const { token, isLoading: authLoading } = useAuth();
+  const { showToast } = useToast();
   const [medecins, setMedecins] = useState<AdminMedecin[]>([]);
   const [infirmiers, setInfirmiers] = useState<AdminInfirmier[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,8 +105,9 @@ const PersonnelMedical = () => {
       const updated = await adminAPI.updateMedecin(token, editMedecin.medecin_id, editMedecinForm);
       setMedecins(prev => prev.map(m => m.medecin_id === updated.medecin_id ? updated : m));
       setEditMedecin(null);
+      showToast('Médecin mis à jour', 'success');
     } catch (e: any) {
-      alert(e.detail || 'Erreur lors de la mise à jour');
+      showToast(e.detail || 'Erreur lors de la mise à jour', 'error');
     } finally {
       setEditMedecinLoading(false);
     }
@@ -116,8 +119,9 @@ const PersonnelMedical = () => {
       await adminAPI.deleteMedecin(token, deleteMedecinModal.id);
       setMedecins(prev => prev.filter(m => m.medecin_id !== deleteMedecinModal.id));
       setDeleteMedecinModal(null);
+      showToast('Médecin supprimé', 'success');
     } catch (e: any) {
-      alert(e.detail || 'Erreur lors de la suppression');
+      showToast(e.detail || 'Erreur lors de la suppression', 'error');
     }
   };
 
@@ -126,8 +130,9 @@ const PersonnelMedical = () => {
     try {
       const updated = await adminAPI.updateMedecin(token, m.medecin_id, { disponible: !m.disponible });
       setMedecins(prev => prev.map(x => x.medecin_id === updated.medecin_id ? updated : x));
+      showToast(updated.disponible ? 'Médecin marqué disponible' : 'Médecin marqué indisponible', 'success');
     } catch (e: any) {
-      alert(e.detail || 'Erreur');
+      showToast(e.detail || 'Erreur', 'error');
     }
   };
 
@@ -138,8 +143,9 @@ const PersonnelMedical = () => {
       const updated = await adminAPI.updateInfirmier(token, editInfirmier.infirmier_id, editInfirmierForm);
       setInfirmiers(prev => prev.map(i => i.infirmier_id === updated.infirmier_id ? updated : i));
       setEditInfirmier(null);
+      showToast('Infirmier mis à jour', 'success');
     } catch (e: any) {
-      alert(e.detail || 'Erreur lors de la mise à jour');
+      showToast(e.detail || 'Erreur lors de la mise à jour', 'error');
     } finally {
       setEditInfirmierLoading(false);
     }
@@ -151,8 +157,9 @@ const PersonnelMedical = () => {
       await adminAPI.deleteInfirmier(token, deleteInfirmierModal.id);
       setInfirmiers(prev => prev.filter(i => i.infirmier_id !== deleteInfirmierModal.id));
       setDeleteInfirmierModal(null);
+      showToast('Infirmier supprimé', 'success');
     } catch (e: any) {
-      alert(e.detail || 'Erreur lors de la suppression');
+      showToast(e.detail || 'Erreur lors de la suppression', 'error');
     }
   };
 
@@ -161,8 +168,9 @@ const PersonnelMedical = () => {
     try {
       const updated = await adminAPI.updateInfirmier(token, inf.infirmier_id, { disponible: !inf.disponible });
       setInfirmiers(prev => prev.map(x => x.infirmier_id === updated.infirmier_id ? updated : x));
+      showToast(updated.disponible ? 'Infirmier marqué disponible' : 'Infirmier marqué indisponible', 'success');
     } catch (e: any) {
-      alert(e.detail || 'Erreur');
+      showToast(e.detail || 'Erreur', 'error');
     }
   };
 

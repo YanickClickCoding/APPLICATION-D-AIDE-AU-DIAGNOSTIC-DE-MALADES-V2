@@ -269,8 +269,9 @@ const Dashboard = () => {
                   </div>
               </div>
               <div style={{padding: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-                  <div style={{width: '100%', height: '320px', position: 'relative'}}>
+                  <div style={{width: '100%', height: '360px', position: 'relative'}}>
                       <Doughnut data={chartData} options={chartOptions} />
+
                       <div style={{position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', pointerEvents: 'none'}}>
                           <CenteredCounter value={statsData.totalConsultations} />
                           <div style={{fontSize: '14px', color: '#64748B', fontFamily: "'DM Sans', sans-serif", marginTop: '4px'}}>

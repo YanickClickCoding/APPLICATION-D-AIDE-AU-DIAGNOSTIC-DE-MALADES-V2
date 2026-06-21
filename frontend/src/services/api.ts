@@ -638,6 +638,7 @@ export interface AdminUserUpdate {
   role?: 'admin' | 'medecin' | 'infirmier';
   actif?: boolean;
   password?: string;
+  specialite?: string;
 }
 
 export interface AdminMedecin {
